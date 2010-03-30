@@ -8,40 +8,40 @@
 <script type="text/javascript">
 
 	SPARK.ready(function() {
-		SPARK.find(" body a[href=http://www.yahoo.com/] ");
-		SPARK.find(" body div.myclass ");
-		SPARK.find(" body div.myclass #myid ");
-		SPARK.find(" p a[href] ");
-		SPARK.find(" html #p2");
-		SPARK.find(" * html");
-		SPARK.find(".myclass");
+		SPARK.select(" body a[href=http://www.yahoo.com/] ");
+		SPARK.select(" body div.myclass ");
+		SPARK.select(" body div.myclass #myid ");
+		SPARK.select(" p a[href] ");
+		SPARK.select(" html #p2");
+		SPARK.select(" * html");
+		SPARK.select(".myclass");
 	});
 
 	var mydivhandler = function() {
 		alert('clicked mydiv!');
 	};
 	SPARK.ready(function() {
-		SPARK.find('.myclass').style({background:'#efefef'});
-		SPARK.find('.mydiv').watch('click', mydivhandler);
-		SPARK.find('#p2').watch('click', function() {
+		SPARK.select('.myclass').style({background:'#efefef'});
+		SPARK.select('.mydiv').watch('click', mydivhandler);
+		SPARK.select('#p2').watch('click', function() {
 			alert("clicked p2 which is a: " + this.tagName);
 		});
-		SPARK.find('p.myclass').watch('click', function() {
+		SPARK.select('p.myclass').watch('click', function() {
 			alert('clicked p.myclass!');
 		});
-		SPARK.find('p').watch('click', function(evt) {
+		SPARK.select('p').watch('click', function(evt) {
 			alert('clicked p!');
-			alert(SPARK.find('.myclass').style('backgroundColor'));
+			alert(SPARK.select('.myclass').style('backgroundColor'));
 			evt.preventDefault();
 		});
-		SPARK.find('#stop').watch('click', function() {
-			SPARK.find('.mydiv').unwatch('click', mydivhandler);
+		SPARK.select('#stop').watch('click', function() {
+			SPARK.select('.mydiv').unwatch('click', mydivhandler);
 			});
-		SPARK.find("p:first-child").style('background', 'yellow');
-		SPARK.find("p > a").style("background", "yellow");
-		SPARK.find("body > a").style("background", "red");
-		SPARK.find("p.class + *").style("backgroundColor", "yellow");
-		SPARK.find("body + p").style("background", "red");
+		SPARK.select("p:first-child").style('background', 'yellow');
+		SPARK.select("p > a").style("background", "yellow");
+		SPARK.select("body > a").style("background", "red");
+		SPARK.select("p.class + *").style("backgroundColor", "yellow");
+		SPARK.select("body + p").style("background", "red");
 	});
 </script>
 </head>

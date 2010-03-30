@@ -19,8 +19,7 @@ SPARK = (function() {
 		loadstate = [], // for each file, loadstate 1 = loading, 2 = loaded
 		callbacks = [], // for each load callback, [files, callback]
 		readyqueue = [], // just callbacks to execute when ready
-		ready = 0,
-		extensions = {};
+		ready = 0;
 
 	var checkcascade = function(elements, newelement, cascade) {
 	// check if newelement cascades from the list of elements, according
@@ -74,24 +73,40 @@ SPARK = (function() {
 		}
 	};
 
-	var makeobject = function(prototype, contents) {
-	// makes a new object based on the given prototype.  optionally sets
-	// other properties as well
+	var makeobject = function(prototype, selection) {
+	// makes a new object based on the given prototype, and sets the selected
+	// contents to those specified in selection.
 		var
 			Constructor = function() {},
+			supplied = selection.cloneNode || selection.alert ? [selection] :
+				selection,
 			newobject;
 		Constructor.prototype = prototype;
 		newobject = new Constructor();
 
-		for (var name in contents) {
-			if (contents.hasOwnProperty(name)) {
-				newobject[name] = contents[name];
-			}
+		for (var i = 0; i < supplied.length; i++) {
+			newobject[i] = supplied[i];
 		}
+		newobject.length = supplied.length;
+
 		return newobject;
 	};
 
-	var core = makeobject(extensions, {
+	var makeforeach = function(callback) {
+		return function() {
+			var
+				i, result;
+			for (i = 0; i < this.length; i++) {
+				result = callback.apply(this[i], arguments);
+				if (result !== undef) {
+					return result;
+				}
+			}
+			return this;
+		};
+	};
+
+	var core = {
 
 		build: function(spec) {
 		// builds a new node (element or text node) according to the given
@@ -102,27 +117,26 @@ SPARK = (function() {
 		// where attr and contents are optional.  alternatively, spec can be
 		// just a string (which will result in a text node)
 			var
-				node = spec.name ? doc.createElement(spec.name) :
-					doc.createTextNode(spec),
-				newspark = makeobject(this, [node]),
+				node = makeobject(this, spec.name ? doc.createElement(spec.name) :
+					doc.createTextNode(spec)),
 				name;
 			if (spec.attr) {
 				for (name in spec.attr) {
 					if (spec.attr[name].charAt) {
-						node.setAttribute(name, spec.attr[name]);
+						node[0].setAttribute(name, spec.attr[name]);
 						if (name.toLowerCase() == "style") {
-							node.style.cssText = spec.attr[name];
+							node[0].style.cssText = spec.attr[name];
 						}
 						if (name.toLowerCase() == "class") {
-							node.className = spec.attr[name];
+							node[0].className = spec.attr[name];
 						}
 					}
 				}
 			}
 			if (spec.contents) {
-				newspark.append(spec.contents);
+				node.append(spec.contents);
 			}
-			return newspark;
+			return node;
 		},
 
 		select: function(selector) {
@@ -139,8 +153,7 @@ SPARK = (function() {
 			// if a node or an array of nodes (or array-like object) is passed
 			// then just do this
 			if (!selector.charAt) {
-				return makeobject(this,
-					selector.cloneNode || selector.alert ? [selector] : selector);
+				return makeobject(this, selector);
 			}
 
 			selector += ","; // makes the loop with the regex easier
@@ -260,7 +273,7 @@ SPARK = (function() {
 			return makeobject(this, collected);
 		},
 
-		watch: function(eventname, callback) {
+		watch: makeforeach(function(eventname, callback) {
 		// simple cross-platform event handling. registers the given callback
 		// as an even handler for each currently selected element, for the event
 		// named by eventname.  eventname should not include the "on" prefix.
@@ -285,16 +298,14 @@ SPARK = (function() {
 			callback.SPARK = callback.SPARK || {};
 			mycallback = callback.SPARK.iehn || (callback.SPARK.iehn = mycallback);
 
-			this.each(function() {
-				if (this[addeventlistener]) {
-					// other browsers
-					this[addeventlistener](eventname, callback, !1);
-				} 
-				else {
-					this[attachevent]("on"+eventname, mycallback);
-				}
-			});
-		},
+			if (this[addeventlistener]) {
+				// other browsers
+				this[addeventlistener](eventname, callback, !1);
+			} 
+			else {
+				this[attachevent]("on"+eventname, mycallback);
+			}
+		}),
 
 		unwatch: function(eventname, callback) {
 		// removes an event handler added with watch(). While SPARK can be mixed
@@ -323,12 +334,12 @@ SPARK = (function() {
 		extend: function(name, property) {
 		// for extending the default capabilities of SPARK.  the new
 		// property will be added to the prototype chain of all SPARK
-		// objects. later added properties can replace earlier properties,
-		// but core properties (those specified in SPARK core) cannot be
-		// replaced.
+		// objects. Existing properties will not be replaced.
 		// Therefore, you have to be careful not to collide with names of
 		// present or future SPARK core properties.
-			extensions[name] = property;
+			if (!core[name]) {
+				core[name] = property;
+			}
 			return this;
 		},
 
@@ -391,65 +402,51 @@ SPARK = (function() {
 			// load asks for callback so don't chain
 		},
 
-		style: function(style, styleval) {
+		style: makeforeach(function(style, styleval) {
 		// gets or sets the style of the selected elements.
 		// if styleval is blank and style is a string, gets the current style
-		// of the first matched element
+		// of the first element having such a style
 		// if styleval is specified, sets the current style instead
 		// alternatively style can be an object of {style: styleval, ...} in
 		// which case it sets multiple styles
 			var
-				styles = style,
-				firstelement = this[0];
-			if (style.charAt) {
-				if (!styleval && styleval !== "") {
-					// if first argument is string and not second argument, just
-					// return current style
-					return !firstelement ? undef :
-						window.getComputedStyle ?
-							getComputedStyle(firstelement, mynull)[style] :
-						firstelement.currentStyle ? firstelement.currentStyle[style] :
-						undef;
-				}
-				styles = {};
-				styles[style] = styleval;
+				stringfirst = style.charAt;
+			if (stringfirst && styleval === undef) {
+				return window.getComputedStyle ?
+					getComputedStyle(this, mynull)[style] :
+					this.currentStyle ? this.currentStyle[style] :
+					undef;
 			}
-			this.each(function() {
-				for (var name in styles) {
-					if (styles[name].charAt && this.style) {
-						this.style[name] = styles[name];
-					}
+			if (stringfirst) {
+				style = {};
+				style[style] = styleval;
+			}
+			for (var name in style) {
+				if (style[name].charAt && this.style) {
+					this.style[name] = style[name];
 				}
-			});
-			return this;
-		},
+			}
+		}),
 
-		append: function(spec) {
+		append: makeforeach(function(spec) {
 		// inserts a new element or array of elements as defined by spec into
 		// the document. for each selected element, the elements/text nodes
 		// specified in the spec are created and them inserted within the 
 		// element after any other children.
 			var
-				insertbefore = arguments[2],
-				newelements = [];
-			this.each(function() {
-				var 
-					tmp,
-					myspec = spec.name ? [spec] : spec,
-					node;
-				while ((tmp = myspec.shift())) {
-					node = this.build(tmp);
-					if (insertbefore && this.parentNode) {
-						this.parentNode.insertBefore(node, this);
-					}
-					else {
-						this.appendChild(node);
-					}
-					newelements.push(node);
+				tmp,
+				myspec = spec.name ? [spec] : spec,
+				node;
+			while ((tmp = myspec.shift())) {
+				node = this.build(tmp);
+				if (arguments[2] && this.parentNode) {
+					this.parentNode.insertBefore(node, this);
 				}
-			});
-			return makeobject(this, newelements);
-		},
+				else {
+					this.appendChild(node);
+				}
+			}
+		}),
 
 		insert: function(spec) { 
 		// inserts new element or elements as defined by spec into
@@ -461,32 +458,29 @@ SPARK = (function() {
 			return this.append(spec, undef, 1);
 		},
 
-		remove: function(contentsonly) {
+		remove: makeforeach(function(contentsonly) {
 		// remove selected elements from the document.  If contentsonly is
 		// given and is true, then it removes only their contents, leaving
 		// the empty elements. note that references to the deleted objects
 		// may still exist in the SPARK object that's returned (don't count
 		// on this behaviour)
-			this.each(function() {
-				var
-					tmp;
-				while (contentsonly && (tmp = this.firstChild)) {
+			var
+				tmp;
+			if (!contentsonly && this.parentNode) {
+				this.parentNode.removeChild(this);
+			}
+			else {
+				while ((tmp = this.firstChild)) {
 					this.removeChild(tmp);
 				}
-				if (!contentsonly && this.parentNode) {
-					this.parentNode.removeChild(this);
-				}
-			});
-			return this;
-		},
+			}
+		}),
 
-		each: function(callback) {
+		each: makeforeach(function(callback) {
 		// simply executes the given callback for each currently selected element.
 		// the callback's 'this' variable will be the element it applies to
-			for (var i = 0; i < this.length; i++) {
-				callback.call(this[i]);
-			}
-		},
+			callback.call(this);
+		}),
 
 		gethttp: function(url, callback, options) {
 		// places an HTTP request (using XMLHttpRequest) for the given URL.
@@ -514,7 +508,7 @@ SPARK = (function() {
 			} catch (e) {}
 			// asks for callback so don't chain
 		}
-	});
+	};
 
 	// set up ready listening
 	core.select(doc).watch("DOMContentLoaded", processreadyqueue);
@@ -524,5 +518,5 @@ SPARK = (function() {
 		checkscroll();
 	}
 
-	return makeobject(core);
+	return makeobject(core, []);
 }()); 

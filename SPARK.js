@@ -358,6 +358,7 @@ SPARK = (function() {
 							myscript.unwatch('load', gencallback).unwatch('readystatechange',
 								gencallback).remove();
 							if (!(--mycallback.SPARKl[loadid])) {
+								// this callback is no longer waiting on any files, so call it
 								mycallback();
 								delete mycallback.SPARKl[loadid];
 							}
@@ -370,6 +371,8 @@ SPARK = (function() {
 			};
 
 		mycallback.SPARKl = mycallback.SPARKl || {};
+		// store a count of how many files this callback (for this loadid)
+		// is still "waiting on"
 		mycallback.SPARKl[loadid] = 0;
 
 		this.ready(function() {

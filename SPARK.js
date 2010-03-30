@@ -19,7 +19,6 @@ SPARK = (function() {
 		undef,
 		selectorregex = /(\s*)([>+]?)\s*([#\.\[:]?)(\*|[\w\-]+)(([~|]?=)['"]?([^\]'"]*))?|\s*,/g,
 		loadstate = [], // for each file, loadstate 1 = loading, 2 = loaded
-		callbacks = [], // for each load callback, [files, callback]
 		readyqueue = [], // just callbacks to execute when ready
 		ready = 0,
 		gid = 0,
@@ -64,39 +63,6 @@ SPARK = (function() {
 			callback();
 		}
 		ready = 1;
-	};
-
-	var processcallbacks = function() {
-		// go over the list of registered callbacks and check which ones are ready
-		for (var i = 0; i < callbacks.length; i++) {
-			for (var j = 0, satisfied = 1; satisfied &&
-				j < callbacks[i][0].length; j++) {
-				satisfied = loadstate[callbacks[i][0][j]] == 2;
-			}
-			if (satisfied) {
-				callbacks[i][1]();
-				callbacks.splice(i--, 1); // decrease i after shortening current array
-			}
-		}
-	};
-
-	var registerscript = function(file) {
-		loadstate[file] = 1;
-		setTimeout(function() {
-			// add the script into the head as a new element
-			var
-				myscript = this.find('head').append({name: 'script'}).set("src", file),
-				mycallback = function() {
-					// if readystate exists ensure its value is 'loaded' or 'complete'
-					if (!this.readyState || /oade|co/.test(this.readyState)) {
-						loadstate[file] = 2;
-						myscript.unwatch('load', mycallback).unwatch('load', mycallback).remove();
-						processcallbacks();
-					}
-				};
-			myscript.watch('load', mycallback);
-			myscript.watch('readystatechange', mycallback);
-		}, 0);
 	};
 
 	var checkscroll = function() {
@@ -303,16 +269,16 @@ SPARK = (function() {
 					return callback.call(myelement, evt);
 				};
 
-			myelement.SPARK = myelement.SPARK || {};
-			myelement.SPARK["e"+callback.SPARKi] = 
-				myelement.SPARK["e"+callback.SPARKi] || mycallback;
+			myelement.SPARKe = myelement.SPARKe || {};
+			myelement.SPARKe[callback.SPARKi] = 
+				myelement.SPARKe[callback.SPARKi] || mycallback;
 
 			if (myelement.addEventListener) {
 				// other browsers
 				myelement.addEventListener(eventname, callback, !1);
 			} 
 			else {
-				myelement.attachEvent("on"+eventname, myelement.SPARK["e"+callback.SPARKi]);
+				myelement.attachEvent("on"+eventname, myelement.SPARKe[callback.SPARKi]);
 			}
 		});
 	};
@@ -331,9 +297,9 @@ SPARK = (function() {
 			} 
 			else {
 				if (callback.SPARKi && myelement.SPARK &&
-					myelement.SPARK["e"+callback.SPARKi]) {
-					myelement.detachEvent("on"+eventname, myelement.SPARK["e"+callback.SPARKi]);
-					delete myelement.SPARK["e"+callback.SPARKi];
+					myelement.SPARKe[callback.SPARKi]) {
+					myelement.detachEvent("on"+eventname, myelement.SPARKe[callback.SPARKi]);
+					delete myelement.SPARKe[callback.SPARKi];
 				}
 			}
 		});
@@ -354,37 +320,69 @@ SPARK = (function() {
 	};
 
 	core.extend = function(name, property) {
-	// for extending the default capabilities of SPARK. you can trash
-	// the spark object by doing this, so make sure not to collide with
-	// names of SPARK core properties
-		core[name] = property;
+	// for extending prototype for all SPARK objects. if the SPARK prototype
+	// already has a property with this name, then it will NOT be replaced.
+	// therefore you must take steps not to choose names that collide with
+	// current or future SPARK properties.
+	//todo a standard for this should be created.  don't use this yet
+		if (core[name] === undef) {
+			core[name] = property;
+		}
 		return this;
 	};
 
-	core.load = function(file, callback) {
-	// for dynamically loading other javascript files.  files may be a single
-	// URL or an array of URLs.  callback is optional, and if supplied the given
+	core.load = function(files, callback) {
+	// dynamically load and execute other javascript files asynchronously,
+	// allowing the rest of the page to continue loading and the user to
+	// interact with it while loading.  files may be a single URL or an
+	// array of URLs.  callback is optional, and if supplied the given
 	// callback will be called once the given file is loaded.
-	// files should be loaded asynchronously, and there is no guarantee about the
-	// order in which they're executed, except that the callback will only be
-	// called when all specified files are loaded.
+	// There is no guarantee about the order in which different callbacks
+	// are executed, except that a callback will only be called when all
+	// specified files are loaded.
 	// It's safe to call this many times with the same file, and it won't be
 	// loaded again, as long as the filename string is completely the same (not
 	// just resolving to the same URL).
 		var
-			i,
-			files = file.charAt ? [file] : file;
+			myfiles = files.charAt ? [files] : files,
+			mycallback = callback || function() {},
+			that = this,
+			loadid = ++gid,
+			registerscript = function(file) {
+				var
+					myscript = that.build({name: 'script'}).set('src', file),
+					gencallback = function() {
+						if (loadstate[file] < 2 &&
+							(!this.readyState || /loade|co/.test(this.readyState))) {
+							loadstate[file] = 2;
+							myscript.unwatch('load', gencallback).unwatch('readystatechange',
+								gencallback).remove();
+							if (!(--mycallback.SPARKl[loadid])) {
+								mycallback();
+								delete mycallback.SPARKl[loadid];
+							}
+						}
+					};
+				that.find('head').append(myscript);
+				myscript.watch('load', gencallback);
+				myscript.watch('readystatechange', gencallback);
+				loadstate[file] = 1;
+			};
 
-		for (i = 0; i < files.length; i++) {
-			if (!loadstate[files[i]]) {
-				registerscript(files[i]);
+		mycallback.SPARKl = mycallback.SPARKl || {};
+		mycallback.SPARKl[loadid] = 0;
+
+		this.ready(function() {
+			for (var i = 0; i < myfiles.length; i++) {
+				if (!loadstate[myfiles[i]]) {
+					mycallback.SPARKl[loadid]++;
+					registerscript(myfiles[i]);
+				}
 			}
-		}
-		if (callback) {
-			callbacks.push([files,callback]);
-		}
-		processcallbacks();
-		// load asks for callback so don't chain
+			if (!mycallback.SPARKl[loadid]) {
+				mycallback();
+			}
+		});
 	};
 
 	core.get = function(prop) {
@@ -407,14 +405,19 @@ SPARK = (function() {
 			undef;
 	};
 
+	/*
+	// this is kind of the odd one out in my SPARK library as it
+	// doesn't seem like an everyday essential task.  leaving it
+	// out to save space. 
 	core.gettext = function() {
 	// fetches and returns the text content of the selected nodes.
 	// to set the text content of a node, you should just use
 	// append("text") - preceded by empty() if necessary
 		return !this.length ? undef :
-			this[0].textContent ? this[0].textContent :
+			this[0].textContent !== undef ? this[0].textContent :
 			this[0].innerText;
 	};
+	*/
 
 	core.set = function(prop, value) {
 	// really simple method, just sets one or more properties on each
@@ -467,19 +470,20 @@ SPARK = (function() {
 	};
 
 	core.append = function(spec) {
-	// inserts a new element or array of elements as defined by spec into
-	// the document. for each selected element, the elements/text nodes
-	// specified in the spec are created and then inserted within the 
-	// element after any other children.
+	// inserts a new element or array of elements into the document.
+	// the parameter may be either a node, a spec as defined in build(),
+	// or an array containing a mixture of such.
+	// the new elements are appended to the child nodes of each currently
+	// selected node.
 		var
 			elements = [];
 		this.each(function() {
 			var 
 				tmp,
-				myspec = spec.name ? [spec] : spec,
+				myspec = spec.name || spec.cloneNode ? [spec] : spec,
 				node;
 			while ((tmp = myspec.shift())) {
-				node = this.build(tmp);
+				node = tmp.cloneNode ? tmp : this.build(tmp);
 				elements.push(node);
 				this.appendChild(node);
 			}
@@ -488,19 +492,20 @@ SPARK = (function() {
 	};
 
 	core.insert = function(spec) {
-	// inserts a new element or array of elements as defined by spec into
-	// the document. for each selected element, the elements/text nodes
-	// specified in the spec are created and then inserted before the
-	// current element
+	// inserts a new element or array of elements into the document.
+	// the parameter may be either a node, a spec as defined in build(),
+	// or an array containing a mixture of such.
+	// the new elements are inserted before each currently
+	// selected node.
 		var
 			elements = [];
 		this.each(function() {
 			var 
 				tmp,
-				myspec = spec.name ? [spec] : spec,
+				myspec = spec.name || spec.cloneNode ? [spec] : spec,
 				node;
 			while ((tmp = myspec.shift()) && this.parentNode) {
-				node = this.build(tmp);
+				node = tmp.cloneNode ? tmp : this.build(tmp);
 				elements.push(node);
 				this.parentNode.insertBefore(node, this);
 			}

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-	<title>My website</title>
+	<title>Test suite</title>
 <script type="text/javascript" src="SPARK.js"></script>
 <script type="text/javascript">
 
@@ -21,7 +21,7 @@
 		alert('clicked mydiv!');
 	};
 	SPARK.ready(function() {
-		SPARK.select('.myclass').style({background:'#efefef'});
+		SPARK.select('.myclass').setstyle({background:'#efefef'});
 		SPARK.select('.mydiv').watch('click', mydivhandler);
 		SPARK.select('#p2').watch('click', function() {
 			alert("clicked p2 which is a: " + this.tagName);
@@ -31,17 +31,17 @@
 		});
 		SPARK.select('p').watch('click', function(evt) {
 			alert('clicked p!');
-			alert(SPARK.select('.myclass').style('backgroundColor'));
+			alert(SPARK.select('.myclass').getstyle('backgroundColor'));
 			evt.preventDefault();
 		});
 		SPARK.select('#stop').watch('click', function() {
 			SPARK.select('.mydiv').unwatch('click', mydivhandler);
 			});
-		SPARK.select("p:first-child").style('background', 'yellow');
-		SPARK.select("p > a").style("background", "yellow");
-		SPARK.select("body > a").style("background", "red");
-		SPARK.select("p.class + *").style("backgroundColor", "yellow");
-		SPARK.select("body + p").style("background", "red");
+		SPARK.select("p:first-child").setstyle('background', 'yellow');
+		SPARK.select("p > a").setstyle("background", "yellow");
+		SPARK.select("body > a").setstyle("background", "red");
+		SPARK.select("p.class + *").setstyle("backgroundColor", "yellow");
+		SPARK.select("body + p").setstyle("background", "red");
 	});
 </script>
 </head>

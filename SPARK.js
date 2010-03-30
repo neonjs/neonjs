@@ -11,15 +11,18 @@
 */
 
 SPARK = (function() {
+
+	// #######################################################################################
+	// PRIVATE VARIABLES
+	
 	var
-		doc = document,
-		mynull = null,
 		undef,
 		selectorregex = /(\s*)([>+]?)\s*([#\.\[:]?)(\*|[\w\-]+)(([~|]?=)['"]?([^\]'"]*))?|\s*,/g,
 		loadstate = [], // for each file, loadstate 1 = loading, 2 = loaded
 		callbacks = [], // for each load callback, [files, callback]
 		readyqueue = [], // just callbacks to execute when ready
-		ready = 0;
+		ready = 0,
+		core = {};
 
 	var checkcascade = function(elements, newelement, cascade) {
 	// check if newelement cascades from the list of elements, according
@@ -27,13 +30,13 @@ SPARK = (function() {
 	// cascade == '&' : match when newelement occurs in elements
 	// cascade == '>' : when newelement is direct child of one in elements
 	// cascade == '>>': when newelement is descendent of one in elements
-		for (var m = 0; m < elements.length; m++) {
+		for (var i = 0; i < elements.length; i++) {
 			if (
-				cascade == ">>" ? (elements[m].compareDocumentPosition ?
-					(elements[m].compareDocumentPosition(newelement) & 16) :
-					(elements[m].contains(newelement) && elements[m]!==newelement)) :
-				cascade == ">" ? newelement.parentNode === elements[m] :
-				newelement === elements[m] // cascade == '&'
+				cascade == ">>" ? (elements[i].compareDocumentPosition ?
+					(elements[i].compareDocumentPosition(newelement) & 16) :
+					(elements[i].contains(newelement) && elements[i]!==newelement)) :
+				cascade == ">" ? newelement.parentNode === elements[i] :
+				newelement === elements[i] // cascade == '&'
 				) {
 				return !0; //true
 			}
@@ -66,95 +69,45 @@ SPARK = (function() {
 	// hack, intended only for IE, for checking when the DOM content is
 	// loaded
 		try {
-			doc.documentElement.doScroll('left');
+			document.documentElement.doScroll("left");
 			processreadyqueue();
 		} catch (e) {
 			setTimeout(checkscroll, 7);
 		}
 	};
 
-	var makeobject = function(prototype, selection) {
-	// makes a new object based on the given prototype, and sets the selected
-	// contents to those specified in selection.
-		var
-			Constructor = function() {},
-			supplied = selection.cloneNode || selection.alert ? [selection] :
-				selection,
-			newobject;
-		Constructor.prototype = prototype;
-		newobject = new Constructor();
+	// #######################################################################################
+	// PUBLIC METHODS
+	// call these methods using SPARK.methodname() eg SPARK.each()
 
-		for (var i = 0; i < supplied.length; i++) {
-			newobject[i] = supplied[i];
+	core.each = function(callback) {
+	// simply executes the given callback for each currently selected element.
+	// the callback's 'this' variable will be the element it applies to
+		for (var i = 0; i < this.length; i++) {
+			callback.call(this[i]);
 		}
-		newobject.length = supplied.length;
-
-		return newobject;
 	};
 
-	var makeforeach = function(callback) {
-		return function() {
-			var
-				i, result;
-			for (i = 0; i < this.length; i++) {
-				result = callback.apply(this[i], arguments);
-				if (result !== undef) {
-					return result;
-				}
-			}
-			return this;
-		};
-	};
+	core.select = function(selector) {
+	// css selector engine for SPARK.  returns array of elements according to
+	// the given selector string.  as much of CSS 2.1 selector syntax as
+	// possible is supported including A > B, A + B, A:first-child
+		var
+			i,
+			parts,
+			cascade,
+			tmp,
+			Constructor = function() {},
+			newelement,
+			elements = [];
 
-	var core = {
+		Constructor.prototype = this;
+		newelement = new Constructor();
 
-		build: function(spec) {
-		// builds a new node (element or text node) according to the given
-		// spec and selects it, but doesn't insert it into the document. this
-		// is used internally by SPARK, but may be useful elsewhere. the spec
-		// should be an object conforming to:
-		// {name: <tag name>, attr: {name:val, ...}, contents: [<spec>, ...]}  
-		// where attr and contents are optional.  alternatively, spec can be
-		// just a string (which will result in a text node)
-			var
-				node = makeobject(this, spec.name ? doc.createElement(spec.name) :
-					doc.createTextNode(spec)),
-				name;
-			if (spec.attr) {
-				for (name in spec.attr) {
-					if (spec.attr[name].charAt) {
-						node[0].setAttribute(name, spec.attr[name]);
-						if (name.toLowerCase() == "style") {
-							node[0].style.cssText = spec.attr[name];
-						}
-						if (name.toLowerCase() == "class") {
-							node[0].className = spec.attr[name];
-						}
-					}
-				}
-			}
-			if (spec.contents) {
-				node.append(spec.contents);
-			}
-			return node;
-		},
+		newelement.length = 0;
 
-		select: function(selector) {
-		// css selector engine for SPARK.  returns array of elements according to
-		// the given selector string.  as much of CSS 2.1 selector syntax as
-		// possible is supported including A > B, A + B, A:first-child
-			var
-				parts,
-				cascade,
-				tmp,
-				collected = [],
-				elements = [];
-
-			// if a node or an array of nodes (or array-like object) is passed
-			// then just do this
-			if (!selector.charAt) {
-				return makeobject(this, selector);
-			}
+		if (selector.charAt) {
+			// if the selector is a string, then treat it as a CSS style selector
 
 			selector += ","; // makes the loop with the regex easier
 
@@ -165,6 +118,7 @@ SPARK = (function() {
 				if (parts[4]) {
 					// we have at least a name; this is part of a selector and not a comma or the end
 					var
+						// set these parts for readability, mostly
 						//whitespace = parts[1],
 						//combine = parts[2],
 						type = parts[3],
@@ -172,7 +126,7 @@ SPARK = (function() {
 						attrcompare = parts[6],
 						attrvalue = parts[7],
 						singleparent = elements.length==1 && (cascade=='>' || cascade=='>>'),
-						searchwithin = singleparent ? elements[0] : doc,
+						searchwithin = singleparent ? elements[0] : document,
 						skipcascade = !cascade,
 						skipfilter = 0,
 						regex,
@@ -206,9 +160,9 @@ SPARK = (function() {
 							skipcascade = 1;
 						}
 						else if (cascade == '+') {
-							for (var o = 0; o < elements.length; o++) {
+							for (i = 0; i < elements.length; i++) {
 								var 
-									element = getelementsibling(elements[o]);
+									element = getelementsibling(elements[i]);
 								if (element) {
 									newelements.push(element);
 								}
@@ -220,7 +174,7 @@ SPARK = (function() {
 							// parent we can still skip the cascade
 							if (type == '#') {
 								// get element by ID (quick - there's only one!)
-								tmp = doc.getElementById(name);
+								tmp = document.getElementById(name);
 								newelements = tmp ? [tmp] : [];
 								skipfilter = 1;
 							}
@@ -228,30 +182,35 @@ SPARK = (function() {
 								// get element by tag name or get all elements (worst case, when comparing
 								// attributes and there's no '&' cascade)
 								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
-								for (var f = 0; f < tmp.length; f++) {
-									newelements.push(tmp[f]);
+								for (i = 0; i < tmp.length; i++) {
+									newelements.push(tmp[i]);
 								}
 								skipfilter = !type;
 								skipcascade += (singleparent && cascade == '>>');
 							}
 						}
 						// now we do filtering and cascading in one big loop!  stand back!
-						for (var n = 0; n < newelements.length; n++) {
+						for (i = 0; i < newelements.length; i++) {
 							var
 								pass = skipfilter ? 1 :
 									!type ? (name == "*" || name.toLowerCase() == 
-										newelements[n].nodeName.toLowerCase()) :
-									type == "." ? regex.test(newelements[n].className) :
-									type == '#' ? (newelements[n].id == name) :
-									attrcompare ? regex.test(newelements[n].getAttribute(name)) :
-									type == '[' ? ((tmp = newelements[n].getAttribute(name)) !==
-										mynull && tmp != "") :
+										newelements[i].nodeName.toLowerCase()) :
+									type == "." ? regex.test(newelements[i].className) :
+									type == '#' ? (newelements[i].id == name) :
+									attrcompare ? regex.test(newelements[i].getAttribute(name)) :
+									type == '[' ? ((tmp = newelements[i].getAttribute(name)) !==
+										null && tmp != "") :
 									(name.toLowerCase() == "first-child") ? 
-										!getelementsibling(newelements[n],1) :
+										!getelementsibling(newelements[i],1) :
+									// if we're supporting first-child, supporting last-child is
+									// trivial.  however we may as well limit ourselves to CSS2.1
+									// as this library is supposed to be low fat
+									//(name.toLowerCase() == "last-child") ? 
+									//	!getelementsibling(newelements[n]) :
 									0;
 							if (!pass ||
-								(!skipcascade && !checkcascade(elements, newelements[n], cascade))) {
-								newelements.splice(n--, 1);
+								(!skipcascade && !checkcascade(elements, newelements[i], cascade))) {
+								newelements.splice(i--, 1);
 							}
 						}
 						elements = newelements;
@@ -262,261 +221,350 @@ SPARK = (function() {
 					// if we have reached either a comma or the end of the selector
 					while ((tmp = elements.shift())) {
 
-						if (!checkcascade(collected, tmp, '&')) {
-							// if elements[p] DOESN'T exist in collected
-							collected.push(tmp);
+						if (!checkcascade(newelement, tmp)) {
+							// if elements[p] DOESN'T exist in newelement
+							newelement[newelement.length++] = tmp;
 						}
 					}
 					cascade = 0;
 				}
 			}
-			return makeobject(this, collected);
-		},
+		}
+		else {
+			// handle the case where the argument was a node or array of nodes rather than
+			// a CSS selector
+			elements = selector.cloneNode || selector.alert ? [selector] :
+				selector;
+			for (i = 0; i < elements.length; i++) {
+				newelement[newelement.length++] = elements[i];
+			}
+		}
+		return newelement;
+	};
 
-		watch: makeforeach(function(eventname, callback) {
-		// simple cross-platform event handling. registers the given callback
-		// as an even handler for each currently selected element, for the event
-		// named by eventname.  eventname should not include the "on" prefix.
-		// intended to be cross platform.
-		// the callback will be able to access the source element via the "this"
-		// variable, and the event object via the first parameter.
-		// the event object is largely different across browsers, but at least
-		// preventDefault() is simulated on browsers (IE) not supporting it.
-			var
-				addeventlistener = arguments[3] ? "removeEventListener" :
-					"addEventListener",
-				attachevent = arguments[3] ? "detachEvent" : "attachEvent",
-				mycallback = function() {
-					var
-						evt = event;
-					evt.preventDefault = evt.preventDefault || function() {
-						evt.returnValue = !1;
-					};
-					return callback.call(evt.srcElement, evt);
+	core.watch = function(eventname, callback) {
+	// simple cross-platform event handling. registers the given callback
+	// as an even handler for each currently selected element, for the event
+	// named by eventname.  eventname should not include the "on" prefix.
+	// intended to be cross platform.
+	// The callback will be able to access the event object via the first
+	// parameter, which will contain event.target, event.preventDefault()
+	// and event.stopPropagation() across browsers.
+	// Other things, such as the this keyword cannot be relied upon to
+	// work cross-browser
+		var
+			mycallback = function() {
+				var
+					evt = event;
+				evt.preventDefault = function() {
+					evt.returnValue = !1;
 				};
+				evt.stopPropagation = function() {
+					evt.cancelBubble = !0;
+				};
+				evt.target = evt.srcElement;
+				return callback(evt);
+			};
 
-			callback.SPARK = callback.SPARK || {};
-			mycallback = callback.SPARK.iehn || (callback.SPARK.iehn = mycallback);
+		callback.SPARK = callback.SPARK || {};
+		callback.SPARK.evhn = callback.SPARK.evhn || mycallback;
 
-			if (this[addeventlistener]) {
+		this.each(function() {
+			if (this.addEventListener) {
 				// other browsers
-				this[addeventlistener](eventname, callback, !1);
+				this.addEventListener(eventname, callback, !1);
 			} 
 			else {
-				this[attachevent]("on"+eventname, mycallback);
+				this.attachEvent("on"+eventname, callback.SPARK.evhn);
 			}
-		}),
+		});
+	};
 
-		unwatch: function(eventname, callback) {
-		// removes an event handler added with watch(). While SPARK can be mixed
-		// with other frameworks and even with native browser calls, you need to
-		// always un-register events with the same method as the event was
-		// registered with.
-			this.watch(eventname, callback, undef, 1);
-			// this asks for a callback, but not with the intention of running
-			// it.  so do chain this method
-			return this;
-		},
-
-		ready: function(callback) {
-		// specify a callback function that should be executed when the document is
-		// ready, ie has fully loaded (not necessarily images, other external files)
-		// will run instantly if the document is already ready.
-		// call this as many times as you like.
-			if (ready) {
-				callback();
-			} else {
-				readyqueue.push(callback);
-			}
-			// ready asks for callback so don't chain
-		},
-
-		extend: function(name, property) {
-		// for extending the default capabilities of SPARK.  the new
-		// property will be added to the prototype chain of all SPARK
-		// objects. Existing properties will not be replaced.
-		// Therefore, you have to be careful not to collide with names of
-		// present or future SPARK core properties.
-			if (!core[name]) {
-				core[name] = property;
-			}
-			return this;
-		},
-
-		load: function(file, callback) {
-		// for dynamically loading other javascript files.  files may be a single
-		// URL or an array of URLs.  callback is optional, and if supplied the given
-		// callback will be called once the given file is loaded.
-		// files should be loaded asynchronously, and there is no guarantee about the
-		// order in which they're executed, except that the callback will only be
-		// called when all specified files are loaded.
-		// It's safe to call this many times with the same file, and it won't be
-		// loaded again, as long as the filename string is completely the same (not
-		// just resolving to the same URL).
-			var
-				files = file.charAt ? [file] : file,
-				processcallbacks = function() {
-					// go over the list of registered callbacks and check which ones are ready
-					for (var i = 0; i < callbacks.length; i++) {
-						for (var j = 0, satisfied = 1; satisfied &&
-							j < callbacks[i][0].length; j++) {
-							satisfied = loadstate[callbacks[i][0][j]] == 2;
-						}
-						if (satisfied) {
-							callbacks[i][1]();
-							callbacks.splice(i--, 1); // decrease i after shortening current array
-						}
-					}
-				},
-				registerscript = function(file) {
-					loadstate[file] = 1;
-					setTimeout(function () {
-						// add the script into the head as a new element
-						var
-							myscript = this.find('head').append({name: 'script'}),
-							mycallback = function() {
-								var
-									readystate = this.readyState;
-								// if readystate exists ensure its value is 'loaded' or 'complete'
-								if (!readystate || /loade|co/.test(readystate)) {
-									loadstate[file] = 2;
-									myscript.unwatch('load', mycallback, 1).unwatch('load', mycallback, 1).remove();
-									processcallbacks();
-								}
-							};
-						myscript[0].src = file;
-						myscript.watch('load', mycallback);
-						myscript.watch('readystatechange', mycallback);
-					}, 0);
-				};
-
-			if (callback) {
-				callbacks.push([files,callback]);
-			}
-			for (var i = 0; i < files.length; i++) {
-				if (!loadstate[files[i]]) {
-					registerscript(files[i]);
-				}
-			}
-			processcallbacks();
-			// load asks for callback so don't chain
-		},
-
-		style: makeforeach(function(style, styleval) {
-		// gets or sets the style of the selected elements.
-		// if styleval is blank and style is a string, gets the current style
-		// of the first element having such a style
-		// if styleval is specified, sets the current style instead
-		// alternatively style can be an object of {style: styleval, ...} in
-		// which case it sets multiple styles
-			var
-				stringfirst = style.charAt;
-			if (stringfirst && styleval === undef) {
-				return window.getComputedStyle ?
-					getComputedStyle(this, mynull)[style] :
-					this.currentStyle ? this.currentStyle[style] :
-					undef;
-			}
-			if (stringfirst) {
-				style = {};
-				style[style] = styleval;
-			}
-			for (var name in style) {
-				if (style[name].charAt && this.style) {
-					this.style[name] = style[name];
-				}
-			}
-		}),
-
-		append: makeforeach(function(spec) {
-		// inserts a new element or array of elements as defined by spec into
-		// the document. for each selected element, the elements/text nodes
-		// specified in the spec are created and them inserted within the 
-		// element after any other children.
-			var
-				tmp,
-				myspec = spec.name ? [spec] : spec,
-				node;
-			while ((tmp = myspec.shift())) {
-				node = this.build(tmp);
-				if (arguments[2] && this.parentNode) {
-					this.parentNode.insertBefore(node, this);
-				}
+	core.unwatch = function(eventname, callback) {
+	// removes an event handler added with watch(). While SPARK can be mixed
+	// with other frameworks and even with native browser calls, you need to
+	// always un-register each event handler with the same framework/method
+	// as the event was registered with.
+		if (callback.SPARK && callback.SPARK.evhn) {
+			this.each(function() {
+				if (this.addEventListener) {
+					// other browsers
+					this.removeEventListener(eventname, callback, !1);
+				} 
 				else {
-					this.appendChild(node);
+					this.detachEvent("on"+eventname, callback.SPARK.evhn);
+				}
+			});
+		}
+		return this;
+	};
+
+	core.ready = function(callback) {
+	// specify a callback function that should be executed when the document is
+	// ready, ie has fully loaded (not necessarily images, other external files)
+	// will run instantly if the document is already ready.
+	// call this as many times as you like.
+		if (ready) {
+			callback();
+		} else {
+			readyqueue.push(callback);
+		}
+		// ready asks for callback so don't chain
+	};
+
+	core.extend = function(name, property) {
+	// for extending the default capabilities of SPARK.  the new
+	// property will be added to the prototype chain of all SPARK
+	// objects. later added properties can replace earlier properties,
+	// but core properties (those specified in SPARK core) cannot be
+	// replaced.
+	// Therefore, you have to be careful not to collide with names of
+	// present or future SPARK core properties.
+		core[name] = property;
+		return this;
+	};
+
+	core.load = function(file, callback) {
+	// for dynamically loading other javascript files.  files may be a single
+	// URL or an array of URLs.  callback is optional, and if supplied the given
+	// callback will be called once the given file is loaded.
+	// files should be loaded asynchronously, and there is no guarantee about the
+	// order in which they're executed, except that the callback will only be
+	// called when all specified files are loaded.
+	// It's safe to call this many times with the same file, and it won't be
+	// loaded again, as long as the filename string is completely the same (not
+	// just resolving to the same URL).
+		var
+			i,
+			files = file.charAt ? [file] : file,
+			processcallbacks = function() {
+				// go over the list of registered callbacks and check which ones are ready
+				for (var i = 0; i < callbacks.length; i++) {
+					for (var j = 0, satisfied = 1; satisfied &&
+						j < callbacks[i][0].length; j++) {
+						satisfied = loadstate[callbacks[i][0][j]] == 2;
+					}
+					if (satisfied) {
+						callbacks[i][1]();
+						callbacks.splice(i--, 1); // decrease i after shortening current array
+					}
+				}
+			},
+			registerscript = function(file) {
+				loadstate[file] = 1;
+				setTimeout(function () {
+					// add the script into the head as a new element
+					var
+						myscript = this.find('head').append({name: 'script'}),
+						mycallback = function() {
+							// if readystate exists ensure its value is 'loaded' or 'complete'
+							if (!this.readyState || /loade|co/.test(this.readyState)) {
+								loadstate[file] = 2;
+								myscript.unwatch('load', mycallback, 1).unwatch('load', mycallback, 1).remove();
+								processcallbacks();
+							}
+						};
+					myscript[0].src = file;
+					myscript.watch('load', mycallback);
+					myscript.watch('readystatechange', mycallback);
+				}, 0);
+			};
+
+		if (callback) {
+			callbacks.push([files,callback]);
+		}
+		for (i = 0; i < files.length; i++) {
+			if (!loadstate[files[i]]) {
+				registerscript(files[i]);
+			}
+		}
+		processcallbacks();
+		// load asks for callback so don't chain
+	};
+
+	core.get = function(prop) {
+	// fetches and returns the value of the given property, for the
+	// first selected element.
+		return !this.length ? undef :
+			this[prop];
+	};
+
+	core.getstyle = function(style) {
+	// fetches and returns the "computed"/"current" style value for
+	// the given style, for the first selected element.  Note that
+	// this is a value computed by the browser and they may each
+	// return the same value in quite different notations, eg
+	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
+	// spark doesn't normalise them
+		return !this.length ? undef :
+			window.getComputedStyle ?
+				getComputedStyle(this[0], null)[style] :
+			this[0].currentStyle ? this[0].currentStyle[style] :
+			undef;
+	};
+
+	core.gettext = function() {
+	// fetches and returns the text content of the selected nodes.
+	// to set the text content of a node, you should just use
+	// append("text") - preceded by empty() if necessary
+		return !this.length ? undef :
+			this[0].textContent ? this[0].textContent :
+			this[0].innerText ? this[0].innerText :
+			undef;
+	};
+
+	core.set = function(prop, value) {
+	// really simple method, just sets one or more properties on each
+	// selected node.  prop can be an object of {property: value, ...}
+	// or you can set a single property with prop and value.
+		var
+			values = prop;
+		if (value !== undef) {
+			values = {};
+			values[prop] = value;
+		}
+		this.each(function() {
+			for (var name in values) {
+				if (values[name].charAt) {
+					this[name] = values[name];
 				}
 			}
-		}),
+		});
+		return this;
+	};
 
-		insert: function(spec) { 
-		// inserts new element or elements as defined by spec into
-		// the document. elements are inserted before the beginning of each
-		// selected element.
-		// Avoid attempting this on a node at the top of its tree (ie, the
-		// document element).  Current behaviour in this exceptional case is
-		// to append the nodes instead, but this may change.
-			return this.append(spec, undef, 1);
-		},
+	core.setstyle = function(style, value) {
+	// sets one or more styles on each selected node.  style can be
+	// an object of {style: styleval, ...} or you can set a single
+	// style with style and value.
+		var
+			values = style;
+		if (value !== undef) {
+			values = {};
+			values[style] = value;
+		}
+		this.each(function() {
+			for (var name in values) {
+				if (values[name].charAt && this.style) {
+					this.style[name] = values[name];
+				}
+			}
+		});
+		return this;
+	};
 
-		remove: makeforeach(function(contentsonly) {
-		// remove selected elements from the document.  If contentsonly is
-		// given and is true, then it removes only their contents, leaving
-		// the empty elements. note that references to the deleted objects
-		// may still exist in the SPARK object that's returned (don't count
-		// on this behaviour)
-			var
-				tmp;
-			if (!contentsonly && this.parentNode) {
+	core.build = function(spec) {
+	// builds a new node (element or text node) according to the given
+	// spec and selects it, but doesn't insert it into the document. this
+	// is used internally by SPARK, but may be useful elsewhere. the spec
+	// should be an object conforming to:
+	// {name: <tag name>, attr: {name:val, ...}, contents: [<spec>, ...]}  
+	// where attr and contents are optional.  alternatively, spec can be
+	// just a string (which will result in a text node)
+		var
+			newspark = this.select(spec.name ? document.createElement(spec.name) :
+				document.createTextNode(spec)),
+			name;
+		if (spec.attr) {
+			for (name in spec.attr) {
+				if (spec.attr[name].charAt) {
+					newspark[0].setAttribute(name, spec.attr[name]);
+					if (name.toLowerCase() == "style") {
+						newspark[0].style.cssText = spec.attr[name];
+					}
+					if (name.toLowerCase() == "class") {
+						newspark[0].className = spec.attr[name];
+					}
+				}
+			}
+		}
+		return newspark.append(spec.contents || []);
+	};
+
+	core.append = function(spec) {
+	// inserts a new element or array of elements as defined by spec into
+	// the document. for each selected element, the elements/text nodes
+	// specified in the spec are created and then inserted within the 
+	// element after any other children.
+		this.each(function() {
+			var 
+				tmp,
+				myspec = spec.name ? [spec] : spec;
+			while ((tmp = myspec.shift())) {
+				this.appendChild(this.build(tmp));
+			}
+		});
+		return this;
+	};
+
+	core.insert = function(spec) {
+	// inserts a new element or array of elements as defined by spec into
+	// the document. for each selected element, the elements/text nodes
+	// specified in the spec are created and then inserted before the
+	// current element
+		this.each(function() {
+			var 
+				tmp,
+				myspec = spec.name ? [spec] : spec;
+			while ((tmp = myspec.shift()) && this.parentNode) {
+				this.parentNode.insertBefore(this.build(tmp), this);
+			}
+		});
+		return this;
+	};
+
+	core.remove = function() {
+	// removes the selected nodes from the document and all their contents.
+		this.each(function() {
+			if (this.parentNode) {
 				this.parentNode.removeChild(this);
 			}
-			else {
-				while ((tmp = this.firstChild)) {
-					this.removeChild(tmp);
-				}
+		});
+		return this;
+	};
+
+	core.empty = function() {
+	// deletes the contents of the selected nodes, but not the nodes
+	// themselves
+		this.each(function() {
+			var tmp;
+			while ((tmp = this.firstChild)) {
+				this.removeChild(tmp);
 			}
-		}),
+		});
+		return this;
+	};
 
-		each: makeforeach(function(callback) {
-		// simply executes the given callback for each currently selected element.
-		// the callback's 'this' variable will be the element it applies to
-			callback.call(this);
-		}),
-
-		gethttp: function(url, callback, options) {
-		// places an HTTP request (using XMLHttpRequest) for the given URL.
-		// options is optional.  it should be an object with properties
-		// like 'method' (get or post), 'body' (body of post request) etc.
-		// callback is only called when the load is 100% complete (that is, you
-		// won't be able to implement a progress indicator).
+	core.gethttp = function(url, callback, method, body) {
+	// places an HTTP request (using XMLHttpRequest) for the given URL.
+	// options is optional.  it should be an object with properties
+	// like 'method' (get or post), 'body' (body of post request) etc.
+	// callback is only called when the load is 100% complete (that is, you
+	// won't be able to implement a progress indicator).
+		try {
 			var
-				xmlhttprequest,
-				myoptions = options || {},
-				method = myoptions.method || 'GET',
-				body = myoptions.body || mynull;
-			try {
 				xmlhttprequest = XMLHttpRequest ?
 					new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
-				if (callback) {
-					xmlhttprequest.onreadystatechange = function() {
-						if (xmlhttprequest.readyState == 4) {
-							callback.call(xmlhttprequest);
-						}
-					};
-				}
-				xmlhttprequest.open(method, url, !0);
-				xmlhttprequest.send(body);
-			} catch (e) {}
-			// asks for callback so don't chain
-		}
+			if (callback) {
+				xmlhttprequest.onreadystatechange = function() {
+					if (xmlhttprequest.readyState == 4) {
+						callback.call(xmlhttprequest);
+					}
+				};
+			}
+			xmlhttprequest.open(method || "GET", url, !0);
+			xmlhttprequest.send(body);
+		} catch (e) {}
+		// asks for callback so don't chain
 	};
 
 	// set up ready listening
-	core.select(doc).watch("DOMContentLoaded", processreadyqueue);
+	core.select(document).watch("DOMContentLoaded", processreadyqueue);
 	core.select(window).watch("load", processreadyqueue);
 	// IE only hack; testing doscroll method
 	if (/\bMSIE\b/.test(navigator.userAgent) && !window.opera && window == top) {
 		checkscroll();
 	}
 
-	return makeobject(core, []);
+	return core.select([]);
 }()); 

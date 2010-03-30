@@ -21,10 +21,10 @@
 		alert('clicked mydiv!');
 	};
 	SPARK.ready(function() {
-		SPARK.select('.myclass').setstyle({background:'#efefef'});
+		SPARK.select('.myclass').setstyle('background', '#efefef');
 		SPARK.select('.mydiv').watch('click', mydivhandler);
-		SPARK.select('#p2').watch('click', function(event) {
-			alert("clicked p2 which is a: " + event.target.tagName);
+		SPARK.select('#p2').watch('click', function(evt) {
+			alert("clicked p2 which is a: " + this.tagName);
 		});
 		SPARK.select('p.myclass').watch('click', function() {
 			alert('clicked p.myclass!');
@@ -42,6 +42,9 @@
 		SPARK.select("body > a").setstyle("background", "red");
 		SPARK.select("p.class + *").setstyle("backgroundColor", "yellow");
 		SPARK.select("body + p").setstyle("background", "red");
+		SPARK.select("#stop + p").watch('click', function(evt) {
+			alert("Event for " + this.tagName + " came from " + evt.target.tagName);
+			});
 	});
 </script>
 </head>

@@ -12,7 +12,7 @@
 
 SPARK = (function() {
 
-	// #######################################################################################
+	// ##################################################################
 	// PRIVATE VARIABLES
 	
 	var
@@ -22,6 +22,7 @@ SPARK = (function() {
 		callbacks = [], // for each load callback, [files, callback]
 		readyqueue = [], // just callbacks to execute when ready
 		ready = 0,
+		gid = 0,
 		core = {};
 
 	var checkcascade = function(elements, newelement, cascade) {
@@ -36,7 +37,7 @@ SPARK = (function() {
 					(elements[i].compareDocumentPosition(newelement) & 16) :
 					(elements[i].contains(newelement) && elements[i]!==newelement)) :
 				cascade == ">" ? newelement.parentNode === elements[i] :
-				newelement === elements[i] // cascade == '&'
+				newelement === elements[i] // cascade == '&'; default
 				) {
 				return !0; //true
 			}
@@ -65,6 +66,39 @@ SPARK = (function() {
 		ready = 1;
 	};
 
+	var processcallbacks = function() {
+		// go over the list of registered callbacks and check which ones are ready
+		for (var i = 0; i < callbacks.length; i++) {
+			for (var j = 0, satisfied = 1; satisfied &&
+				j < callbacks[i][0].length; j++) {
+				satisfied = loadstate[callbacks[i][0][j]] == 2;
+			}
+			if (satisfied) {
+				callbacks[i][1]();
+				callbacks.splice(i--, 1); // decrease i after shortening current array
+			}
+		}
+	};
+
+	var registerscript = function(file) {
+		loadstate[file] = 1;
+		setTimeout(function() {
+			// add the script into the head as a new element
+			var
+				myscript = this.find('head').append({name: 'script'}).set("src", file),
+				mycallback = function() {
+					// if readystate exists ensure its value is 'loaded' or 'complete'
+					if (!this.readyState || /oade|co/.test(this.readyState)) {
+						loadstate[file] = 2;
+						myscript.unwatch('load', mycallback).unwatch('load', mycallback).remove();
+						processcallbacks();
+					}
+				};
+			myscript.watch('load', mycallback);
+			myscript.watch('readystatechange', mycallback);
+		}, 0);
+	};
+
 	var checkscroll = function() {
 	// hack, intended only for IE, for checking when the DOM content is
 	// loaded
@@ -76,7 +110,7 @@ SPARK = (function() {
 		}
 	};
 
-	// #######################################################################################
+	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.each()
 
@@ -101,9 +135,9 @@ SPARK = (function() {
 			newelement,
 			elements = [];
 
+		// construct new spark object
 		Constructor.prototype = this;
 		newelement = new Constructor();
-
 		newelement.length = 0;
 
 		if (selector.charAt) {
@@ -130,6 +164,7 @@ SPARK = (function() {
 						skipcascade = !cascade,
 						skipfilter = 0,
 						regex,
+						pass,
 						newelements = [];
 
 					// the cascade is the way in which the new set of elements must relate
@@ -161,10 +196,9 @@ SPARK = (function() {
 						}
 						else if (cascade == '+') {
 							for (i = 0; i < elements.length; i++) {
-								var 
-									element = getelementsibling(elements[i]);
-								if (element) {
-									newelements.push(element);
+								tmp = getelementsibling(elements[i]);
+								if (tmp) {
+									newelements.push(tmp);
 								}
 							}
 							skipcascade = 1;
@@ -191,23 +225,22 @@ SPARK = (function() {
 						}
 						// now we do filtering and cascading in one big loop!  stand back!
 						for (i = 0; i < newelements.length; i++) {
-							var
-								pass = skipfilter ? 1 :
-									!type ? (name == "*" || name.toLowerCase() == 
-										newelements[i].nodeName.toLowerCase()) :
-									type == "." ? regex.test(newelements[i].className) :
-									type == '#' ? (newelements[i].id == name) :
-									attrcompare ? regex.test(newelements[i].getAttribute(name)) :
-									type == '[' ? ((tmp = newelements[i].getAttribute(name)) !==
-										null && tmp != "") :
-									(name.toLowerCase() == "first-child") ? 
-										!getelementsibling(newelements[i],1) :
-									// if we're supporting first-child, supporting last-child is
-									// trivial.  however we may as well limit ourselves to CSS2.1
-									// as this library is supposed to be low fat
-									//(name.toLowerCase() == "last-child") ? 
-									//	!getelementsibling(newelements[n]) :
-									0;
+							pass = skipfilter ? 1 :
+								!type ? (name == "*" || name.toLowerCase() == 
+									newelements[i].nodeName.toLowerCase()) :
+								type == "." ? regex.test(newelements[i].className) :
+								type == '#' ? (newelements[i].id == name) :
+								attrcompare ? regex.test(newelements[i].getAttribute(name)) :
+								type == '[' ? ((tmp = newelements[i].getAttribute(name)) !==
+									null && tmp != "") :
+								(name.toLowerCase() == "first-child") ? 
+									!getelementsibling(newelements[i],1) :
+								// if we're supporting first-child, supporting last-child is
+								// trivial.  however we may as well limit ourselves to CSS2.1
+								// as this library is supposed to be low fat
+								//(name.toLowerCase() == "last-child") ? 
+								//	!getelementsibling(newelements[n]) :
+								0;
 							if (!pass ||
 								(!skipcascade && !checkcascade(elements, newelements[i], cascade))) {
 								newelements.splice(i--, 1);
@@ -252,30 +285,34 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 	// Other things, such as the this keyword cannot be relied upon to
 	// work cross-browser
-		var
-			mycallback = function() {
-				var
-					evt = event;
-				evt.preventDefault = function() {
-					evt.returnValue = !1;
-				};
-				evt.stopPropagation = function() {
-					evt.cancelBubble = !0;
-				};
-				evt.target = evt.srcElement;
-				return callback(evt);
-			};
-
-		callback.SPARK = callback.SPARK || {};
-		callback.SPARK.evhn = callback.SPARK.evhn || mycallback;
+		callback.SPARKi = callback.SPARKi || ++gid;
 
 		this.each(function() {
-			if (this.addEventListener) {
+			var
+				myelement = this,
+				mycallback = function() {
+					var
+						evt = event;
+					evt.preventDefault = function() {
+						evt.returnValue = !1;
+					};
+					evt.stopPropagation = function() {
+						evt.cancelBubble = !0;
+					};
+					evt.target = evt.srcElement;
+					return callback.call(myelement, evt);
+				};
+
+			myelement.SPARK = myelement.SPARK || {};
+			myelement.SPARK["e"+callback.SPARKi] = 
+				myelement.SPARK["e"+callback.SPARKi] || mycallback;
+
+			if (myelement.addEventListener) {
 				// other browsers
-				this.addEventListener(eventname, callback, !1);
+				myelement.addEventListener(eventname, callback, !1);
 			} 
 			else {
-				this.attachEvent("on"+eventname, callback.SPARK.evhn);
+				myelement.attachEvent("on"+eventname, myelement.SPARK["e"+callback.SPARKi]);
 			}
 		});
 	};
@@ -285,17 +322,21 @@ SPARK = (function() {
 	// with other frameworks and even with native browser calls, you need to
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
-		if (callback.SPARK && callback.SPARK.evhn) {
-			this.each(function() {
-				if (this.addEventListener) {
-					// other browsers
-					this.removeEventListener(eventname, callback, !1);
-				} 
-				else {
-					this.detachEvent("on"+eventname, callback.SPARK.evhn);
+		this.each(function() {
+			var
+				myelement = this;
+			if (myelement.addEventListener) {
+				// other browsers
+				myelement.removeEventListener(eventname, callback, !1);
+			} 
+			else {
+				if (callback.SPARKi && myelement.SPARK &&
+					myelement.SPARK["e"+callback.SPARKi]) {
+					myelement.detachEvent("on"+eventname, myelement.SPARK["e"+callback.SPARKi]);
+					delete myelement.SPARK["e"+callback.SPARKi];
 				}
-			});
-		}
+			}
+		});
 		return this;
 	};
 
@@ -313,13 +354,9 @@ SPARK = (function() {
 	};
 
 	core.extend = function(name, property) {
-	// for extending the default capabilities of SPARK.  the new
-	// property will be added to the prototype chain of all SPARK
-	// objects. later added properties can replace earlier properties,
-	// but core properties (those specified in SPARK core) cannot be
-	// replaced.
-	// Therefore, you have to be careful not to collide with names of
-	// present or future SPARK core properties.
+	// for extending the default capabilities of SPARK. you can trash
+	// the spark object by doing this, so make sure not to collide with
+	// names of SPARK core properties
 		core[name] = property;
 		return this;
 	};
@@ -336,47 +373,15 @@ SPARK = (function() {
 	// just resolving to the same URL).
 		var
 			i,
-			files = file.charAt ? [file] : file,
-			processcallbacks = function() {
-				// go over the list of registered callbacks and check which ones are ready
-				for (var i = 0; i < callbacks.length; i++) {
-					for (var j = 0, satisfied = 1; satisfied &&
-						j < callbacks[i][0].length; j++) {
-						satisfied = loadstate[callbacks[i][0][j]] == 2;
-					}
-					if (satisfied) {
-						callbacks[i][1]();
-						callbacks.splice(i--, 1); // decrease i after shortening current array
-					}
-				}
-			},
-			registerscript = function(file) {
-				loadstate[file] = 1;
-				setTimeout(function () {
-					// add the script into the head as a new element
-					var
-						myscript = this.find('head').append({name: 'script'}),
-						mycallback = function() {
-							// if readystate exists ensure its value is 'loaded' or 'complete'
-							if (!this.readyState || /loade|co/.test(this.readyState)) {
-								loadstate[file] = 2;
-								myscript.unwatch('load', mycallback, 1).unwatch('load', mycallback, 1).remove();
-								processcallbacks();
-							}
-						};
-					myscript[0].src = file;
-					myscript.watch('load', mycallback);
-					myscript.watch('readystatechange', mycallback);
-				}, 0);
-			};
+			files = file.charAt ? [file] : file;
 
-		if (callback) {
-			callbacks.push([files,callback]);
-		}
 		for (i = 0; i < files.length; i++) {
 			if (!loadstate[files[i]]) {
 				registerscript(files[i]);
 			}
+		}
+		if (callback) {
+			callbacks.push([files,callback]);
 		}
 		processcallbacks();
 		// load asks for callback so don't chain
@@ -385,8 +390,7 @@ SPARK = (function() {
 	core.get = function(prop) {
 	// fetches and returns the value of the given property, for the
 	// first selected element.
-		return !this.length ? undef :
-			this[prop];
+		return this.length && this[0][prop];
 	};
 
 	core.getstyle = function(style) {
@@ -409,26 +413,15 @@ SPARK = (function() {
 	// append("text") - preceded by empty() if necessary
 		return !this.length ? undef :
 			this[0].textContent ? this[0].textContent :
-			this[0].innerText ? this[0].innerText :
-			undef;
+			this[0].innerText;
 	};
 
 	core.set = function(prop, value) {
 	// really simple method, just sets one or more properties on each
 	// selected node.  prop can be an object of {property: value, ...}
 	// or you can set a single property with prop and value.
-		var
-			values = prop;
-		if (value !== undef) {
-			values = {};
-			values[prop] = value;
-		}
 		this.each(function() {
-			for (var name in values) {
-				if (values[name].charAt) {
-					this[name] = values[name];
-				}
-			}
+			this[prop] = value;
 		});
 		return this;
 	};
@@ -437,17 +430,9 @@ SPARK = (function() {
 	// sets one or more styles on each selected node.  style can be
 	// an object of {style: styleval, ...} or you can set a single
 	// style with style and value.
-		var
-			values = style;
-		if (value !== undef) {
-			values = {};
-			values[style] = value;
-		}
 		this.each(function() {
-			for (var name in values) {
-				if (values[name].charAt && this.style) {
-					this.style[name] = values[name];
-				}
+			if (this.style) {
+				this.style[style] = value;
 			}
 		});
 		return this;
@@ -486,15 +471,20 @@ SPARK = (function() {
 	// the document. for each selected element, the elements/text nodes
 	// specified in the spec are created and then inserted within the 
 	// element after any other children.
+		var
+			elements = [];
 		this.each(function() {
 			var 
 				tmp,
-				myspec = spec.name ? [spec] : spec;
+				myspec = spec.name ? [spec] : spec,
+				node;
 			while ((tmp = myspec.shift())) {
-				this.appendChild(this.build(tmp));
+				node = this.build(tmp);
+				elements.push(node);
+				this.appendChild(node);
 			}
 		});
-		return this;
+		return this.select(elements);
 	};
 
 	core.insert = function(spec) {
@@ -502,15 +492,20 @@ SPARK = (function() {
 	// the document. for each selected element, the elements/text nodes
 	// specified in the spec are created and then inserted before the
 	// current element
+		var
+			elements = [];
 		this.each(function() {
 			var 
 				tmp,
-				myspec = spec.name ? [spec] : spec;
+				myspec = spec.name ? [spec] : spec,
+				node;
 			while ((tmp = myspec.shift()) && this.parentNode) {
-				this.parentNode.insertBefore(this.build(tmp), this);
+				node = this.build(tmp);
+				elements.push(node);
+				this.parentNode.insertBefore(node, this);
 			}
 		});
-		return this;
+		return this.select(elements);
 	};
 
 	core.remove = function() {

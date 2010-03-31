@@ -44,7 +44,7 @@ SPARK = (function() {
 
 	var checkattr = function(attr, attrcompare, attrvalue) {
 	// check if attribute attr matches the attribute comparison specified
-		return !attrcompare ? attr !== null && attr !== "" :
+		return !attrcompare ? attr !== null && attr != "" :
 			attrcompare == "=" ? attrvalue == attr :
 			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
 			(attrvalue == attr || attr.indexOf(attrvalue+"-") === 0); // |=
@@ -91,7 +91,7 @@ SPARK = (function() {
 	// simply executes the given callback for each currently selected element.
 	// the callback's 'this' variable will be the element it applies to
 		for (var i = 0; i < this.length; i++) {
-			callback.call(this[i], this);
+			callback.call(this[i]);
 		}
 	};
 
@@ -135,16 +135,16 @@ SPARK = (function() {
 						type = parts[3],
 						name = parts[4],
 						//attrcompare = parts[6],
-						attrvalue = (parts[8]+"").replace("\\",""),
+						attrvalue = (parts[8]+"").replace(/\\(.)/g, "$1"), // strip slashes
 						skipcascade = !cascade,
 						skipfilter = 0,
 						newelements = [];
 
 					// the cascade is the way in which the new set of elements must relate
 					// to the previous set
-					cascade = parts[2] || (parts[1] && cascade ? ">>" : cascade);
+					cascade = parts[2] || (!cascade ? cascade : parts[1] ? ">>" : "&");
 
-					singleparent = elements.length==1 && cascade.charAt(0) == '>';
+					singleparent = elements.length==1 && (cascade == ">" && cascade == ">>");
 					searchwithin = singleparent ? elements[0] : document;
 
 					// if we have no starting elements and this isn't the first run,
@@ -154,11 +154,11 @@ SPARK = (function() {
 						// see if we can skip the cascade, narrow down only
 						if (cascade == '&') {
 							skipcascade = 1;
-							newelements = elements.slice(0);
+							newelements.push.call(newelements, elements);
 						}
 						else if (cascade == '+') {
 							skipcascade = 1;
-							for (i = 0, skipcascade = 1; i < elements.length; i++) {
+							for (i = 0; i < elements.length; i++) {
 								if ((tmp = getelementsibling(elements[i]))) {
 									newelements.push(tmp);
 								}
@@ -170,8 +170,9 @@ SPARK = (function() {
 							if (type == '#') {
 								skipfilter = 1;
 								// get element by ID (quick - there's only one!)
-								tmp = document.getElementById(name);
-								newelements = tmp ? [tmp] : [];
+								if ((tmp = document.getElementById(name))) {
+									newelements.push(tmp);
+								}
 							}
 							else {
 								// get element by tag name or get all elements (worst case, when comparing
@@ -181,20 +182,22 @@ SPARK = (function() {
 								for (i = 0; i < tmp.length; i++) {
 									newelements.push(tmp[i]);
 								}
-								skipcascade += (singleparent && cascade == '>>');
+								if (singleparent && cascade == ">>") {
+									skipcascade = 1;
+								}
 							}
 						}
 						// now we do filtering and cascading in one big loop!  stand back!
 						for (i = 0; i < newelements.length; i++) {
-							pass = skipfilter ? 1 :
-								!type ? (name == "*" || name.toUpperCase() ==
-									newelements[i].nodeName) :
-								type == '#' ? (newelements[i].id == name) :
+
+							pass = skipfilter || (!type && name == "*") ? 1 :
+								!type ? name.toUpperCase() ==	newelements[i].nodeName :
+								type == '#' ? newelements[i].id == name :
 								type == "." ? checkattr(newelements[i].className,
 									"~=", name) :
 								type == "[" ? checkattr(newelements[i].getAttribute(name),
 									parts[6], attrvalue) :
-								(name.toLowerCase() == "first-child") ? 
+								name.toLowerCase() == "first-child" ? 
 									!getelementsibling(newelements[i],1) :
 								// if we're supporting first-child, supporting last-child is
 								// trivial.  however we may as well limit ourselves to CSS2.1
@@ -202,13 +205,15 @@ SPARK = (function() {
 								//(name.toLowerCase() == "last-child") ? 
 								//	!getelementsibling(newelements[n]) :
 								0;
-							if (!pass ||
-								(!skipcascade && !checkcascade(elements, newelements[i], cascade))) {
+
+							if (pass && !skipcascade) {
+								pass = checkcascade(elements, newelements[i], cascade);
+							}
+							if (!pass) {
 								newelements.splice(i--, 1);
 							}
 						}
 						elements = newelements;
-						cascade = '&';
 					}
 				}
 				else {
@@ -482,18 +487,20 @@ SPARK = (function() {
 	// selected node.
 	// todo see if modifying this to use this.each() compresses a bit better
 		var
-			i, j,
-			myspec = spec.name || spec.clonenode || spec.charat ? [spec] : spec,
-			node,
-			elements = [];
-		for (i = 0; i < this.length; i++) {
-			for (j = 0; j < myspec.length; j++) {
-				node = myspec[j].parentnode ? myspec[j].clonenode(!0) :
-					myspec[j].clonenode ? myspec[j] : this.build(myspec[j])[0];
+			elements = [],
+			spark = this;
+		this.each(function() {
+			var
+				i,
+				myspec = spec.name || spec.cloneNode || spec.charAt ? [spec] : spec,
+				node;
+			for (i = 0; i < myspec.length; i++) {
+				node = myspec[i].parentNode ? myspec[i].cloneNode(!0) :
+					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
 				elements.push(node);
-				this[i].appendchild(node);
+				this.appendChild(node);
 			}
-		}
+		});
 		return this.select(elements);
 	};
 
@@ -504,18 +511,20 @@ SPARK = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			i, j,
-			myspec = spec.name || spec.clonenode || spec.charat ? [spec] : spec,
-			node,
-			elements = [];
-		for (i = 0; i < this.length; i++) {
-			for (j = 0; j < myspec.length && this[i].parentNode; j++) {
-				node = myspec[j].parentnode ? myspec[j].clonenode(!0) :
-					myspec[j].clonenode ? myspec[j] : this.build(myspec[j])[0];
+			elements = [],
+			spark = this;
+		this.each(function() {
+			var
+				i,
+				myspec = spec.name || spec.cloneNode || spec.charAt ? [spec] : spec,
+				node;
+			for (i = 0; i < myspec.length && this[i].parentNode; i++) {
+				node = myspec[i].parentNode ? myspec[i].cloneNode(!0) :
+					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
 				elements.push(node);
-				this[i].parentNode.insertBefore(node);
+				this.parentNode.insertBefore(node);
 			}
-		}
+		});
 		return this.select(elements);
 	};
 

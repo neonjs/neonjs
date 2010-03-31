@@ -16,9 +16,7 @@
 		SPARK.select(" html #p2");
 		SPARK.select(" * html");
 		SPARK.select(".myclass");
-		console.log(SPARK.select("#p2"));
-		console.log(SPARK.select('#p2').append({name: 'span', contents: "hello"}));
-		console.log(SPARK.build({name: 'span', contents: "hello"}));
+		SPARK.select('#p2').append({name: 'span', contents: "hello"});
 	});
 
 	var mydivhandler = function() {

@@ -1,3 +1,8 @@
+// ==ClosureCompiler==
+// @output_file_name default.js
+// @compilation_level SIMPLE_OPTIMIZATIONS
+// ==/ClosureCompiler==
+
 // SPARK core - your basic javascript framework with CSS selectors
 // and event handling, and a way of loading in modules
 // Part of the SPARK Javascript library
@@ -23,6 +28,16 @@ SPARK = (function() {
 		ready = 0,
 		gid = 0;
 
+	var getprevioussibling = function(element) {
+	// find the next sibling of this element which is an element node
+	// or if doprevious is set, the previous one!
+		while ((element = element.previousSibling)) {
+			if (element.nodeType == 1) {
+				return element;
+			}
+		}
+	};
+
 	var checkcascade = function(elements, newelement, cascade) {
 	// check if newelement cascades from the list of elements, according
 	// to the cascade type.
@@ -33,9 +48,10 @@ SPARK = (function() {
 			if (
 				cascade == ">>" ? (elements[i].compareDocumentPosition ?
 					(elements[i].compareDocumentPosition(newelement) & 16) :
-					(elements[i].contains(newelement) && elements[i]!==newelement)) :
-				cascade == ">" ? newelement.parentNode === elements[i] :
-				newelement === elements[i] // cascade == '&'; default
+					(elements[i].contains(newelement) && elements[i] !== newelement)) :
+				cascade == ">" ? elements[i] === newelement.parentNode :
+				cascade == "+" ? elements[i] === getprevioussibling(newelement) :
+				elements[i] === newelement // cascade == '&'; default
 				) {
 				return !0; //true
 			}
@@ -44,21 +60,10 @@ SPARK = (function() {
 
 	var checkattr = function(attr, attrcompare, attrvalue) {
 	// check if attribute attr matches the attribute comparison specified
-		return !attrcompare ? attr !== null && attr !== "" :
+		return !attrcompare ? attr !== null && attr != "" :
 			attrcompare == "=" ? attrvalue == attr :
 			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
 			(attrvalue == attr || attr.indexOf(attrvalue+"-") === 0); // |=
-	};
-
-	var getelementsibling = function(element, doprevious) {
-	// find the next sibling of this element which is an element node
-	// or if doprevious is set, the previous one!
-		while ((element =
-			element[doprevious ? "previousSibling" : "nextSibling"])) {
-			if (element.nodeType == 1) {
-				return element;
-			}
-		}
 	};
 
 	var processreadyqueue = function() {
@@ -91,7 +96,7 @@ SPARK = (function() {
 	// simply executes the given callback for each currently selected element.
 	// the callback's 'this' variable will be the element it applies to
 		for (var i = 0; i < this.length; i++) {
-			callback.call(this[i], this);
+			callback.call(this[i]);
 		}
 	};
 
@@ -135,16 +140,19 @@ SPARK = (function() {
 						type = parts[3],
 						name = parts[4],
 						//attrcompare = parts[6],
-						attrvalue = (parts[8]+"").replace("\\",""),
+						attrvalue = (parts[8]+"").replace(/\\(.)/g, "$1"), // strip slashes
 						skipcascade = !cascade,
 						skipfilter = 0,
 						newelements = [];
 
 					// the cascade is the way in which the new set of elements must relate
 					// to the previous set
-					cascade = parts[2] || (parts[1] && cascade ? ">>" : cascade);
 
-					singleparent = elements.length==1 && cascade.charAt(0) == '>';
+					cascade = parts[2] ? parts[2] :
+						parts[1] && cascade ? ">>" :
+						cascade;
+
+					singleparent = elements.length==1 && (cascade == ">" && cascade == ">>");
 					searchwithin = singleparent ? elements[0] : document;
 
 					// if we have no starting elements and this isn't the first run,
@@ -156,22 +164,15 @@ SPARK = (function() {
 							skipcascade = 1;
 							newelements = elements.slice(0);
 						}
-						else if (cascade == '+') {
-							skipcascade = 1;
-							for (i = 0, skipcascade = 1; i < elements.length; i++) {
-								if ((tmp = getelementsibling(elements[i]))) {
-									newelements.push(tmp);
-								}
-							}
-						}
 						else {
 							// see if we can narrow down.  in some cases if there's a single
 							// parent we can still skip the cascade
 							if (type == '#') {
 								skipfilter = 1;
 								// get element by ID (quick - there's only one!)
-								tmp = document.getElementById(name);
-								newelements = tmp ? [tmp] : [];
+								if ((tmp = document.getElementById(name))) {
+									newelements.push(tmp);
+								}
 							}
 							else {
 								// get element by tag name or get all elements (worst case, when comparing
@@ -181,34 +182,37 @@ SPARK = (function() {
 								for (i = 0; i < tmp.length; i++) {
 									newelements.push(tmp[i]);
 								}
-								skipcascade += (singleparent && cascade == '>>');
+								if (singleparent && cascade == ">>") {
+									skipcascade = 1;
+								}
 							}
 						}
 						// now we do filtering and cascading in one big loop!  stand back!
 						for (i = 0; i < newelements.length; i++) {
-							pass = skipfilter ? 1 :
-								!type ? (name == "*" || name.toUpperCase() ==
-									newelements[i].nodeName) :
-								type == '#' ? (newelements[i].id == name) :
+
+							// phase one, filtering of existing nodes to narrow down
+							// selection
+							pass = skipfilter ? 1 : 
+								!type ? name == "*" || newelements[i].nodeName ==
+									name.toUpperCase() :
+								type == '#' ? newelements[i].id == name :
 								type == "." ? checkattr(newelements[i].className,
 									"~=", name) :
 								type == "[" ? checkattr(newelements[i].getAttribute(name),
 									parts[6], attrvalue) :
-								(name.toLowerCase() == "first-child") ? 
-									!getelementsibling(newelements[i],1) :
-								// if we're supporting first-child, supporting last-child is
-								// trivial.  however we may as well limit ourselves to CSS2.1
-								// as this library is supposed to be low fat
-								//(name.toLowerCase() == "last-child") ? 
-								//	!getelementsibling(newelements[n]) :
+								name.toLowerCase() == "first-child" ? 
+									!getprevioussibling(newelements[i]) :
 								0;
+
+							// phase two, filtering of nodes against the previously matched
+							// set according to cascade type
 							if (!pass ||
 								(!skipcascade && !checkcascade(elements, newelements[i], cascade))) {
 								newelements.splice(i--, 1);
 							}
 						}
 						elements = newelements;
-						cascade = '&';
+						cascade = "&";
 					}
 				}
 				else {
@@ -351,7 +355,7 @@ SPARK = (function() {
 				var
 					myscript = that.build({name: 'script'}).set('src', file),
 					gencallback = function() {
-						if (loadstate[file] < 2 &&
+						if (loadstate[file] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
 							loadstate[file] = 2;
 							myscript.unwatch('load', gencallback).unwatch('readystatechange',
@@ -363,10 +367,10 @@ SPARK = (function() {
 							}
 						}
 					};
+				loadstate[file] = 1;
 				myscript.watch('load', gencallback);
 				myscript.watch('readystatechange', gencallback);
 				that.find('head').append(myscript);
-				loadstate[file] = 1;
 			};
 
 		mycallback.SPARKl = mycallback.SPARKl || {};
@@ -482,18 +486,20 @@ SPARK = (function() {
 	// selected node.
 	// todo see if modifying this to use this.each() compresses a bit better
 		var
-			i, j,
-			myspec = spec.name || spec.clonenode || spec.charat ? [spec] : spec,
-			node,
-			elements = [];
-		for (i = 0; i < this.length; i++) {
-			for (j = 0; j < myspec.length; j++) {
-				node = myspec[j].parentnode ? myspec[j].clonenode(!0) :
-					myspec[j].clonenode ? myspec[j] : this.build(myspec[j])[0];
+			elements = [],
+			spark = this;
+		this.each(function() {
+			var
+				i,
+				myspec = spec.name || spec.cloneNode || spec.charAt ? [spec] : spec,
+				node;
+			for (i = 0; i < myspec.length; i++) {
+				node = myspec[i].parentNode ? myspec[i].cloneNode(!0) :
+					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
 				elements.push(node);
-				this[i].appendchild(node);
+				this.appendChild(node);
 			}
-		}
+		});
 		return this.select(elements);
 	};
 
@@ -504,18 +510,22 @@ SPARK = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			i, j,
-			myspec = spec.name || spec.clonenode || spec.charat ? [spec] : spec,
-			node,
-			elements = [];
-		for (i = 0; i < this.length; i++) {
-			for (j = 0; j < myspec.length && this[i].parentNode; j++) {
-				node = myspec[j].parentnode ? myspec[j].clonenode(!0) :
-					myspec[j].clonenode ? myspec[j] : this.build(myspec[j])[0];
+			elements = [],
+			spark = this;
+		this.each(function() {
+			var
+				i,
+				myspec = spec.name || spec.cloneNode || spec.charAt ? [spec] : spec,
+				node;
+			for (i = 0; i < myspec.length; i++) {
+				node = myspec[i].parentNode ? myspec[i].cloneNode(!0) :
+					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
 				elements.push(node);
-				this[i].parentNode.insertBefore(node);
+				if (this.parentNode) {
+					this.parentNode.insertBefore(node);
+				}
 			}
-		}
+		});
 		return this.select(elements);
 	};
 
@@ -543,8 +553,7 @@ SPARK = (function() {
 
 	core.gethttp = function(url, callback, method, body) {
 	// places an HTTP request (using XMLHttpRequest) for the given URL.
-	// options is optional.  it should be an object with properties
-	// like 'method' (get or post), 'body' (body of post request) etc.
+	// method and body are optional.
 	// callback is only called when the load is 100% complete (that is, you
 	// won't be able to implement a progress indicator).
 		var
@@ -572,3 +581,4 @@ SPARK = (function() {
 
 	return core.select([]);
 }()); 
+

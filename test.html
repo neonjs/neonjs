@@ -16,6 +16,8 @@
 		SPARK.select(" html #p2");
 		SPARK.select(" * html");
 		SPARK.select(".myclass");
+		console.log(SPARK.select('#p2').append({name: 'span', contents: "hello"}));
+		console.log(SPARK.build({name: 'span', contents: "hello"}));
 	});
 
 	var mydivhandler = function() {
@@ -39,13 +41,14 @@
 			SPARK.select('.mydiv').unwatch('click', mydivhandler);
 			});
 		SPARK.select("p:first-child").setstyle('background', 'yellow');
-		SPARK.select("p > a").setstyle("background", "yellow");
+		SPARK.select("p>a").setstyle("background", "yellow");
 		SPARK.select("body > a").setstyle("background", "red");
 		SPARK.select("p.class + *").setstyle("backgroundColor", "yellow");
 		SPARK.select("body + p").setstyle("background", "red");
 		SPARK.select("#stop + p").watch('click', function(evt) {
 			alert("Event for " + this.tagName + " came from " + evt.target.tagName);
 			});
+		SPARK.select("p[title='Tom\\'s + [\"cat\"]?']").setstyle('background', 'yellow');
 	});
 </script>
 </head>
@@ -57,5 +60,6 @@
 	<div class="mydiv myclass">Div</div>
 	<p id="stop">Stop</p>
 	<p><a href="http://www.yahoo.com/">Link</a></p>
+	<p title="Tom's + [&quot;cat&quot;]?">Try this</p>
 </body>
 </html>

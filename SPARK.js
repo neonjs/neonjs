@@ -7,7 +7,7 @@
 /*global SPARK:true,attachEvent,window,opera,ActiveXObject */
 
 /**
-@preserve SPARK lib (c) Thomas Rutter SPARKlib.com
+@preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
 SPARK = (function() {
@@ -17,12 +17,11 @@ SPARK = (function() {
 	
 	var
 		undef,
-		selectorregex = /(\s*)([>+]?)\s*([#\.\[:]?)(\*|[\w\-]+)(([~|]?=)['"]?([^\]'"]*))?|\s*,/g,
-		loadstate = [], // for each file, loadstate 1 = loading, 2 = loaded
+		core = {},
+		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		readyqueue = [], // just callbacks to execute when ready
 		ready = 0,
-		gid = 0,
-		core = {};
+		gid = 0;
 
 	var checkcascade = function(elements, newelement, cascade) {
 	// check if newelement cascades from the list of elements, according
@@ -41,6 +40,14 @@ SPARK = (function() {
 				return !0; //true
 			}
 		}
+	};
+
+	var checkattr = function(attr, attrcompare, attrvalue) {
+	// check if attribute attr matches the attribute comparison specified
+		return !attrcompare ? attr !== null && attr !== "" :
+			attrcompare == "=" ? attrvalue == attr :
+			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
+			(attrvalue == attr || attr.indexOf(attrvalue+"-") === 0); // |=
 	};
 
 	var getelementsibling = function(element, doprevious) {
@@ -84,7 +91,7 @@ SPARK = (function() {
 	// simply executes the given callback for each currently selected element.
 	// the callback's 'this' variable will be the element it applies to
 		for (var i = 0; i < this.length; i++) {
-			callback.call(this[i]);
+			callback.call(this[i], this);
 		}
 	};
 
@@ -95,11 +102,15 @@ SPARK = (function() {
 		var
 			i,
 			parts,
-			cascade,
 			tmp,
+			elements = [],
+			cascade,
+			singleparent,
+			searchwithin,
 			Constructor = function() {},
-			newelement,
-			elements = [];
+			pass,
+			regex = /(([>+]?)\s*)([#.\[:]?)([*\w\-]+)(([|~]?=)("|'|)((\\.|[^\\])*?)\7\])?|,/g,
+			newelement;
 
 		// construct new spark object
 		Constructor.prototype = this;
@@ -113,7 +124,7 @@ SPARK = (function() {
 
 			// grab the parts of the selector one by one, and process it as we go.
 			// whether there is whitespace before the part is significant
-			while	((parts = selectorregex.exec(selector))) {
+			while	((parts = regex.exec(selector))) {
 
 				if (parts[4]) {
 					// we have at least a name; this is part of a selector and not a comma or the end
@@ -123,82 +134,66 @@ SPARK = (function() {
 						//combine = parts[2],
 						type = parts[3],
 						name = parts[4],
-						attrcompare = parts[6],
-						attrvalue = parts[7],
-						singleparent = elements.length==1 && (cascade=='>' || cascade=='>>'),
-						searchwithin = singleparent ? elements[0] : document,
+						//attrcompare = parts[6],
+						attrvalue = (parts[8]+"").replace("\\",""),
 						skipcascade = !cascade,
 						skipfilter = 0,
-						regex,
-						pass,
 						newelements = [];
 
 					// the cascade is the way in which the new set of elements must relate
 					// to the previous set
 					cascade = parts[2] || (parts[1] && cascade ? ">>" : cascade);
 
+					singleparent = elements.length==1 && cascade.charAt(0) == '>';
+					searchwithin = singleparent ? elements[0] : document;
+
 					// if we have no starting elements and this isn't the first run,
 					// then don't bother
 					if (elements.length || skipcascade) {
 
-						// always treat .myclass the same as [class~=myclass] 
-						if (type == '.') {
-							attrvalue = name;
-							attrcompare = '~=';
-						}
-
-						// get ready to filter
-						if (attrcompare) {
-							regex = new RegExp(
-								attrcompare == '|=' ? ("^"+attrvalue+"(-|$)") :
-								attrcompare == '~=' ? ("(\\s|^)"+attrvalue+"(\\s|$)") 
-								: ("^"+attrvalue+"$"));
-						}
-
 						// see if we can skip the cascade, narrow down only
 						if (cascade == '&') {
-							newelements = elements.slice(0);
 							skipcascade = 1;
+							newelements = elements.slice(0);
 						}
 						else if (cascade == '+') {
-							for (i = 0; i < elements.length; i++) {
-								tmp = getelementsibling(elements[i]);
-								if (tmp) {
+							skipcascade = 1;
+							for (i = 0, skipcascade = 1; i < elements.length; i++) {
+								if ((tmp = getelementsibling(elements[i]))) {
 									newelements.push(tmp);
 								}
 							}
-							skipcascade = 1;
 						}
 						else {
 							// see if we can narrow down.  in some cases if there's a single
 							// parent we can still skip the cascade
 							if (type == '#') {
+								skipfilter = 1;
 								// get element by ID (quick - there's only one!)
 								tmp = document.getElementById(name);
 								newelements = tmp ? [tmp] : [];
-								skipfilter = 1;
 							}
 							else {
 								// get element by tag name or get all elements (worst case, when comparing
 								// attributes and there's no '&' cascade)
+								skipfilter = !type;
 								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
 								for (i = 0; i < tmp.length; i++) {
 									newelements.push(tmp[i]);
 								}
-								skipfilter = !type;
 								skipcascade += (singleparent && cascade == '>>');
 							}
 						}
 						// now we do filtering and cascading in one big loop!  stand back!
 						for (i = 0; i < newelements.length; i++) {
 							pass = skipfilter ? 1 :
-								!type ? (name == "*" || name.toLowerCase() == 
-									newelements[i].nodeName.toLowerCase()) :
-								type == "." ? regex.test(newelements[i].className) :
+								!type ? (name == "*" || name.toUpperCase() ==
+									newelements[i].nodeName) :
 								type == '#' ? (newelements[i].id == name) :
-								attrcompare ? regex.test(newelements[i].getAttribute(name)) :
-								type == '[' ? ((tmp = newelements[i].getAttribute(name)) !==
-									null && tmp != "") :
+								type == "." ? checkattr(newelements[i].className,
+									"~=", name) :
+								type == "[" ? checkattr(newelements[i].getAttribute(name),
+									parts[6], attrvalue) :
 								(name.toLowerCase() == "first-child") ? 
 									!getelementsibling(newelements[i],1) :
 								// if we're supporting first-child, supporting last-child is
@@ -232,7 +227,7 @@ SPARK = (function() {
 		else {
 			// handle the case where the argument was a node or array of nodes rather than
 			// a CSS selector
-			elements = selector.cloneNode || selector.alert ? [selector] :
+			elements = selector.cloneNode || selector.setTimeout ? [selector] :
 				selector;
 			for (i = 0; i < elements.length; i++) {
 				newelement[newelement.length++] = elements[i];
@@ -257,6 +252,9 @@ SPARK = (function() {
 			var
 				myelement = this,
 				mycallback = function() {
+					// this should only be called by browsers who use attachevent
+					// and not addeventlistener, so we can assume a global event
+					// object
 					var
 						evt = event;
 					evt.preventDefault = function() {
@@ -265,20 +263,24 @@ SPARK = (function() {
 					evt.stopPropagation = function() {
 						evt.cancelBubble = !0;
 					};
+					evt.currentTarget = myelement;
 					evt.target = evt.srcElement;
 					return callback.call(myelement, evt);
 				};
 
-			myelement.SPARKe = myelement.SPARKe || {};
-			myelement.SPARKe[callback.SPARKi] = 
-				myelement.SPARKe[callback.SPARKi] || mycallback;
+			// all this so we can provide 'this' and 'currentTarget' in IE.
+			// So we maintain a separate handler with its in-closure reference
+			// to 'myelement' for each element we apply to
+			this.SPARKe = this.SPARKe || {};
+			this.SPARKe[callback.SPARKi] = 
+				this.SPARKe[callback.SPARKi] || mycallback;
 
-			if (myelement.addEventListener) {
+			if (this.addEventListener) {
 				// other browsers
-				myelement.addEventListener(eventname, callback, !1);
+				this.addEventListener(eventname, callback, !1);
 			} 
 			else {
-				myelement.attachEvent("on"+eventname, myelement.SPARKe[callback.SPARKi]);
+				this.attachEvent("on"+eventname, this.SPARKe[callback.SPARKi]);
 			}
 		});
 	};
@@ -289,17 +291,14 @@ SPARK = (function() {
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
 		this.each(function() {
-			var
-				myelement = this;
-			if (myelement.addEventListener) {
+			if (this.addEventListener) {
 				// other browsers
-				myelement.removeEventListener(eventname, callback, !1);
+				this.removeEventListener(eventname, callback, !1);
 			} 
 			else {
-				if (callback.SPARKi && myelement.SPARK &&
-					myelement.SPARKe[callback.SPARKi]) {
-					myelement.detachEvent("on"+eventname, myelement.SPARKe[callback.SPARKi]);
-					delete myelement.SPARKe[callback.SPARKi];
+				if (this.SPARKe && this.SPARKe[callback.SPARKi]) {
+					this.detachEvent("on"+eventname, this.SPARKe[callback.SPARKi]);
+					delete this.SPARKe[callback.SPARKi];
 				}
 			}
 		});
@@ -364,9 +363,9 @@ SPARK = (function() {
 							}
 						}
 					};
-				that.find('head').append(myscript);
 				myscript.watch('load', gencallback);
 				myscript.watch('readystatechange', gencallback);
+				that.find('head').append(myscript);
 				loadstate[file] = 1;
 			};
 
@@ -469,7 +468,10 @@ SPARK = (function() {
 				}
 			}
 		}
-		return newspark.append(spec.contents || []);
+		if (spec.contents) {
+			newspark.append(spec.contents);
+		}
+		return newspark;
 	};
 
 	core.append = function(spec) {
@@ -478,19 +480,20 @@ SPARK = (function() {
 	// or an array containing a mixture of such.
 	// the new elements are appended to the child nodes of each currently
 	// selected node.
+	// todo see if modifying this to use this.each() compresses a bit better
 		var
+			i, j,
+			myspec = spec.name || spec.clonenode || spec.charat ? [spec] : spec,
+			node,
 			elements = [];
-		this.each(function() {
-			var 
-				tmp,
-				myspec = spec.name || spec.cloneNode ? [spec] : spec,
-				node;
-			while ((tmp = myspec.shift())) {
-				node = tmp.cloneNode ? tmp : this.build(tmp);
+		for (i = 0; i < this.length; i++) {
+			for (j = 0; j < myspec.length; j++) {
+				node = myspec[j].parentnode ? myspec[j].clonenode(!0) :
+					myspec[j].clonenode ? myspec[j] : this.build(myspec[j])[0];
 				elements.push(node);
-				this.appendChild(node);
+				this[i].appendchild(node);
 			}
-		});
+		}
 		return this.select(elements);
 	};
 
@@ -501,18 +504,18 @@ SPARK = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
+			i, j,
+			myspec = spec.name || spec.clonenode || spec.charat ? [spec] : spec,
+			node,
 			elements = [];
-		this.each(function() {
-			var 
-				tmp,
-				myspec = spec.name || spec.cloneNode ? [spec] : spec,
-				node;
-			while ((tmp = myspec.shift()) && this.parentNode) {
-				node = tmp.cloneNode ? tmp : this.build(tmp);
+		for (i = 0; i < this.length; i++) {
+			for (j = 0; j < myspec.length && this[i].parentNode; j++) {
+				node = myspec[j].parentnode ? myspec[j].clonenode(!0) :
+					myspec[j].clonenode ? myspec[j] : this.build(myspec[j])[0];
 				elements.push(node);
-				this.parentNode.insertBefore(node, this);
+				this[i].parentNode.insertBefore(node);
 			}
-		});
+		}
 		return this.select(elements);
 	};
 
@@ -544,20 +547,18 @@ SPARK = (function() {
 	// like 'method' (get or post), 'body' (body of post request) etc.
 	// callback is only called when the load is 100% complete (that is, you
 	// won't be able to implement a progress indicator).
-		try {
-			var
-				xmlhttprequest = XMLHttpRequest ?
-					new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
-			if (callback) {
-				xmlhttprequest.onreadystatechange = function() {
-					if (xmlhttprequest.readyState == 4) {
-						callback.call(xmlhttprequest);
-					}
-				};
-			}
-			xmlhttprequest.open(method || "GET", url, !0);
-			xmlhttprequest.send(body);
-		} catch (e) {}
+		var
+			xmlhttprequest = window.XMLHttpRequest ?
+				new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+		if (callback) {
+			xmlhttprequest.onreadystatechange = function() {
+				if (xmlhttprequest.readyState == 4) {
+					callback.call(xmlhttprequest);
+				}
+			};
+		}
+		xmlhttprequest.open(method || "GET", url, !0);
+		xmlhttprequest.send(body);
 		// asks for callback so don't chain
 	};
 
@@ -565,7 +566,7 @@ SPARK = (function() {
 	core.select(document).watch("DOMContentLoaded", processreadyqueue);
 	core.select(window).watch("load", processreadyqueue);
 	// IE only hack; testing doscroll method
-	if (/\bMSIE\b/.test(navigator.userAgent) && !window.opera && window == top) {
+	if (/\bMSIE/.test(navigator.userAgent) && !window.opera && window == top) {
 		checkscroll();
 	}
 

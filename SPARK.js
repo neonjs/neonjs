@@ -59,7 +59,7 @@ SPARK = (function() {
 		return !attrcompare ? attr !== null && attr != "" :
 			attrcompare == "=" ? attrvalue == attr :
 			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
-			(attrvalue == attr || attr.indexOf(attrvalue+"-") === 0); // |=
+			(attrvalue == attr || (attr && attr.indexOf(attrvalue+"-") === 0)); // |=
 	};
 
 	var processreadyqueue = function() {

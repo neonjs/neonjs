@@ -7,58 +7,95 @@
 <script type="text/javascript" src="SPARK.js"></script>
 <script type="text/javascript">
 
-	SPARK.ready(function() {
-		SPARK.select("#stop + p");
-		SPARK.select(" body a[href=http://www.yahoo.com/] ");
-		SPARK.select(" body div.myclass ");
-		SPARK.select(" body div.myclass #myid ");
-		SPARK.select(" p a[href] ");
-		SPARK.select(" html #p2");
-		SPARK.select(" * html");
-		SPARK.select(".myclass");
-		SPARK.select('#p2').append({name: 'span', contents: "hello"});
-	});
+SPARK.ready(function() {
 
-	var mydivhandler = function() {
-		alert('clicked mydiv!');
-	};
-	SPARK.ready(function() {
-		SPARK.select('.myclass').setstyle('background', '#efefef');
-		SPARK.select('.mydiv').watch('click', mydivhandler);
-		SPARK.select('#p2').watch('click', function(evt) {
-			alert("clicked p2 which is a: " + this.tagName);
-		});
-		SPARK.select('p.myclass').watch('click', function() {
-			alert('clicked p.myclass!');
-		});
-		SPARK.select('p').watch('click', function(evt) {
-			alert('clicked p!');
-			alert(SPARK.select('.myclass').getstyle('backgroundColor'));
-			evt.preventDefault();
-		});
-		SPARK.select('#stop').watch('click', function() {
-			SPARK.select('.mydiv').unwatch('click', mydivhandler);
-			});
-		SPARK.select("p:first-child").setstyle('background', 'yellow');
-		SPARK.select("p>a").setstyle("background", "yellow");
-		SPARK.select("body > a").setstyle("background", "red");
-		SPARK.select("p.class + *").setstyle("backgroundColor", "yellow");
-		SPARK.select("body + p").setstyle("background", "red");
-		SPARK.select("#stop + p").watch('click', function(evt) {
-			alert("Event for " + this.tagName + " came from " + evt.target.tagName);
-			});
-		SPARK.select("p[title='Tom\\'s + [\"cat\"]?']").setstyle('background', 'yellow');
-	});
+	var element = document.createElement("p");
+	element.appendChild(document.createTextNode("test"));
+	SPARK.select('body').append({name: "table"});
+
+	var
+		resulttable = SPARK.select('body').append({name: "table"}).append({name: "tbody"});
+		addresult = function(success, message) {
+			var
+				newrow = resulttable.append({name: "tr", contents: [{name: "td", contents: success ? "SUCCESS" : "FAIL"}, {name: "td", contents: message}]});
+			SPARK.select(newrow[0].firstChild).setstyle("background", success ? "green" : "black").setstyle("padding", "5px").setstyle("color", "white");
+		},
+		assertions = 0,
+		failures = 0,
+		assert = function(value, message) {
+			assertions++;
+			if (!value) {
+				failures++;
+				addresult(0, message);
+			}
+		},
+		report = function(reportname) {
+			addresult(!failures, reportname + (failures ? " "+failures+" tests failed!" : ""));
+			failures = assertions = 0;
+		};
+
+	(function setup() {
+		SPARK.select('p').remove();
+	})();
+
+	(function testeach() {
+		SPARK.select('body').append([{name: "p"}, {name: "p"}]).set("className", "test1");
+		var
+			count = 0;
+		SPARK.select('body>p.test1').
+			each(function(){ count = count + (this.className == "test1"); });
+		assert(count == 2, "Append 2 paragraphs and run a function for each of them.");
+		SPARK.select('body>p.test1').remove();
+		report("Testing each()");
+	})();
+
+	(function testselect() {
+		SPARK.select('body').append([{name: "div", attr: {id: "myid"}}, {name: "div", attr: {"class": "test2 test2test", title: "Tom's + [\"cat\"]?"}},{name: "p", attr: {lang: "en-US"}}]);
+
+		assert(SPARK.select('body').length == 1, "Select single element by tag name");
+		assert(SPARK.select('html')[0].firstChild, "Make sure element selected is a node");
+		assert(SPARK.select('body html').length == 0, "Negative descendant child match");
+		assert(SPARK.select('html>div').length == 0, "Negative immediate child match");
+		assert(SPARK.select('html div').length == 2, "Test descendant child match");
+		assert(SPARK.select('body>div').length == 2, "Test immediate child match");
+		assert(SPARK.select('head+body').length == 1, "Test next sibling match");
+		assert(SPARK.select('body+body').length == 0, "Negative next sibling match");
+		assert(SPARK.select('div.test2').length == 1, "Test class name match");
+		assert(SPARK.select('div.otherclass').length == 0, "Negative class name match");
+		assert(SPARK.select('div#myid').length == 1, "Tag name and ID match");
+		assert(SPARK.select('#myid').length == 1, "ID match");
+		assert(SPARK.select('div[title="Tom\'s + [\\"cat\\"]?"]').length == 1, "Complex attribute selector match");
+		assert(SPARK.select('*').length > 0, "* tagname match");
+		assert(SPARK.select('div[class~=test2]').length == 1, "~= attribute selector match");
+		assert(SPARK.select('div[class=test2]').length == 0, "Negative = attribute selector match");
+		assert(SPARK.select('html, head, #myid, #asdf').length == 3, "Multiple selectors with commas");
+		assert(SPARK.select('div#myid *').length == 0, "Negative descendant * match");
+		assert(SPARK.select('head:first-child').length == 1, ":first-child match count");
+		assert(SPARK.select('body:first-child').length == 0, "Negative :first-child match");
+		assert(SPARK.select('* html').length == 0, "Document descendant child checking");
+		assert(SPARK.select(window)[0].alert, "Manual selector: window");
+		assert(SPARK.select(document)[0].createElement, "Manual selector: document");
+		assert(SPARK.select('p[lang|=en]').length == 1, "|= attribute selector match");
+		assert(SPARK.select('p[lang|=en-US]').length == 1, "|= attribute selector match 2");
+		assert(SPARK.select('p[lang|=US]').length == 0, "Negative |= attribute selector");
+		assert(SPARK.select(document.createElement('p')).length == 1, "Createelement in select");
+
+		SPARK.select('body>div, body>div + p').remove();
+
+		report("Testing CSS selector engine");
+	})();
+
+	(function testwatch() {
+
+	})();
+
+});
+	
 </script>
 </head>
 
 <body>
-	<p class=" class myclass anotherclass" id="para1">Paragraph 1</p>
-	<!-- this is a comment -->
-	<p id="p2">Paragraph 2</p>
-	<div class="mydiv myclass">Div</div>
-	<p id="stop">Stop</p>
-	<p><a href="http://www.yahoo.com/">Link</a></p>
-	<p title="Tom's + [&quot;cat&quot;]?">Try this</p>
+	<p id="nodom">DOM not manipulated</p>
+
 </body>
 </html>

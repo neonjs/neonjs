@@ -83,7 +83,7 @@ SPARK.extend('tester', (function() {
 		// buy a bit more time, and indicate that the test is waiting on user
 		// input
 			clearTimeout(testobj.timeout);
-			testobj.timeout = setTimeout(mytimeout, 60000);
+			testobj.timeout = setTimeout(mytimeout, 29900);
 			if (!failures) {
 				resultcell.empty().append("WAITING ...");
 			}

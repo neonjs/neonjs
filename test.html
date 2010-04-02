@@ -126,20 +126,25 @@ SPARK.load("SPARK-tester.js", function() {
 			this.finish();
 		});
 
+		SPARK.tester.test("load() tests", function() {
+			var
+				that = this;
+			this.assert(1, "Must have worked for these tests to function");
+			SPARK.load("SPARK-tester.js", function() {
+				that.assert(1, "Has worked a second time");
+				that.finish();
+			});
+		});
+
+		SPARK.tester.test("get() tests", function() {
+			var
+				newdiv = this.testdiv.append({name: "div", attr: {id: "SPARKtestertestget"}});
+			this.assert(newdiv.get("id") == "SPARKtestertestget", "Testing get() on id");
+			this.assert(newdiv.get("nodeName").toLowerCase() == "div", "Testing get() on nodeName");
+			this.finish();
+		});
+
 	});
-	
-
-	
-/*
-	(function testselect() {
-
-		report("Testing CSS selector engine");
-	})();
-
-	(function testwatch() {
-
-	})();
-	*/
 
 });
 	

@@ -366,7 +366,7 @@ SPARK = (function() {
 				loadstate[file] = 1;
 				myscript.watch('load', gencallback);
 				myscript.watch('readystatechange', gencallback);
-				that.find('head').append(myscript);
+				that.select('head').append(myscript);
 			};
 
 		mycallback.SPARKl = mycallback.SPARKl || {};
@@ -518,7 +518,7 @@ SPARK = (function() {
 					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
 				elements.push(node);
 				if (this.parentNode) {
-					this.parentNode.insertBefore(node);
+					this.parentNode.insertBefore(node, this);
 				}
 			}
 		});

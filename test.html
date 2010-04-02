@@ -17,7 +17,7 @@ SPARK.load("SPARK-tester.js", function() {
 		SPARK.ready(function() {
 			called++;
 			that.assert(called == 1, "Ready called only once");
-			setTimeout(function() { that.finish(); }, 200);
+			setTimeout(function() { that.finish(); }, 80);
 		});
 		
 	});

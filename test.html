@@ -116,10 +116,13 @@ SPARK.load("SPARK-tester.js", function() {
 				myobj2 = {name: "2nd"};
 			SPARK.extend("SPARKunittesttry1", myobj);
 			this.assert(SPARK.SPARKunittesttry1, "SPARK extension exists");
-			this.assert(SPARK.SPARKunittesttry1.name == "thisisatest", "SPARK extension value");
+			this.assert(SPARK.SPARKunittesttry1.name == "thisisatest", 
+				"SPARK extension value");
 			SPARK.extend("SPARKunittesttry1", myobj2);
-			this.assert(SPARK.SPARKunittesttry1.name == "thisisatest", "SPARK extension no overwriting");
-			this.assert(SPARK.select('body').SPARKunittesttry1.name == "thisisatest", "SPARK extension on generated objects");
+			this.assert(SPARK.SPARKunittesttry1.name == "thisisatest", 
+				"SPARK extension no overwriting");
+			this.assert(SPARK.select('body').SPARKunittesttry1.name == 
+				"thisisatest", "SPARK extension on generated objects");
 			this.finish();
 		});
 

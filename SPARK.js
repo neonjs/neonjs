@@ -34,22 +34,42 @@ SPARK = (function() {
 		}
 	};
 
-	var checkcascade = function(elements, newelement, cascade) {
-	// check if newelement cascades from the list of elements, according
-	// to the cascade type.
-	// cascade == '&' : match when newelement occurs in elements
-	// cascade == '>' : when newelement is direct child of one in elements
-	// cascade == '>>': when newelement is descendent of one in elements
-		for (var i = 0; i < elements.length; i++) {
-			if (
-				cascade == ">>" ? (elements[i].compareDocumentPosition ?
-					(elements[i].compareDocumentPosition(newelement) & 16) :
-					(elements[i].contains(newelement) && elements[i] !== newelement)) :
-				cascade == ">" ? elements[i] === newelement.parentNode :
-				cascade == "+" ? elements[i] === getprevioussibling(newelement) :
-				elements[i] === newelement // cascade == '&'; default
-				) {
-				return !0; //true
+	var checkcascade = {
+		">>" : function(elements, newelement) {
+			var i = elements.length;
+			while (i--) {
+				if (elements[i].compareDocumentPosition ?
+						elements[i].compareDocumentPosition(newelement) & 16 :
+					elements[i].contains ?
+						(elements[i].contains(newelement) && elements[i] !== newelement) :
+					0) {
+					return 1;
+				}
+
+			}
+		},
+		">" : function(elements, newelement) {
+			var i = elements.length;
+			while (i--) {
+				if (elements[i] === newelement.parentNode) {
+					return 1;
+				}
+			}
+		},
+		"+" : function(elements, newelement) {
+			var i = elements.length;
+			while (i--) {
+				if (elements[i] === getprevioussibling(newelement)) {
+					return 1;
+				}
+			}
+		},
+		"&" : function(elements, newelement) {
+			var i = elements.length;
+			while (i--) {
+				if (elements[i] === newelement) {
+					return 1;
+				}
 			}
 		}
 	};
@@ -203,7 +223,7 @@ SPARK = (function() {
 							// phase two, filtering of nodes against the previously matched
 							// set according to cascade type
 							if (!pass ||
-								(!skipcascade && !checkcascade(elements, newelements[i], cascade))) {
+								(!skipcascade && !checkcascade[cascade](elements, newelements[i]))) {
 								newelements.splice(i--, 1);
 							}
 						}
@@ -215,7 +235,7 @@ SPARK = (function() {
 					// if we have reached either a comma or the end of the selector
 					while ((tmp = elements.shift())) {
 
-						if (!checkcascade(newelement, tmp)) {
+						if (!checkcascade["&"](newelement, tmp)) {
 							// if elements[p] DOESN'T exist in newelement
 							newelement[newelement.length++] = tmp;
 						}
@@ -343,6 +363,7 @@ SPARK = (function() {
 	// loaded again, as long as the filename string is completely the same (not
 	// just resolving to the same URL).
 		var
+			i,
 			myfiles = files.charAt ? [files] : files,
 			mycallback = callback || function() {},
 			that = this,
@@ -375,7 +396,8 @@ SPARK = (function() {
 		mycallback.SPARKl[loadid] = 0;
 
 		this.ready(function() {
-			for (var i = 0; i < myfiles.length; i++) {
+			i = myfiles.length;
+			while (i--) {
 				if (!loadstate[myfiles[i]]) {
 					mycallback.SPARKl[loadid]++;
 					registerscript(myfiles[i]);

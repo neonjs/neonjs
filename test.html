@@ -26,7 +26,7 @@ SPARK.load("SPARK-tester.js", function() {
 
 		SPARK.tester.test("each() method tests", function() {
 
-			this.testdiv.append([{name: "p"}, {name: "p"}]).set("className", "test1");
+			this.testdiv.append([{p:""}, {p:""}]).set("className", "test1");
 			var
 				count = 0;
 			SPARK.select("body, head").
@@ -37,10 +37,14 @@ SPARK.load("SPARK-tester.js", function() {
 
 		SPARK.tester.test("select() method tests", function() {
 
-			this.testdiv.append([{name: "div", attr: {id: "myid"}}, {name: "div", attr: {"class": "test2 test2test", title: "Tom's + [\"cat\"]?"}},{name: "p", attr: {lang: "en-US"}}]);
+			this.testdiv.append([
+				{div:"",$id:"myid"},
+				{div:"",$class:"test2 test2test",$title:"Tom's + [\"cat\"]?"},
+				{p:"",$lang:"en-US"}
+			]);
 
 			this.assert(SPARK.select('body').length == 1, "Single tag name select");
-			this.assert(SPARK.select('html')[0].firstChild, "Ensure element is node");
+			this.assert(SPARK.select('html')[0].firstChild.nodeName, "Ensure element is node");
 			this.assert(SPARK.select('body html').length == 0, "Negative descendant child match");
 			this.assert(SPARK.select('body> #myid').length == 0, "Negative immediate child match");
 			this.assert(SPARK.select('body #myid').length == 1, "Test descendant child match");
@@ -86,8 +90,8 @@ SPARK.load("SPARK-tester.js", function() {
 
 			var
 				that = this,
-				p = this.testdiv.append({name: "p", contents: "Testing user input: "}),
-				button = p.append({name: "button", contents: "Please click"}),
+				p = this.testdiv.append({p:"Testing user input: "}),
+				button = p.append({button:"Please click"}),
 				otherclicked = 0,
 				wrongclicked = 0,
 				wrongclickfunc = function() { wrongclicked = 1; };
@@ -138,7 +142,7 @@ SPARK.load("SPARK-tester.js", function() {
 
 		SPARK.tester.test("get() tests", function() {
 			var
-				newdiv = this.testdiv.append({name: "div", attr: {id: "SPARKtestertestget"}});
+				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
 			this.assert(newdiv.get("id") == "SPARKtestertestget", "Testing get() on id");
 			this.assert(newdiv.get("nodeName").toLowerCase() == "div", "Testing get() on nodeName");
 			this.finish();

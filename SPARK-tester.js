@@ -18,9 +18,7 @@ SPARK.extend('tester', (function() {
 		tester = {};
 
 	var setuptable = function() {
-		var
-			testtable = SPARK.select('body').append({name: "table"});
-		return testtable.append({name: "tbody"});
+		return SPARK.select('body').append({table:""}).append({tbody:""});
 	};
 
 	tester.test = function(testname, testfunction) {
@@ -28,12 +26,12 @@ SPARK.extend('tester', (function() {
 	// more times
 		var
 			mytesttbody = testtbody || (testtbody = setuptable()),
-			testrow = mytesttbody.append({name: "tr"}),
-			resultcell = testrow.append({name: "td", contents: "TESTING ..."}).
+			testrow = mytesttbody.append({tr:""}),
+			resultcell = testrow.append({td:"TESTING ..."}).
 				setstyle('background', 'gray').
 				setstyle('color', 'white').
 				setstyle('padding', '5px'),
-			messagecell = testrow.append({name: "td", contents: {name: "div", contents: testname}}).
+			messagecell = testrow.append({td:{div:testname}}).
 				setstyle('padding', '2px'),
 			failures = 0,
 			assertions = 0,
@@ -54,7 +52,7 @@ SPARK.extend('tester', (function() {
 			if (!assertval) {
 				resultcell.empty().setstyle('background', 'brown').append("FAILURE");
 				messagecell = messagecell.
-					append({name: "div", contents: "Assertion failed: "+shortdesc});
+					append({div:"Assertion failed: "+shortdesc});
 				failures++;
 			}
 			assertions++;
@@ -75,7 +73,7 @@ SPARK.extend('tester', (function() {
 
 		testobj.id = "SPARK-tester-" + (++gid);
 
-		testobj.testdiv = SPARK.select('body>:first-child').insert({name: "div", attr: {id: testobj.id}});
+		testobj.testdiv = SPARK.select('body>:first-child').insert({div:"",$id:testobj.id});
 
 		testobj.timeout = setTimeout(mytimeout, 9900);
 

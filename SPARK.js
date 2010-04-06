@@ -370,7 +370,7 @@ SPARK = (function() {
 			loadid = ++gid,
 			registerscript = function(file) {
 				var
-					myscript = that.build({name: 'script'}).set('src', file),
+					myscript = that.build({script:""}).set('src', file),
 					gencallback = function() {
 						if (loadstate[file] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
@@ -466,36 +466,57 @@ SPARK = (function() {
 	};
 
 	core.build = function(spec) {
-	// builds a new node (element or text node) according to the given
-	// spec and selects it, but doesn't insert it into the document. this
-	// is used internally by SPARK, but may be useful elsewhere. the spec
-	// should be an object conforming to:
-	// {name: <tag name>, attr: {name:val, ...}, contents: [<spec>, ...]}  
-	// where attr and contents are optional.  alternatively, spec can be
-	// just a string (which will result in a text node)
+	// builds one or more new nodes (elements/text nodes) according to
+	// the given spec and returns a spark object with the new nodes
+	// selected. this can be used to generate nodes for the document
+	// without inserting them anywhere yet.
+	// The spec is one of:
+	// A string, in which case a text node is created with the text
+	// An object of {elementname:contents[,$attrname:attrval,...]}
+	//   where contents is another spec (which will be processed
+	//   recursively).  Since objects are considered unsorted, the
+	//   only reliable way to tell which property is the element name
+	//   is that it is the only one that is a valid element name.
+	//   Attributes have dollar signs added before them for this
+	//   reason.
+	// Or an array containing one or more strings or objects as above
 		var
-			newspark = this.select(spec.name ? document.createElement(spec.name) :
-				document.createTextNode(spec)),
-			name;
-		if (spec.attr) {
-			for (name in spec.attr) {
-				if (spec.attr[name].charAt) {
-					newspark[0].setAttribute(name, spec.attr[name]);
-					if (name.toLowerCase() == "style") {
-						newspark[0].style.cssText = spec.attr[name];
-					}
-					if (name.toLowerCase() == "class") {
-						newspark[0].className = spec.attr[name];
-					}
-				}
+			tmp,
+			element,
+			myarray = [],
+			attribute;
+		if (spec && spec.charAt && spec.substr) { // is a string
+			return this.select(document.createTextNode(spec));
+		}
+		if (!spec || spec.length === 0) {
+			return this.select(myarray);
+		}
+		if (spec.cloneNode && spec.appendChild) { // is a node
+			return this.select(spec);
+		}
+		if (spec.length && spec[0]) { 
+			for (tmp = 0; tmp < spec.length; tmp++) {
+				myarray.push(this.build(spec[tmp])[0]);
+			}
+			return this.select(myarray);
+		}
+		for (tmp in spec) {
+			if (tmp.charAt(0) == "$") {
+				attribute = document.createAttribute(tmp.substr(1));
+				attribute.value = spec[tmp];
+				myarray.push(attribute);
+			}
+			else {
+				element = this.select(document.createElement(tmp));
+				element.append(spec[tmp]);
 			}
 		}
-		if (spec.contents) {
-			newspark.append(spec.contents);
+		while ((tmp = myarray.shift())) {
+			element[0].setAttributeNode(tmp);
 		}
-		return newspark;
+		return element;
 	};
-
+	
 	core.append = function(spec) {
 	// inserts a new element or array of elements into the document.
 	// the parameter may be either a node, a spec as defined in build(),
@@ -504,21 +525,16 @@ SPARK = (function() {
 	// selected node.
 	// todo see if modifying this to use this.each() compresses a bit better
 		var
-			elements = [],
-			spark = this;
+			elements = this.build(spec);
 		this.each(function() {
 			var
-				i,
-				myspec = spec.name || spec.cloneNode || spec.charAt ? [spec] : spec,
-				node;
-			for (i = 0; i < myspec.length; i++) {
-				node = myspec[i].parentNode ? myspec[i].cloneNode(!0) :
-					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
-				elements.push(node);
-				this.appendChild(node);
+				i;
+			for (i = 0; i < elements.length; i++) {
+				this.appendChild(elements[i].parentNode ? elements[i].cloneNode(!0) :
+					elements[i]);
 			}
 		});
-		return this.select(elements);
+		return elements;
 	};
 
 	core.insert = function(spec) {
@@ -528,23 +544,19 @@ SPARK = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			elements = [],
-			spark = this;
+			elements = this.build(spec);
 		this.each(function() {
 			var
-				i,
-				myspec = spec.name || spec.cloneNode || spec.charAt ? [spec] : spec,
-				node;
-			for (i = 0; i < myspec.length; i++) {
-				node = myspec[i].parentNode ? myspec[i].cloneNode(!0) :
-					myspec[i].cloneNode ? myspec[i] : spark.build(myspec[i])[0];
-				elements.push(node);
-				if (this.parentNode) {
-					this.parentNode.insertBefore(node, this);
+				i;
+			if (this.parentNode) {
+				for (i = 0; i < elements.length; i++) {
+					this.parentNode.insertBefore(
+						elements[i].parentNode ? elements[i].cloneNode(!0) : elements[i],
+						this);
 				}
 			}
 		});
-		return this.select(elements);
+		return elements;
 	};
 
 	core.remove = function() {

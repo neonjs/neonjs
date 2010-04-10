@@ -598,10 +598,23 @@ SPARK = (function() {
 	// unserialises the JSON string into the equivalent value.  Does a check
 	// on the string that is only thorough enough to prevent arbitrary code
 	// execution.
-		return json.replace && /^[\],:{}\s]*$/.test(
-			json.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@').
+		var
+			cx = /[\x00\u007f-\uffff]/g;
+
+		// slow when there are lots of characters outside ascii.  hmmm wonder
+		// if this initial stage is necessary for security
+		if (cx.test(json)) {
+			json = json.replace(cx, function(ch) {
+				return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
+			});
+		}
+
+		if (/^[\],:{}\s]*$/.test(
+			json.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '&').
 			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
-			replace(/(?:^|:|,)(?:\s*\[)+/g, '')) ? eval("("+json+")") : undef;
+			replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+			return eval("("+json+")");
+		}
 	};
 
 	core.jsonencode = function(obj, _exclude) {

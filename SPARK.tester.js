@@ -75,19 +75,22 @@ SPARK.extend('tester', (function() {
 
 		testobj.testdiv = SPARK.select('body>:first-child').insert({div:"",$id:testobj.id});
 
-		testobj.timeout = setTimeout(mytimeout, 9900);
+		testobj.timeout = setTimeout(mytimeout, 2490);
 
-		testobj.waitforinput = function() {
+		testobj.wait = function(timelimit) {
 		// buy a bit more time, and indicate that the test is waiting on user
 		// input
 			clearTimeout(testobj.timeout);
-			testobj.timeout = setTimeout(mytimeout, 29900);
+			testobj.timeout = setTimeout(mytimeout, timelimit);
 			if (!failures) {
 				resultcell.empty().append("WAITING ...");
 			}
 		};
 		
-		testfunction.call(testobj);
+		// asynchronous
+		setTimeout(function() {
+			testfunction.call(testobj);
+		}, 0);
 	};
 
 	return tester;

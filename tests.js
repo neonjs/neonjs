@@ -1,15 +1,6 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+SPARK.load("SPARK.tester.js", function() {
 
-<head>
-	<title>Test suite</title>
-<script type="text/javascript" src="SPARK.js"></script>
-<script type="text/javascript">
-
-SPARK.load("SPARK-tester.js", function() {
-
-	SPARK.tester.test("ready() test", function() {
+	SPARK.tester.test("Document ready state", function() {
 		var
 			called = 0,
 			that = this;
@@ -24,7 +15,7 @@ SPARK.load("SPARK-tester.js", function() {
 	
 	SPARK.ready(function() {
 
-		SPARK.tester.test("each() method tests", function() {
+		SPARK.tester.test("Iterating over elements", function() {
 
 			this.testdiv.append([{p:""}, {p:""}]).set("className", "test1");
 			var
@@ -35,7 +26,7 @@ SPARK.load("SPARK-tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("select() method tests", function() {
+		SPARK.tester.test("Selectors", function() {
 
 			this.testdiv.append([
 				{div:"",$id:"myid"},
@@ -86,7 +77,7 @@ SPARK.load("SPARK-tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("watch() and unwatch() method tests", function() {
+		SPARK.tester.test("Event handling", function() {
 
 			var
 				that = this,
@@ -94,27 +85,35 @@ SPARK.load("SPARK-tester.js", function() {
 				button = p.append({button:"Please click"}),
 				otherclicked = 0,
 				wrongclicked = 0,
+				mouseup = 1,
 				wrongclickfunc = function() { wrongclicked = 1; };
 
-			this.waitforinput();
+			this.wait(30000);
 			button.watch('click', function(evt) {
 				that.assert(!!evt, "Event object was passed");
 				that.assert(!!evt.currentTarget.nodeName, "event.currentTarget is a node");
 				that.assert(!!evt.target.nodeName, "event.target is a node");
+				that.assert(evt.pageX > 0, "event.pageX has some positive value");
+				that.assert(evt.pageY > 0, "event.pageY has some positive value");
 				that.assert(evt.target.nodeName.toLowerCase() == "button", "Button clicked target");
 				setTimeout(function() {
 					that.assert(otherclicked == 1, "Multiple watchers on event fired");
 					that.assert(wrongclicked == 0, "Unwatched successfully");
+					that.assert(mouseup == 1, "Mouseup event fired");
 					that.finish();
 				}, 20);
 			});
 			button.watch('click', function() { otherclicked = 1; });
 			button.watch('click', wrongclickfunc);
 			button.unwatch('click', wrongclickfunc);
+			button.watch('mouseup', function(evt) {
+				mouseup = 1;
+				that.assert(evt.which > 0, "event.which has some positive value");
+			});
 
 		});
 
-		SPARK.tester.test("extend() tests", function() {
+		SPARK.tester.test("Extending SPARK", function() {
 			var
 				myobj = {name: "thisisatest"},
 				myobj2 = {name: "2nd"};
@@ -130,21 +129,66 @@ SPARK.load("SPARK-tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("load() tests", function() {
+		SPARK.tester.test("Loading external Javascript", function() {
 			var
 				that = this;
 			this.assert(1, "Must have worked for these tests to function");
-			SPARK.load("SPARK-tester.js", function() {
+			SPARK.load("SPARK.tester.js", function() {
 				that.assert(1, "Has worked a second time");
 				that.finish();
 			});
 		});
 
-		SPARK.tester.test("get() tests", function() {
+		SPARK.tester.test("Getting/setting element properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
 			this.assert(newdiv.get("id") == "SPARKtestertestget", "Testing get() on id");
 			this.assert(newdiv.get("nodeName").toLowerCase() == "div", "Testing get() on nodeName");
+			newdiv.set('SPARKtest', 555);
+			this.assert(newdiv.get('SPARKtest') === 555, "Setting and getting custom property");
+			this.finish();
+		});
+
+		SPARK.tester.test("Getting/setting style properties", function() {
+			var
+				newdiv = this.testdiv.append({div:"",$style:"border:1px solid red;border-top-width:66px"});
+			this.assert(newdiv.getstyle('borderTopWidth') == "66px", "Read inline style");
+			newdiv.setstyle('width', '555px');
+			this.assert(newdiv.getstyle('width') == '555px', "Set and read element style");
+			this.finish();
+		});
+
+		SPARK.tester.test("Building elements", function() {
+			var
+				elements = SPARK.build({p:"Contents",$title:"Mytitle"}),
+				pandtext = SPARK.build([{p:""},"Mycontents"]);
+
+			this.assert(elements[0].nodeName.toLowerCase() == "p", "Correct element name created");
+			this.assert(elements[0].firstChild.nodeType == 3, "Text node child created");
+			this.assert(pandtext[0].nodeName.toLowerCase() == "p", "Accepts array");
+			this.assert(pandtext[1].nodeType == 3, "Text node second part of array");
+			this.finish();
+		});
+
+		SPARK.tester.test("JSON encoding and decoding", function() {
+			var
+				windowjson = SPARK.jsonencode(window),
+				arrjson = SPARK.jsonencode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]),
+				objjson = SPARK.jsonencode({val:function() {}, "val\n": 5 / 0, nested: []}),
+				newwindow = SPARK.jsondecode(windowjson),
+				newarr = SPARK.jsondecode(arrjson),
+				newobj = SPARK.jsondecode(objjson);
+
+			this.assert(windowjson, "JSON encoding window object is OK");
+			this.assert(arrjson == "[null,null,null,456.67,\"Tom's + [\\\"cat\\\"]?\"]",
+				"Correct encoding of an array");
+			this.assert(objjson == "{\"val\\n\":null,\"nested\":[]}",
+				"Correct encoding of an object");
+			this.assert(newarr.length == 5, "Correct array length reconstructed");
+			this.assert(newarr[3] == 456.67, "Correct float reconstructed");
+			this.assert(newarr[4] == "Tom's + [\"cat\"]?", "Correct string reconstructed");
+			this.assert(newobj["val\n"] === null, "Correct null reconstructed");
+			this.assert(newobj.nested.length == 0, "Correct empty array reconstructed");
 			this.finish();
 		});
 
@@ -152,9 +196,3 @@ SPARK.load("SPARK-tester.js", function() {
 
 });
 	
-</script>
-</head>
-
-<body>
-</body>
-</html>

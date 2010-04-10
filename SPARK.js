@@ -4,7 +4,7 @@
 // Part of the SPARK Javascript library
 // Copyright (c) 2010 Thomas Rutter
 
-/*jslint browser: true, newcap: true, immed: true */
+/*jslint browser: true, evil: true, newcap: true, immed: true */
 /*global SPARK:true,attachEvent,window,opera,ActiveXObject */
 
 /**
@@ -34,7 +34,7 @@ SPARK = (function() {
 		}
 	};
 
-	var checkcascade = {
+	var checkinarray = {
 		">>" : function(elements, newelement) {
 			var i = elements.length;
 			while (i--) {
@@ -138,7 +138,7 @@ SPARK = (function() {
 		newelement = new Constructor();
 		newelement.length = 0;
 
-		if (selector.charAt) {
+		if (typeof selector == 'string') {
 			// if the selector is a string, then treat it as a CSS style selector
 
 			selector += ","; // makes the loop with the regex easier
@@ -223,7 +223,7 @@ SPARK = (function() {
 							// phase two, filtering of nodes against the previously matched
 							// set according to cascade type
 							if (!pass ||
-								(!skipcascade && !checkcascade[cascade](elements, newelements[i]))) {
+								(!skipcascade && !checkinarray[cascade](elements, newelements[i]))) {
 								newelements.splice(i--, 1);
 							}
 						}
@@ -235,7 +235,7 @@ SPARK = (function() {
 					// if we have reached either a comma or the end of the selector
 					while ((tmp = elements.shift())) {
 
-						if (!checkcascade["&"](newelement, tmp)) {
+						if (!checkinarray["&"](newelement, tmp)) {
 							// if elements[p] DOESN'T exist in newelement
 							newelement[newelement.length++] = tmp;
 						}
@@ -283,23 +283,32 @@ SPARK = (function() {
 					evt.stopPropagation = function() {
 						evt.cancelBubble = !0;
 					};
+					if (!evt.which) {
+						evt.which = 
+							evt.button & 1 ? 1 :
+							evt.button & 2 ? 3 :
+							evt.button & 4 ? 2 : evt.which;
+					}
+					evt.pageX = evt.clientX + 
+						(document.documentElement.scrollLeft || document.body.scrollLeft);
+					evt.pageY = evt.clientY + 
+						(document.documentElement.scrollTop || document.body.scrollTop);
 					evt.currentTarget = myelement;
 					evt.target = evt.srcElement;
 					return callback.call(myelement, evt);
 				};
-
-			// all this so we can provide 'this' and 'currentTarget' in IE.
-			// So we maintain a separate handler with its in-closure reference
-			// to 'myelement' for each element we apply to
-			this.SPARKe = this.SPARKe || {};
-			this.SPARKe[callback.SPARKi] = 
-				this.SPARKe[callback.SPARKi] || mycallback;
 
 			if (this.addEventListener) {
 				// other browsers
 				this.addEventListener(eventname, callback, !1);
 			} 
 			else {
+				// all this so we can provide 'this' and 'currentTarget' in IE.
+				// So we maintain a separate handler with its in-closure reference
+				// to 'myelement' for each element we apply to
+				this.SPARKe = this.SPARKe || {};
+				this.SPARKe[callback.SPARKi] = 
+					this.SPARKe[callback.SPARKi] || mycallback;
 				this.attachEvent("on"+eventname, this.SPARKe[callback.SPARKi]);
 			}
 		});
@@ -311,12 +320,14 @@ SPARK = (function() {
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
 		this.each(function() {
+
 			if (this.addEventListener) {
 				// other browsers
 				this.removeEventListener(eventname, callback, !1);
 			} 
 			else {
 				if (this.SPARKe && this.SPARKe[callback.SPARKi]) {
+					// special IE handling
 					this.detachEvent("on"+eventname, this.SPARKe[callback.SPARKi]);
 					delete this.SPARKe[callback.SPARKi];
 				}
@@ -364,7 +375,7 @@ SPARK = (function() {
 	// just resolving to the same URL).
 		var
 			i,
-			myfiles = files.charAt ? [files] : files,
+			myfiles = typeof files == 'string' ? [files] : files,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
@@ -485,7 +496,7 @@ SPARK = (function() {
 			element,
 			myarray = [],
 			attribute;
-		if (spec && spec.charAt && spec.substr) { // is a string
+		if (typeof spec == 'string') { // is a string
 			return this.select(document.createTextNode(spec));
 		}
 		if (!spec || spec.length === 0) {
@@ -494,21 +505,23 @@ SPARK = (function() {
 		if (spec.cloneNode && spec.appendChild) { // is a node
 			return this.select(spec);
 		}
-		if (spec.length && spec[0]) { 
+		if (spec.length && spec[0]) {  // array-like, non-empty
 			for (tmp = 0; tmp < spec.length; tmp++) {
 				myarray.push(this.build(spec[tmp])[0]);
 			}
 			return this.select(myarray);
 		}
 		for (tmp in spec) {
-			if (tmp.charAt(0) == "$") {
-				attribute = document.createAttribute(tmp.substr(1));
-				attribute.value = spec[tmp];
-				myarray.push(attribute);
-			}
-			else {
-				element = this.select(document.createElement(tmp));
-				element.append(spec[tmp]);
+			if (Object.hasOwnProperty.call(spec, tmp)) {
+				if (tmp.charAt(0) == "$") {
+					attribute = document.createAttribute(tmp.substr(1));
+					attribute.value = spec[tmp];
+					myarray.push(attribute);
+				}
+				else {
+					element = this.select(document.createElement(tmp));
+					element.append(spec[tmp]);
+				}
 			}
 		}
 		while ((tmp = myarray.shift())) {
@@ -579,6 +592,66 @@ SPARK = (function() {
 			}
 		});
 		return this;
+	};
+
+	core.jsondecode = function(json) {
+	// unserialises the JSON string into the equivalent value.  Does a check
+	// on the string that is only thorough enough to prevent arbitrary code
+	// execution.
+		return json.replace && /^[\],:{}\s]*$/.test(
+			json.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@').
+			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+			replace(/(?:^|:|,)(?:\s*\[)+/g, '')) ? eval("("+json+")") : undef;
+	};
+
+	core.jsonencode = function(obj, _exclude) {
+	// serialises the value obj into a JSON string.  the second parameter is
+	// intended for internal use only and must not be relied upon in case
+	// of future changes
+		var
+			i, current, len,
+			exclude = _exclude || [],
+			meta = {'\n': '\\n', '\r': '\\r', '"' : '\\"', '\\': '\\\\'},
+			escapechars = /[\\\"\x00-\x1f\u007f-\uffff]/g,
+			collected = [];
+
+		if (typeof obj == 'object' && obj !== null) {
+
+			// prevent endless recursion; check if processing same object inside itself
+			if (checkinarray["&"](exclude, obj)) {
+				return undef;
+			}
+			exclude.push(obj);
+
+			if (Object.prototype.toString.call(obj) == '[object Array]') {
+				for (i = 0, len = obj.length; i < len; i++) {
+					try {
+						collected.push(this.jsonencode(obj[i], exclude) || 'null');
+					} catch (err1) {}
+				}
+				return '[' + collected.join() + ']';
+			}
+
+			// not array so treat it as pairs of name:value
+			for (i in obj) {
+				if (Object.hasOwnProperty.call(obj, i)) {
+					try {
+						if ((current = this.jsonencode(obj[i], exclude))) {
+							collected.push(this.jsonencode(i) + ':' + current);
+						}
+					} catch (err2) {}
+				}
+			}
+			return '{' + collected.join() + '}';
+		}
+
+		return typeof obj == 'string' ? '"' + obj.replace(escapechars, function(ch) {
+				return meta[ch] || '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
+				}) + '"' :
+			typeof obj == 'number' ? (isFinite(obj) ? String(obj) : 'null') :
+			typeof obj == 'boolean' ? String(obj) :
+			obj === null ? "null" :
+			undef;
 	};
 
 	core.gethttp = function(url, callback, method, body) {

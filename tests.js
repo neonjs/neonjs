@@ -151,8 +151,8 @@ SPARK.load("SPARK.tester.js", function() {
 
 		SPARK.tester.test("Getting/setting style properties", function() {
 			var
-				newdiv = this.testdiv.append({div:"",$style:"border:1px solid red;border-top-width:66px"});
-			this.assert(newdiv.getstyle('borderTopWidth') == "66px", "Read inline style");
+				newdiv = this.testdiv.append({div:"",$style:"width:66px"});
+			this.assert(newdiv.getstyle('width') == "66px", "Read inline style");
 			newdiv.setstyle('width', '555px');
 			this.assert(newdiv.getstyle('width') == '555px', "Set and read element style");
 			this.finish();

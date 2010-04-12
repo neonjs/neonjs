@@ -520,6 +520,7 @@ SPARK = (function() {
 			tmp,
 			element,
 			myarray = [],
+			attributes = {},
 			attribute;
 		if (!spec || spec.length === 0) {
 			return this.select(myarray);
@@ -539,9 +540,7 @@ SPARK = (function() {
 		for (tmp in spec) {
 			if (Object.hasOwnProperty.call(spec, tmp)) {
 				if (tmp.charAt(0) == "$") {
-					attribute = document.createAttribute(tmp.substr(1));
-					attribute.value = spec[tmp];
-					myarray.push(attribute);
+					attributes[tmp.substr(1)] = spec[tmp];
 				}
 				else {
 					element = this.select(document.createElement(tmp));
@@ -549,8 +548,16 @@ SPARK = (function() {
 				}
 			}
 		}
-		while ((tmp = myarray.shift())) {
-			element[0].setAttributeNode(tmp);
+		for (tmp in attributes) {
+			if (Object.hasOwnProperty.call(attributes, tmp)) {
+				element[0].setAttribute(tmp, attributes[tmp]);
+				if (tmp.toLowerCase() == 'style' && element[0].style) {
+					element[0].style.cssText = attributes[tmp];
+				}
+				if (tmp.toLowerCase() == 'class') {
+					element[0].className = attributes[tmp];
+				}
+			}
 		}
 		return element;
 	};
@@ -569,7 +576,7 @@ SPARK = (function() {
 				i;
 			for (i = 0; i < elements.length; i++) {
 				collected.push(this.appendChild(
-					elements[i].parentNode && elements[i].parentNode.nodeType < 10 ?
+					elements[i].parentNode && elements[i].parentNode.nodeType != 11 ?
 					elements[i].cloneNode(!0) : elements[i]));
 			}
 		});
@@ -591,7 +598,7 @@ SPARK = (function() {
 			if (this.parentNode) {
 				for (i = 0; i < elements.length; i++) {
 					collected.push(this.parentNode.insertBefore(
-						elements[i].parentNode && elements[i].parentNode.nodeType < 10 ?
+						elements[i].parentNode && elements[i].parentNode.nodeType != 11 ?
 						elements[i].cloneNode(!0) : elements[i],
 						this));
 				}

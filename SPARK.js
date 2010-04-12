@@ -104,6 +104,25 @@ SPARK = (function() {
 		}
 	};
 
+	var jsondecode = function(json) {
+	// unserialises the JSON string into the equivalent value.  Does a check
+	// on the string that is only thorough enough to prevent arbitrary code
+	// execution.
+	
+		/*
+		var cx = /[\x00\u007f-\uffff]/g;
+		json = json.replace(cx, function(ch) {
+			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
+		});
+		*/
+		if (/^[\],:{}\s]*$/.test(
+			json.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '&').
+			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+			replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+			return eval("("+json+")");
+		}
+	};
+
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.each()
@@ -476,6 +495,12 @@ SPARK = (function() {
 		return this;
 	};
 
+	core.buildhtml = function(html) {
+	// builds a new node or nodes according to the given html code and
+	// selects it, but doesn't insert it into the document.  this is
+	// used internally by SPARK, but may be useful generally.
+	};
+
 	core.build = function(spec) {
 	// builds one or more new nodes (elements/text nodes) according to
 	// the given spec and returns a spark object with the new nodes
@@ -594,29 +619,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	core.jsondecode = function(json) {
-	// unserialises the JSON string into the equivalent value.  Does a check
-	// on the string that is only thorough enough to prevent arbitrary code
-	// execution.
-		var
-			cx = /[\x00\u007f-\uffff]/g;
-
-		// slow when there are lots of characters outside ascii.  hmmm wonder
-		// if this initial stage is necessary for security
-		if (cx.test(json)) {
-			json = json.replace(cx, function(ch) {
-				return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-			});
-		}
-
-		if (/^[\],:{}\s]*$/.test(
-			json.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '&').
-			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
-			replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
-			return eval("("+json+")");
-		}
-	};
-
+	/*
 	core.jsonencode = function(obj, _exclude) {
 	// serialises the value obj into a JSON string.  the second parameter is
 	// intended for internal use only and must not be relied upon in case
@@ -666,26 +669,58 @@ SPARK = (function() {
 			obj === null ? "null" :
 			undef;
 	};
+	*/
 
 	core.gethttp = function(url, callback, method, body) {
 	// places an HTTP request (using XMLHttpRequest) for the given URL.
 	// method and body are optional.
 	// callback is only called when the load is 100% complete (that is, you
 	// won't be able to implement a progress indicator).
+	// body should be specified for POST method.  It can be an object of
+	// {name:value,...} where it will be encoded like form variables, or
+	// it can be a string, where it will be transmitted bare
 		var
+			i,
+			collected = [],
 			xmlhttprequest = window.XMLHttpRequest ?
 				new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
 		if (callback) {
 			xmlhttprequest.onreadystatechange = function() {
 				if (xmlhttprequest.readyState == 4) {
+
+					// implement JSON parsing
+					if (!xmlhttprequest.responseJSON) {
+						xmlhttprequest.responseJSON =
+						jsondecode(xmlhttprequest.responseText);
+					}
+
 					callback.call(xmlhttprequest);
 				}
 			};
 		}
 		xmlhttprequest.open(method || "GET", url, !0);
+		if (body && typeof body != 'string') {
+			for (i in body) {
+				if (Object.hasOwnProperty.call(body, i)) {
+					collected.push(encodeURIComponent(i) + "=" +
+						encodeURIComponent(body[i]));
+				}
+			}
+			body = collected.join('&');
+			xmlhttprequest.setRequestHeader("Content-type",
+				"application/x-www-form-urlencoded");
+		}
 		xmlhttprequest.send(body);
 		// asks for callback so don't chain
 	};
+
+	// frame busting.  this is built in for security
+	// but you can prevent it by setting a global 
+	// SPARKframes = true before loading spark core
+	if (1 || window !== top && !window.SPARKframes) {
+		top.location.replace(location.href);
+		location.replace('about:blank');
+	}
 
 	// set up ready listening
 	core.select(document).watch("DOMContentLoaded", processreadyqueue);

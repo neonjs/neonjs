@@ -5,7 +5,7 @@
 // Copyright (c) 2010 Thomas Rutter
 
 /*jslint browser: true, evil: true, newcap: true, immed: true */
-/*global SPARK:true,attachEvent,window,opera,ActiveXObject */
+/*global SPARK:true,attachEvent,window,self,opera,ActiveXObject */
 
 /**
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
@@ -228,8 +228,8 @@ SPARK = (function() {
 							// phase one, filtering of existing nodes to narrow down
 							// selection
 							pass = skipfilter ? 1 : 
-								!type ? name == "*" || newelements[i].nodeName ==
-									name.toUpperCase() :
+								!type ? name == "*" || newelements[i].nodeName.toLowerCase() ==
+									name.toLowerCase() :
 								type == '#' ? newelements[i].id == name :
 								type == "." ? checkattr(newelements[i].className,
 									"~=", name) :
@@ -417,7 +417,7 @@ SPARK = (function() {
 				loadstate[file] = 1;
 				myscript.watch('load', gencallback);
 				myscript.watch('readystatechange', gencallback);
-				that.select('head').append(myscript);
+				that.select(document.documentElement.firstChild).append(myscript);
 			};
 
 		mycallback.SPARKl = mycallback.SPARKl || {};
@@ -520,8 +520,7 @@ SPARK = (function() {
 			tmp,
 			element,
 			myarray = [],
-			attributes = {},
-			attribute;
+			attributes = [];
 		if (!spec || spec.length === 0) {
 			return this.select(myarray);
 		}
@@ -539,8 +538,8 @@ SPARK = (function() {
 		}
 		for (tmp in spec) {
 			if (Object.hasOwnProperty.call(spec, tmp)) {
-				if (tmp.charAt(0) == "$") {
-					attributes[tmp.substr(1)] = spec[tmp];
+				if (tmp.slice(0,1) == "$") {
+					attributes.push([tmp.slice(1),spec[tmp]]);
 				}
 				else {
 					element = this.select(document.createElement(tmp));
@@ -548,15 +547,13 @@ SPARK = (function() {
 				}
 			}
 		}
-		for (tmp in attributes) {
-			if (Object.hasOwnProperty.call(attributes, tmp)) {
-				element[0].setAttribute(tmp, attributes[tmp]);
-				if (tmp.toLowerCase() == 'style' && element[0].style) {
-					element[0].style.cssText = attributes[tmp];
-				}
-				if (tmp.toLowerCase() == 'class') {
-					element[0].className = attributes[tmp];
-				}
+		for (tmp = 0; tmp < attributes.length; tmp++) {
+			element[0].setAttribute(attributes[tmp][0], attributes[tmp][1]);
+			if (attributes[tmp][0].toLowerCase() == 'style' && element[0].style) {
+				element[0].style.cssText = attributes[tmp][1];
+			}
+			if (attributes[tmp][0].toLowerCase() == 'class') {
+				element[0].className = attributes[tmp][1];
 			}
 		}
 		return element;
@@ -726,10 +723,10 @@ SPARK = (function() {
 
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
-	// SPARKframes = true before loading spark core
-	if (self !== top && !window.SPARKframes) {
+	// SPARKf = true before loading spark core
+	if (self !== top && !window.SPARKf) {
 		top.location.replace(location.href);
-		location.replace('about:blank');
+		location.replace(null);
 	}
 
 	// set up ready listening

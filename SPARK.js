@@ -521,11 +521,11 @@ SPARK = (function() {
 			element,
 			myarray = [],
 			attribute;
-		if (typeof spec == 'string') { // is a string
-			return this.select(document.createTextNode(spec));
-		}
 		if (!spec || spec.length === 0) {
 			return this.select(myarray);
+		}
+		if (typeof spec == 'string') { // is a string
+			return this.select(document.createTextNode(spec));
 		}
 		if (spec.cloneNode && spec.appendChild) { // is a node
 			return this.select(spec);
@@ -561,18 +561,19 @@ SPARK = (function() {
 	// or an array containing a mixture of such.
 	// the new elements are appended to the child nodes of each currently
 	// selected node.
-	// todo see if modifying this to use this.each() compresses a bit better
 		var
-			elements = this.build(spec);
+			elements = this.build(spec),
+			collected = [];
 		this.each(function() {
 			var
 				i;
 			for (i = 0; i < elements.length; i++) {
-				this.appendChild(elements[i].parentNode ? elements[i].cloneNode(!0) :
-					elements[i]);
+				collected.push(this.appendChild(
+					elements[i].parentNode && elements[i].parentNode.nodeType < 10 ?
+					elements[i].cloneNode(!0) : elements[i]));
 			}
 		});
-		return elements;
+		return this.select(collected);
 	};
 
 	core.insert = function(spec) {
@@ -582,19 +583,21 @@ SPARK = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			elements = this.build(spec);
+			elements = this.build(spec),
+			collected = [];
 		this.each(function() {
 			var
 				i;
 			if (this.parentNode) {
 				for (i = 0; i < elements.length; i++) {
-					this.parentNode.insertBefore(
-						elements[i].parentNode ? elements[i].cloneNode(!0) : elements[i],
-						this);
+					collected.push(this.parentNode.insertBefore(
+						elements[i].parentNode && elements[i].parentNode.nodeType < 10 ?
+						elements[i].cloneNode(!0) : elements[i],
+						this));
 				}
 			}
 		});
-		return elements;
+		return this.select(collected);
 	};
 
 	core.remove = function() {
@@ -717,7 +720,7 @@ SPARK = (function() {
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
 	// SPARKframes = true before loading spark core
-	if (1 || window !== top && !window.SPARKframes) {
+	if (self !== top && !window.SPARKframes) {
 		top.location.replace(location.href);
 		location.replace('about:blank');
 	}
@@ -726,7 +729,7 @@ SPARK = (function() {
 	core.select(document).watch("DOMContentLoaded", processreadyqueue);
 	core.select(window).watch("load", processreadyqueue);
 	// IE only hack; testing doscroll method
-	if (/\bMSIE/.test(navigator.userAgent) && !window.opera && window == top) {
+	if (/\bMSIE/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
 

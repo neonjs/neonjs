@@ -170,6 +170,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
+		/*
 		SPARK.tester.test("JSON encoding and decoding", function() {
 			var
 				windowjson = SPARK.jsonencode(window),
@@ -191,6 +192,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(newobj.nested.length == 0, "Correct empty array reconstructed");
 			this.finish();
 		});
+		*/
 
 	});
 

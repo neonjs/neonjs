@@ -21,8 +21,34 @@ SPARK = (function() {
 		core = {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		readyqueue = [], // just callbacks to execute when ready
+		animations = [],
 		ready = 0,
 		gid = 0;
+
+	var tick = function() {
+		var
+			i = animations.length;
+		while (i--) {
+			if (!animations[i].callback()) {
+				animations.splice(i, 1);
+			}
+		}
+		if (animations.length) {
+			setTimeout(tick, ((new Date() * 3) % 50) / 3); // 60 fps
+		}
+	};
+
+	var startanimation = function(callback) {
+	// registers the given callback and starts animation.  The callback
+	// will be called every frame as long as it returns true.
+	// Frames may be skipped if there are slowdowns in the system.
+		var
+			active = animations.length;
+		animations.push(callback);
+		if (!active) {
+			tick();
+		}
+	};
 
 	var getprevioussibling = function(element) {
 	// find the previous sibling of this element which is an element node

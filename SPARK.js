@@ -99,7 +99,7 @@ SPARK = (function() {
 			document.documentElement.doScroll("left");
 			processreadyqueue();
 		} catch (e) {
-			setTimeout(checkscroll, 6);
+			setTimeout(checkscroll, 5);
 		}
 	};
 

@@ -25,8 +25,7 @@ SPARK = (function() {
 		gid = 0;
 
 	var getprevioussibling = function(element) {
-	// find the next sibling of this element which is an element node
-	// or if doprevious is set, the previous one!
+	// find the previous sibling of this element which is an element node
 		while ((element = element.previousSibling)) {
 			if (element.nodeType == 1) {
 				return element;
@@ -79,7 +78,7 @@ SPARK = (function() {
 		return !attrcompare ? attr !== null && attr != "" :
 			attrcompare == "=" ? attrvalue == attr :
 			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
-			(attrvalue == attr || (attr && attr.indexOf(attrvalue+"-") === 0)); // |=
+			(attr+"-").indexOf(attrvalue) === 0;
 	};
 
 	var processreadyqueue = function() {
@@ -100,7 +99,7 @@ SPARK = (function() {
 			document.documentElement.doScroll("left");
 			processreadyqueue();
 		} catch (e) {
-			setTimeout(checkscroll, 7);
+			setTimeout(checkscroll, 6);
 		}
 	};
 
@@ -116,7 +115,7 @@ SPARK = (function() {
 		});
 		*/
 		if (/^[\],:{}\s]*$/.test(
-			json.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '&').
+			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, '&').
 			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
 			replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
 			return eval("("+json+")");
@@ -131,7 +130,7 @@ SPARK = (function() {
 	// simply executes the given callback for each currently selected element.
 	// the callback's 'this' variable will be the element it applies to
 		for (var i = 0; i < this.length; i++) {
-			callback.call(this[i]);
+			callback.call(this[i], i);
 		}
 	};
 
@@ -187,7 +186,7 @@ SPARK = (function() {
 						parts[1] && cascade ? ">>" :
 						cascade;
 
-					singleparent = elements.length==1 && (cascade == ">" && cascade == ">>");
+					singleparent = elements.length==1 && (cascade == ">" || cascade == ">>");
 					searchwithin = singleparent ? elements[0] : document;
 
 					// if we have no starting elements and this isn't the first run,
@@ -369,9 +368,9 @@ SPARK = (function() {
 	};
 
 	core.extend = function(name, property) {
-	// for extending prototype for all SPARK objects. if the SPARK prototype
-	// already has a property with this name, then it will NOT be replaced.
-	// therefore you must take steps not to choose names that collide with
+	// for extending prototype for all SPARK objects. overwrites existing
+	// properties
+	// you must take steps not to choose names that collide with
 	// current or future SPARK properties.
 	//todo a standard for this should be created.  don't use this yet
 		if (core[name] === undef) {
@@ -460,16 +459,12 @@ SPARK = (function() {
 	};
 
 	/*
-	// this is kind of the odd one out in my SPARK library as it
-	// doesn't seem like an everyday essential task.  leaving it
-	// out to save space. 
 	core.gettext = function() {
 	// fetches and returns the text content of the selected nodes.
 	// to set the text content of a node, you should just use
 	// append("text") - preceded by empty() if necessary
 		return !this.length ? undef :
-			this[0].textContent !== undef ? this[0].textContent :
-			this[0].innerText;
+			this[0].textContent || this[0].innerText;
 	};
 	*/
 
@@ -493,12 +488,6 @@ SPARK = (function() {
 			}
 		});
 		return this;
-	};
-
-	core.buildhtml = function(html) {
-	// builds a new node or nodes according to the given html code and
-	// selects it, but doesn't insert it into the document.  this is
-	// used internally by SPARK, but may be useful generally.
 	};
 
 	core.build = function(spec) {
@@ -527,14 +516,14 @@ SPARK = (function() {
 		if (typeof spec == 'string') { // is a string
 			return this.select(document.createTextNode(spec));
 		}
-		if (spec.cloneNode && spec.appendChild) { // is a node
-			return this.select(spec);
-		}
-		if (spec.length && spec[0]) {  // array-like, non-empty
+		if (spec.length && spec[0]) { // array-like, non-empty
 			for (tmp = 0; tmp < spec.length; tmp++) {
 				myarray.push(this.build(spec[tmp])[0]);
 			}
 			return this.select(myarray);
+		}
+		if (spec.cloneNode && spec.appendChild) { // is a node
+			return this.select(spec);
 		}
 		for (tmp in spec) {
 			if (Object.hasOwnProperty.call(spec, tmp)) {
@@ -568,13 +557,12 @@ SPARK = (function() {
 		var
 			elements = this.build(spec),
 			collected = [];
-		this.each(function() {
+		this.each(function(num) {
 			var
 				i;
 			for (i = 0; i < elements.length; i++) {
 				collected.push(this.appendChild(
-					elements[i].parentNode && elements[i].parentNode.nodeType != 11 ?
-					elements[i].cloneNode(!0) : elements[i]));
+					num ? elements[i].cloneNode(!0) : elements[i]));
 			}
 		});
 		return this.select(collected);
@@ -589,15 +577,13 @@ SPARK = (function() {
 		var
 			elements = this.build(spec),
 			collected = [];
-		this.each(function() {
+		this.each(function(num) {
 			var
 				i;
 			if (this.parentNode) {
 				for (i = 0; i < elements.length; i++) {
 					collected.push(this.parentNode.insertBefore(
-						elements[i].parentNode && elements[i].parentNode.nodeType != 11 ?
-						elements[i].cloneNode(!0) : elements[i],
-						this));
+						num ? elements[i].cloneNode(!0) : elements[i], this));
 				}
 			}
 		});
@@ -691,22 +677,22 @@ SPARK = (function() {
 			collected = [],
 			xmlhttprequest = window.XMLHttpRequest ?
 				new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
-		if (callback) {
-			xmlhttprequest.onreadystatechange = function() {
-				if (xmlhttprequest.readyState == 4) {
 
-					// implement JSON parsing
-					if (!xmlhttprequest.responseJSON) {
-						xmlhttprequest.responseJSON =
-						jsondecode(xmlhttprequest.responseText);
-					}
+		xmlhttprequest.onreadystatechange = function() {
+			if (xmlhttprequest.readyState == 4) {
 
-					callback.call(xmlhttprequest);
+				// implement JSON parsing
+				if (!xmlhttprequest.responseJSON) {
+					xmlhttprequest.responseJSON =
+					jsondecode(xmlhttprequest.responseText);
 				}
-			};
-		}
+
+				callback.call(xmlhttprequest);
+			}
+		};
 		xmlhttprequest.open(method || "GET", url, !0);
-		if (body && typeof body != 'string') {
+		if (body && typeof body.cloneNode != 'function' &&
+			typeof body.read != 'function') {
 			for (i in body) {
 				if (Object.hasOwnProperty.call(body, i)) {
 					collected.push(encodeURIComponent(i) + "=" +
@@ -732,8 +718,8 @@ SPARK = (function() {
 	// set up ready listening
 	core.select(document).watch("DOMContentLoaded", processreadyqueue);
 	core.select(window).watch("load", processreadyqueue);
-	// IE only hack; testing doscroll method
-	if (/\bMSIE/.test(navigator.userAgent) && !window.opera && self === top) {
+	// IE only hack; testing doscroll method - check IE9 support
+	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
 

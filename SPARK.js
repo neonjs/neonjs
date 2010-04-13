@@ -21,34 +21,69 @@ SPARK = (function() {
 		core = {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		readyqueue = [], // just callbacks to execute when ready
-		animations = [],
 		ready = 0,
 		gid = 0;
 
-	var tick = function() {
-		var
-			i = animations.length;
-		while (i--) {
-			if (!animations[i].callback()) {
-				animations.splice(i, 1);
-			}
-		}
-		if (animations.length) {
-			setTimeout(tick, ((new Date() * 3) % 50) / 3); // 60 fps
-		}
-	};
+	var registeranimation = (function() {
 
-	var startanimation = function(callback) {
-	// registers the given callback and starts animation.  The callback
-	// will be called every frame as long as it returns true.
-	// Frames may be skipped if there are slowdowns in the system.
 		var
-			active = animations.length;
-		animations.push(callback);
-		if (!active) {
-			tick();
-		}
-	};
+			animationthreads = 0, // the number of threads active
+			scheduledto = 0, // the last frame which has a thread scheduled
+			lastframe = 0,   // the last frame for which callbacks were processed
+			animations = []; // array of array [callback, firstframe]
+
+		// what i'm calling threads are different handlers which keep calling
+		// themselves via setTimeout until there is nothing left to do.  There
+		// are multiple active at any time and they leapfrog each other.
+
+		var tick = function() {
+			var
+				i = animations.length,
+				time = +new Date(),
+				frame = Math.floor(time * 0.06);
+
+			if (animations.length) {
+				scheduledto = frame > scheduledto ? frame + 1 :
+					scheduledto + 1;
+				setTimeout(tick, ((scheduledto / 0.06) - time) + 1);
+			}
+			else {
+				animationthreads--;
+			}
+
+			if (frame > lastframe) {
+				while (i--) {
+					if (!animations[i][1]) {
+						animations[i][1] = frame;
+					}
+					if (!animations[i][0](frame - animations[i][1])) {
+						animations.splice(i, 1);
+					}
+				}
+			}
+			lastframe = frame;
+		};
+	
+		return function(callback) {
+		// registers the given callback and starts animation.  The callback
+		// will be called every frame as long as it returns true.
+		// The callback will be passed a single parameter: the number of
+		// frames that have elapsed since it was registered.
+		// Note that frames are skipped due to CPU congestion.
+		// This is pretty similar to a setInterval call except:
+		// - multiple concurrent animations use the same timers, which
+		//   help work around some inefficiencies
+		// - it's called continuously each 'frame' (60 per second) until
+		//   it returns false, rather than having to clearTimeout etc.
+			callback(0);
+			animations.push([callback, 0]);
+			while (animations.length && animationthreads < 4) {
+				animationthreads++;
+				tick();
+			}
+		};
+
+	}());
 
 	var getprevioussibling = function(element) {
 	// find the previous sibling of this element which is an element node
@@ -748,6 +783,14 @@ SPARK = (function() {
 	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
+
+	core.ready(function() {
+		var el = core.select(document.documentElement.lastChild);
+		registeranimation(function(frame) {
+			el.append(frame+" ");
+			return frame < 160;
+		});
+	});
 
 	return core.select([]);
 }()); 

@@ -42,15 +42,6 @@ SPARK = (function() {
 				time = +new Date(),
 				frame = Math.floor(time * 0.06);
 
-			if (animations.length) {
-				scheduledto = frame > scheduledto ? frame + 1 :
-					scheduledto + 1;
-				setTimeout(tick, ((scheduledto / 0.06) - time) + 1);
-			}
-			else {
-				animationthreads--;
-			}
-
 			if (frame > lastframe) {
 				while (i--) {
 					if (!animations[i][1]) {
@@ -62,6 +53,15 @@ SPARK = (function() {
 				}
 			}
 			lastframe = frame;
+
+			if (animations.length) {
+				scheduledto = frame > scheduledto ? frame + 1 :
+					scheduledto + 1;
+				setTimeout(tick, 3 + (scheduledto / 0.06) - new Date());
+			}
+			else {
+				animationthreads--;
+			}
 		};
 	
 		return function(callback) {
@@ -75,9 +75,8 @@ SPARK = (function() {
 		//   help work around some inefficiencies
 		// - it's called continuously each 'frame' (60 per second) until
 		//   it returns false, rather than having to clearTimeout etc.
-			callback(0);
 			animations.push([callback, 0]);
-			while (animations.length && animationthreads < 4) {
+			while (animations.length && animationthreads < 3) {
 				animationthreads++;
 				tick();
 			}
@@ -786,7 +785,9 @@ SPARK = (function() {
 
 	core.ready(function() {
 		var el = core.select(document.documentElement.lastChild);
+		var count = 0;
 		registeranimation(function(frame) {
+			count++;
 			el.append(frame+" ");
 			return frame < 160;
 		});

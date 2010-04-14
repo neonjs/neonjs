@@ -27,9 +27,9 @@ SPARK = (function() {
 	var registeranimation = (function() {
 
 		var
-			animationthreads = 0, // the number of threads active
-			scheduledto = 0, // the last frame which has a thread scheduled
-			lastframe = 0,   // the last frame for which callbacks were processed
+			active = 0,
+			scheduledto = 0, // the last time which has a thread scheduled
+			lasttime = 0,   // the last time for which callbacks were processed
 			animations = []; // array of array [callback, firstframe]
 
 		// what i'm calling threads are different handlers which keep calling
@@ -39,45 +39,46 @@ SPARK = (function() {
 		var tick = function() {
 			var
 				i = animations.length,
-				time = +new Date(),
-				frame = Math.floor(time * 0.06);
+				time;
 
-			if (frame > lastframe) {
+			do {
+				time = +new Date();
+			} while (time < scheduledto + 1);
+
+			active--;
+			while (animations.length && active < 1) {
+				active++;
+				scheduledto = time < scheduledto + 8 ? scheduledto + (50/3) : time + 2;
+				setTimeout(tick, scheduledto - time);
+			}
+
+			if (time > lasttime) {
 				while (i--) {
 					if (!animations[i][1]) {
-						animations[i][1] = frame;
+						animations[i][1] = time;
 					}
-					if (!animations[i][0](frame - animations[i][1])) {
+					if (!animations[i][0](time - animations[i][1])) {
 						animations.splice(i, 1);
 					}
 				}
+				lasttime = time;
 			}
-			lastframe = frame;
 
-			if (animations.length) {
-				scheduledto = frame > scheduledto ? frame + 1 :
-					scheduledto + 1;
-				setTimeout(tick, 3 + (scheduledto / 0.06) - new Date());
-			}
-			else {
-				animationthreads--;
-			}
 		};
 	
 		return function(callback) {
-		// registers the given callback and starts animation.  The callback
-		// will be called every frame as long as it returns true.
-		// The callback will be passed a single parameter: the number of
-		// frames that have elapsed since it was registered.
-		// Note that frames are skipped due to CPU congestion.
-		// This is pretty similar to a setInterval call except:
-		// - multiple concurrent animations use the same timers, which
-		//   help work around some inefficiencies
-		// - it's called continuously each 'frame' (60 per second) until
-		//   it returns false, rather than having to clearTimeout etc.
+		// registers the given callback to be included in the animation loop.
+		// The callback will be called periodically, corresponding as closely
+		// as possible to every 'frame' appropriate for the given platform.
+		// The callback will be passed a single parameter: the time in
+		// milliseconds since the callback was registered.
+		// The callback will be called continuously as long as it returns
+		// true.
+		// The times in between it being called will be as regular as
+		// possible but may have gaps due to CPU usage, etc.
 			animations.push([callback, 0]);
-			while (animations.length && animationthreads < 3) {
-				animationthreads++;
+			if (!active) {
+				active++;
 				tick();
 			}
 		};
@@ -159,7 +160,7 @@ SPARK = (function() {
 			document.documentElement.doScroll("left");
 			processreadyqueue();
 		} catch (e) {
-			setTimeout(checkscroll, 5);
+			setTimeout(checkscroll, 8);
 		}
 	};
 
@@ -784,13 +785,23 @@ SPARK = (function() {
 	}
 
 	core.ready(function() {
-		var el = core.select(document.documentElement.lastChild);
-		var count = 0;
-		registeranimation(function(frame) {
-			count++;
-			el.append(frame+" ");
-			return frame < 160;
-		});
+		setTimeout(function() {
+			var betweens = [];
+			var previous = 0;
+			var el = SPARK.select('body').append({div:""}).setstyle('height', '10px').setstyle('background', 'red');
+			registeranimation(function(msec) {
+				betweens.push(msec - previous);
+				previous = msec;
+				el.setstyle('width', (msec / 2.5) + "px");
+				if (msec >= 3000) {
+					for (var i = 0; i < betweens.length; i++) {
+						SPARK.select('body').append({span:" "+betweens[i]}).setstyle('background', betweens[i] > 20 ? 'yellow' : 'white');
+					}
+					SPARK.select('body').append({p:"Period: "+(3000/(betweens.length-1))});
+				}
+				else return true;
+			});
+		}, 120);
 	});
 
 	return core.select([]);

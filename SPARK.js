@@ -39,16 +39,12 @@ SPARK = (function() {
 		var tick = function() {
 			var
 				i = animations.length,
-				time;
-
-			do {
 				time = +new Date();
-			} while (time < scheduledto + 1);
 
 			active--;
 			while (animations.length && active < 1) {
 				active++;
-				scheduledto = time < scheduledto + 8 ? scheduledto + (50/3) : time + 2;
+				scheduledto = time > scheduledto + 7 ? time + 12 : scheduledto + (50/3);
 				setTimeout(tick, scheduledto - time);
 			}
 
@@ -788,16 +784,16 @@ SPARK = (function() {
 		setTimeout(function() {
 			var betweens = [];
 			var previous = 0;
-			var el = SPARK.select('body').append({div:""}).setstyle('height', '10px').setstyle('background', 'red');
+			var el = SPARK.select('body').append({div:""}).setstyle('height', '10px').setstyle('width', '50px').setstyle('background', 'red').setstyle('position', 'relative');
 			registeranimation(function(msec) {
 				betweens.push(msec - previous);
 				previous = msec;
-				el.setstyle('width', (msec / 2.5) + "px");
-				if (msec >= 3000) {
+				el.setstyle('left', (msec / 5) + "px");
+				if (msec >= 6000) {
 					for (var i = 0; i < betweens.length; i++) {
 						SPARK.select('body').append({span:" "+betweens[i]}).setstyle('background', betweens[i] > 20 ? 'yellow' : 'white');
 					}
-					SPARK.select('body').append({p:"Period: "+(3000/(betweens.length-1))});
+					SPARK.select('body').append({p:"Period: "+(6000/(betweens.length-1))});
 				}
 				else return true;
 			});

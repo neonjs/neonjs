@@ -133,7 +133,7 @@ SPARK = (function() {
 			i = animations.length,
 			time = +new Date();
 
-		animationschedule = !animations.length ? 0 :
+		animationschedule = !i ? 0 :
 			time < animationschedule + 10 ? animationschedule + (50/3) :
 			time + 4;
 

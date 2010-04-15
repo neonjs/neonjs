@@ -101,7 +101,9 @@ SPARK = (function() {
 			document.documentElement.doScroll("left");
 			processreadyqueue();
 		} catch (e) {
-			setTimeout(checkscroll, 8);
+			if (!ready) {
+				setTimeout(checkscroll, 16);
+			}
 		}
 	};
 
@@ -189,6 +191,7 @@ SPARK = (function() {
 			i,
 			parts,
 			tmp,
+			len,
 			elements = [],
 			cascade,
 			singleparent,
@@ -260,7 +263,7 @@ SPARK = (function() {
 								// attributes and there's no '&' cascade)
 								skipfilter = !type;
 								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
-								for (i = 0; i < tmp.length; i++) {
+								for (i = 0, len = tmp.length; i < len; i++) {
 									newelements.push(tmp[i]);
 								}
 								if (singleparent && cascade == ">>") {

@@ -10,7 +10,7 @@
 SPARK.ready(function() {
 	var betweens = [];
 	var previous = 0;
-	var el = SPARK.select('body').append({div:""}).setstyle('height', '20px').setstyle('width', '50px').setstyle('background', 'gray').setstyle('position', 'relative');
+	var el = SPARK.select('body').append({div:""}).setstyle('height', '20px').setstyle('width', '20px').setstyle('background', 'gray').setstyle('position', 'absolute');
 	SPARK.repeat(function(msec) {
 		betweens.push(msec - previous);
 		previous = msec;

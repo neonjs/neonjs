@@ -21,65 +21,10 @@ SPARK = (function() {
 		core = {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		readyqueue = [], // just callbacks to execute when ready
+		animations = [], // array of array [callback, firstframe]
+		animationschedule = 0, // next scheduled tick or 0 if stopped
 		ready = 0,
 		gid = 0;
-
-	var registeranimation = (function() {
-
-		var
-			active = 0,
-			scheduledto = 0, // the last time which has a thread scheduled
-			lasttime = 0,   // the last time for which callbacks were processed
-			animations = []; // array of array [callback, firstframe]
-
-		// what i'm calling threads are different handlers which keep calling
-		// themselves via setTimeout until there is nothing left to do.  There
-		// are multiple active at any time and they leapfrog each other.
-
-		var tick = function() {
-			var
-				i = animations.length,
-				time = +new Date();
-
-			active--;
-			while (animations.length && active < 1) {
-				active++;
-				scheduledto = time > scheduledto + 7 ? time + 12 : scheduledto + (50/3);
-				setTimeout(tick, scheduledto - time);
-			}
-
-			if (time > lasttime) {
-				while (i--) {
-					if (!animations[i][1]) {
-						animations[i][1] = time;
-					}
-					if (!animations[i][0](time - animations[i][1])) {
-						animations.splice(i, 1);
-					}
-				}
-				lasttime = time;
-			}
-
-		};
-	
-		return function(callback) {
-		// registers the given callback to be included in the animation loop.
-		// The callback will be called periodically, corresponding as closely
-		// as possible to every 'frame' appropriate for the given platform.
-		// The callback will be passed a single parameter: the time in
-		// milliseconds since the callback was registered.
-		// The callback will be called continuously as long as it returns
-		// true.
-		// The times in between it being called will be as regular as
-		// possible but may have gaps due to CPU usage, etc.
-			animations.push([callback, 0]);
-			if (!active) {
-				active++;
-				tick();
-			}
-		};
-
-	}());
 
 	var getprevioussibling = function(element) {
 	// find the previous sibling of this element which is an element node
@@ -179,9 +124,54 @@ SPARK = (function() {
 		}
 	};
 
+	var animationtick = function() {
+	// process a single frame for all registered animations.  Any
+	// animation callback that returns false is deregistered, and when
+	// there are no registered animations left this function stops
+	// calling itself.
+		var
+			i = animations.length,
+			time = +new Date();
+
+		animationschedule = !animations.length ? 0 :
+			time < animationschedule + 10 ? animationschedule + (50/3) :
+			time + 4;
+
+		if (animationschedule) {
+			setTimeout(animationtick, animationschedule - time);
+		}
+
+		while (i--) {
+			if (!animations[i][1]) {
+				animations[i][1] = time;
+			}
+			if (!animations[i][0](time - animations[i][1])) {
+				animations.splice(i, 1);
+			}
+		}
+	};
+
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.each()
+
+	core.repeat = function(callback) {
+	// registers the given callback to be included in the animation loop.
+	// The callback will be called periodically; each call may be
+	// considered a 'frame' of animation.
+	// The callback will be passed a single parameter: the time in
+	// milliseconds since the callback was registered.
+	// The callback will be called continuously as long as it returns
+	// true.
+	// The frequency of frames will aim for the smoothest animation.  It
+	// won't ever exceed 60 fps by very much.
+	// Due to delays in the browser there may be larger gaps between 
+	// frames; there is no queuing of late frames.
+		animations.push([callback, 0]);
+		if (!animationschedule) {
+			animationtick();
+		}
+	};
 
 	core.each = function(callback) {
 	// simply executes the given callback for each currently selected element.
@@ -779,26 +769,6 @@ SPARK = (function() {
 	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
-
-	core.ready(function() {
-		setTimeout(function() {
-			var betweens = [];
-			var previous = 0;
-			var el = SPARK.select('body').append({div:""}).setstyle('height', '10px').setstyle('width', '50px').setstyle('background', 'red').setstyle('position', 'relative');
-			registeranimation(function(msec) {
-				betweens.push(msec - previous);
-				previous = msec;
-				el.setstyle('left', (msec / 5) + "px");
-				if (msec >= 6000) {
-					for (var i = 0; i < betweens.length; i++) {
-						SPARK.select('body').append({span:" "+betweens[i]}).setstyle('background', betweens[i] > 20 ? 'yellow' : 'white');
-					}
-					SPARK.select('body').append({p:"Period: "+(6000/(betweens.length-1))});
-				}
-				else return true;
-			});
-		}, 120);
-	});
 
 	return core.select([]);
 }()); 

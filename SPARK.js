@@ -155,7 +155,7 @@ SPARK = (function() {
 
 	// ##################################################################
 	// PUBLIC METHODS
-	// call these methods using SPARK.methodname() eg SPARK.each()
+	// call these methods using SPARK.methodname() eg SPARK.watch()
 
 	core.repeat = function(callback) {
 	// registers the given callback to be included in the animation loop.
@@ -175,23 +175,27 @@ SPARK = (function() {
 		}
 	};
 
+	/*
+	// I'm considering removing this function because it's not very
+	// performant.  You should do your own looping or call one of set(), get()
+	// etc.
 	core.each = function(callback) {
 	// simply executes the given callback for each currently selected element.
 	// the callback's 'this' variable will be the element it applies to
-		for (var i = 0; i < this.length; i++) {
-			callback.call(this[i], i);
+		for (var i = 0, len = this.length; i < len;) {
+			callback.call(this[i], i++);
 		}
 	};
+	*/
 
 	core.select = function(selector) {
 	// css selector engine for SPARK.  returns array of elements according to
 	// the given selector string.  as much of CSS 2.1 selector syntax as
 	// possible is supported including A > B, A + B, A:first-child
 		var
-			i,
+			i, len,
 			parts,
 			tmp,
-			len,
 			elements = [],
 			cascade,
 			singleparent,
@@ -263,8 +267,8 @@ SPARK = (function() {
 								// attributes and there's no '&' cascade)
 								skipfilter = !type;
 								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
-								for (i = 0, len = tmp.length; i < len; i++) {
-									newelements.push(tmp[i]);
+								for (i = 0, len = tmp.length; i < len;) {
+									newelements.push(tmp[i++]);
 								}
 								if (singleparent && cascade == ">>") {
 									skipcascade = 1;
@@ -272,7 +276,7 @@ SPARK = (function() {
 							}
 						}
 						// now we do filtering and cascading in one big loop!  stand back!
-						for (i = 0; i < newelements.length; i++) {
+						for (i = newelements.length; i--;) {
 
 							// phase one, filtering of existing nodes to narrow down
 							// selection
@@ -292,7 +296,7 @@ SPARK = (function() {
 							// set according to cascade type
 							if (!pass ||
 								(!skipcascade && !checkinarray[cascade](elements, newelements[i]))) {
-								newelements.splice(i--, 1);
+								newelements.splice(i, 1);
 							}
 						}
 						elements = newelements;
@@ -315,10 +319,12 @@ SPARK = (function() {
 		else {
 			// handle the case where the argument was a node or array of nodes rather than
 			// a CSS selector
-			elements = selector.cloneNode || selector.setTimeout ? [selector] :
+			elements = selector.nodeType == 11 ? selector.childNodes :
+				selector.nodeType || selector.setTimeout ? [selector] :
 				selector;
-			for (i = 0; i < elements.length; i++) {
-				newelement[newelement.length++] = elements[i];
+
+			for (i = 0, len = elements.length; i < len;) {
+				newelement[newelement.length++] = elements[i++];
 			}
 		}
 		return newelement;
@@ -334,15 +340,11 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 	// Other things, such as the this keyword cannot be relied upon to
 	// work cross-browser
-		callback.SPARKi = callback.SPARKi || ++gid;
-
-		this.each(function() {
-			var
-				myelement = this,
-				mycallback = function() {
-					// this should only be called by browsers who use attachevent
-					// and not addeventlistener, so we can assume a global event
-					// object
+		var
+			i,
+			myelement,
+			makecallback = function(myelement) {
+				return function() {
 					var
 						evt = event;
 					evt.preventDefault = function() {
@@ -365,21 +367,27 @@ SPARK = (function() {
 					evt.target = evt.srcElement;
 					return callback.call(myelement, evt);
 				};
+			};
 
-			if (this.addEventListener) {
+		callback.SPARKi = callback.SPARKi || ++gid;
+
+		for (i = this.length; i--;) {
+			myelement = this[i];
+
+			if (myelement.addEventListener) {
 				// other browsers
-				this.addEventListener(eventname, callback, !1);
+				myelement.addEventListener(eventname, callback, !1);
 			} 
 			else {
 				// all this so we can provide 'this' and 'currentTarget' in IE.
 				// So we maintain a separate handler with its in-closure reference
 				// to 'myelement' for each element we apply to
-				this.SPARKe = this.SPARKe || {};
-				this.SPARKe[callback.SPARKi] = 
-					this.SPARKe[callback.SPARKi] || mycallback;
-				this.attachEvent("on"+eventname, this.SPARKe[callback.SPARKi]);
+				myelement.SPARKe = myelement.SPARKe || {};
+				myelement.SPARKe[callback.SPARKi] = 
+					myelement.SPARKe[callback.SPARKi] || makecallback(myelement);
+				myelement.attachEvent("on"+eventname, myelement.SPARKe[callback.SPARKi]);
 			}
-		});
+		}
 	};
 
 	core.unwatch = function(eventname, callback) {
@@ -387,20 +395,26 @@ SPARK = (function() {
 	// with other frameworks and even with native browser calls, you need to
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
-		this.each(function() {
+		var
+			i,
+			myelement;
 
-			if (this.addEventListener) {
+		for (i = this.length; i--;) {
+			myelement = this[i];
+
+			if (myelement.addEventListener) {
 				// other browsers
-				this.removeEventListener(eventname, callback, !1);
+				myelement.removeEventListener(eventname, callback, !1);
 			} 
 			else {
-				if (this.SPARKe && this.SPARKe[callback.SPARKi]) {
+				if (myelement.SPARKe && myelement.SPARKe[callback.SPARKi]) {
 					// special IE handling
-					this.detachEvent("on"+eventname, this.SPARKe[callback.SPARKi]);
-					delete this.SPARKe[callback.SPARKi];
+					myelement.detachEvent("on"+eventname,
+						myelement.SPARKe[callback.SPARKi]);
+					delete myelement.SPARKe[callback.SPARKi];
 				}
 			}
-		});
+		}
 		return this;
 	};
 
@@ -522,9 +536,9 @@ SPARK = (function() {
 	// really simple method, just sets one or more properties on each
 	// selected node.  prop can be an object of {property: value, ...}
 	// or you can set a single property with prop and value.
-		this.each(function() {
-			this[prop] = value;
-		});
+		for (var i = this.length; i--;) {
+			this[i][prop] = value;
+		}
 		return this;
 	};
 
@@ -532,11 +546,11 @@ SPARK = (function() {
 	// sets one or more styles on each selected node.  style can be
 	// an object of {style: styleval, ...} or you can set a single
 	// style with style and value.
-		this.each(function() {
-			if (this.style) {
-				this.style[style] = value;
+		for (var i = this.length; i--;) {
+			if (this[i].style) {
+				this[i].style[style] = value;
 			}
-		});
+		}
 		return this;
 	};
 
@@ -556,24 +570,24 @@ SPARK = (function() {
 	//   reason.
 	// Or an array containing one or more strings or objects as above
 		var
-			tmp,
+			tmp, len,
 			element,
-			myarray = [],
 			attributes = [];
 		if (!spec || spec.length === 0) {
-			return this.select(myarray);
+			return this.select([]);
 		}
-		if (typeof spec == 'string') { // is a string
-			return this.select(document.createTextNode(spec));
-		}
-		if (spec.length && spec[0]) { // array-like, non-empty
-			for (tmp = 0; tmp < spec.length; tmp++) {
-				myarray.push(this.build(spec[tmp])[0]);
-			}
-			return this.select(myarray);
-		}
-		if (spec.cloneNode && spec.appendChild) { // is a node
+		if (spec.cloneNode && spec.nodeType) { // is a node
 			return this.select(spec);
+		}
+		if (spec.length && spec[0] && typeof spec != 'string') { //arraylike
+			element = document.createDocumentFragment();
+			for (tmp = 0, len = spec.length; tmp < len;) {
+				element.appendChild(this.build(spec[tmp++])[0]);
+			}
+			return this.select(element);
+		}
+		if (typeof spec != 'object') {
+			return this.select(document.createTextNode(spec));
 		}
 		for (tmp in spec) {
 			if (Object.hasOwnProperty.call(spec, tmp)) {
@@ -582,11 +596,13 @@ SPARK = (function() {
 				}
 				else {
 					element = this.select(document.createElement(tmp));
-					element.append(spec[tmp]);
+					if (spec[tmp]) {
+						element.append(spec[tmp]);
+					}
 				}
 			}
 		}
-		for (tmp = 0; tmp < attributes.length; tmp++) {
+		for (tmp = attributes.length; tmp--;) {
 			element[0].setAttribute(attributes[tmp][0], attributes[tmp][1]);
 			if (attributes[tmp][0].toLowerCase() == 'style' && element[0].style) {
 				element[0].style.cssText = attributes[tmp][1];
@@ -605,16 +621,27 @@ SPARK = (function() {
 	// the new elements are appended to the child nodes of each currently
 	// selected node.
 		var
-			elements = this.build(spec),
+			i, j, len,
+			element = this.build(spec)[0],
+			instance,
+			group,
 			collected = [];
-		this.each(function(num) {
-			var
-				i;
-			for (i = 0; i < elements.length; i++) {
-				collected.push(this.appendChild(
-					num ? elements[i].cloneNode(!0) : elements[i]));
+		
+		if (element) {
+			if (element.parentNode && element.parentNode.nodeType == 11) {
+				element = element.parentNode;
 			}
-		});
+			for (i = this.length; i--;) {
+				if (this[i].appendChild) {
+					instance = i ? element.cloneNode(!0) : element;
+					group = instance.nodeType == 11 ? instance.childNodes : [instance];
+					for (j = 0, len = group.length; j < len;) {
+						collected.push(group[j++]);
+					}
+					this[i].appendChild(instance);
+				}
+			}
+		}
 		return this.select(collected);
 	};
 
@@ -625,40 +652,50 @@ SPARK = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			elements = this.build(spec),
+			i, j, len,
+			element = this.build(spec)[0],
+			instance,
+			group,
 			collected = [];
-		this.each(function(num) {
-			var
-				i;
-			if (this.parentNode) {
-				for (i = 0; i < elements.length; i++) {
-					collected.push(this.parentNode.insertBefore(
-						num ? elements[i].cloneNode(!0) : elements[i], this));
+		
+		if (element) {
+			if (element.parentNode && element.parentNode.nodeType == 11) {
+				element = element.parentNode;
+			}
+			for (i = this.length; i--;) {
+				if (this[i].parentNode) {
+					instance = i ? element.cloneNode(!0) : element;
+					group = instance.nodeType == 11 ? instance.childNodes : [instance];
+					for (j = 0, len = group.length; j < len;) {
+						collected.push(group[j++]);
+					}
+					this[i].parentNode.insertBefore(instance, this[i]);
 				}
 			}
-		});
+		}
 		return this.select(collected);
 	};
 
 	core.remove = function() {
 	// removes the selected nodes from the document and all their contents.
-		this.each(function() {
-			if (this.parentNode) {
-				this.parentNode.removeChild(this);
+		for (var i = this.length; i--;) {
+			if (this[i].parentNode) {
+				this[i].parentNode.removeChild(this[i]);
 			}
-		});
+		}
 		return this;
 	};
 
 	core.empty = function() {
 	// deletes the contents of the selected nodes, but not the nodes
 	// themselves
-		this.each(function() {
-			var tmp;
-			while ((tmp = this.firstChild)) {
-				this.removeChild(tmp);
+		var
+			i, tmp;
+		for (i = this.length; i--;) {
+			while ((tmp = this[i].firstChild)) {
+				this[i].removeChild(tmp);
 			}
-		});
+		}
 		return this;
 	};
 

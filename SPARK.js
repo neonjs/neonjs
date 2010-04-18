@@ -18,7 +18,7 @@ SPARK = (function() {
 	
 	var
 		undef,
-		SPARK = {},
+		SPARK = window.SPARK || {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		readyqueue = [], // just callbacks to execute when ready
 		animations = [], // array of array [callback, firstframe]
@@ -382,7 +382,8 @@ SPARK = (function() {
 				};
 			};
 
-		callback.SPARKi = callback.SPARKi || ++gid;
+		callback.SPARK = callback.SPARK || {};
+		callback.SPARK.i = callback.SPARK.i || ++gid;
 
 		for (i = this.length; i--;) {
 			myelement = this[i];
@@ -395,10 +396,10 @@ SPARK = (function() {
 				// all this so we can provide 'this' and 'currentTarget' in IE.
 				// So we maintain a separate handler with its in-closure reference
 				// to 'myelement' for each element we apply to
-				myelement.SPARKe = myelement.SPARKe || {};
-				myelement.SPARKe[callback.SPARKi] = 
-					myelement.SPARKe[callback.SPARKi] || makecallback(myelement);
-				myelement.attachEvent("on"+eventname, myelement.SPARKe[callback.SPARKi]);
+				myelement.SPARK = myelement.SPARK || {};
+				myelement.SPARK["e"+callback.SPARK.i] = 
+					myelement.SPARK["e"+callback.SPARK.i] || makecallback(myelement);
+				myelement.attachEvent("on"+eventname, myelement.SPARK["e"+callback.SPARK.i]);
 			}
 		}
 	};
@@ -420,11 +421,12 @@ SPARK = (function() {
 				myelement.removeEventListener(eventname, callback, !1);
 			} 
 			else {
-				if (myelement.SPARKe && myelement.SPARKe[callback.SPARKi]) {
+				if (myelement.SPARK && callback.SPARK && 
+					myelement.SPARK["e"+callback.SPARK.i]) {
 					// special IE handling
 					myelement.detachEvent("on"+eventname,
-						myelement.SPARKe[callback.SPARKi]);
-					delete myelement.SPARKe[callback.SPARKi];
+						myelement.SPARK["e"+callback.SPARK.i]);
+					delete myelement.SPARK["e"+callback.SPARK.i];
 				}
 			}
 		}
@@ -442,18 +444,6 @@ SPARK = (function() {
 			readyqueue.push(callback);
 		}
 		// ready asks for callback so don't chain
-	};
-
-	SPARK.extend = function(name, property) {
-	// for extending the prototype for all SPARK objects.  will refuse
-	// to overwrite existing properties.
-	// you must therefore take steps not to choose names that collide with
-	// current or future SPARK properties.
-	//todo a standard for this should be created.  don't use this yet
-		if (SPARK[name] === undef) {
-			SPARK[name] = property;
-		}
-		return this;
 	};
 
 	SPARK.load = function(files, callback) {
@@ -483,10 +473,10 @@ SPARK = (function() {
 							loadstate[file] = 2;
 							myscript.unwatch('load', gencallback).unwatch('readystatechange',
 								gencallback).remove();
-							if (!(--mycallback.SPARKl[loadid])) {
+							if (!(--mycallback.SPARK["l"+loadid])) {
 								// this callback is no longer waiting on any files, so call it
 								mycallback();
-								delete mycallback.SPARKl[loadid];
+								delete mycallback.SPARK["l"+loadid];
 							}
 						}
 					};
@@ -496,19 +486,19 @@ SPARK = (function() {
 				that.select(document.documentElement.childNodes[0]).append(myscript);
 			};
 
-		mycallback.SPARKl = mycallback.SPARKl || {};
+		mycallback.SPARK = mycallback.SPARK || {};
 		// store a count of how many files this callback (for this loadid)
 		// is still "waiting on"
-		mycallback.SPARKl[loadid] = 0;
+		mycallback.SPARK["l"+loadid] = 0;
 
 		this.ready(function() {
 			for (i = myfiles.length; i--;) {
 				if (!loadstate[myfiles[i]]) {
-					mycallback.SPARKl[loadid]++;
+					mycallback.SPARK["l"+loadid]++;
 					registerscript(myfiles[i]);
 				}
 			}
-			if (!mycallback.SPARKl[loadid]) {
+			if (!mycallback.SPARK["l"+loadid]) {
 				mycallback();
 			}
 		});
@@ -809,8 +799,8 @@ SPARK = (function() {
 
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
-	// SPARKf = true before loading spark SPARK
-	if (self !== top && !window.SPARKf) {
+	// SPARK.inframe before loading SPARK
+	if (self !== top && !SPARK.allowframing) {
 		top.location.replace(location.href);
 		location.replace(null);
 	}
@@ -823,6 +813,6 @@ SPARK = (function() {
 		checkscroll();
 	}
 
-	return SPARK.select();
+	return SPARK;
 }()); 
 

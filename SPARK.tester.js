@@ -10,7 +10,7 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
-SPARK.extend('tester', (function() {
+SPARK.tester = SPARK.tester || (function() {
 	var
 		SPARK = window.SPARK,
 		testtbody,
@@ -94,4 +94,4 @@ SPARK.extend('tester', (function() {
 	};
 
 	return tester;
-}()));
+}());

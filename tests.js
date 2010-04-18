@@ -119,15 +119,11 @@ SPARK.load("SPARK.tester.js", function() {
 			var
 				myobj = {name: "thisisatest"},
 				myobj2 = {name: "2nd"};
-			SPARK.extend("SPARKunittesttry1", myobj);
-			this.assert(SPARK.SPARKunittesttry1, "SPARK extension exists");
-			this.assert(SPARK.SPARKunittesttry1.name == "thisisatest", 
-				"SPARK extension value");
-			SPARK.extend("SPARKunittesttry1", myobj2);
-			this.assert(SPARK.SPARKunittesttry1.name == "thisisatest", 
-				"SPARK extension no overwriting");
-			this.assert(SPARK.select('body').SPARKunittesttry1.name == 
-				"thisisatest", "SPARK extension on generated objects");
+			SPARK.SPARKunittesttry1 = myobj;
+			this.assert(SPARK.SPARKunittesttry1 === myobj,
+				"Writing to SPARK global");
+			this.assert(SPARK.select(document.body).SPARKunittesttry1 === myobj,
+				"Derived SPARK objects inherit written property.");
 			this.finish();
 		});
 

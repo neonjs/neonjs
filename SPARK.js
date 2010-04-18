@@ -18,13 +18,20 @@ SPARK = (function() {
 	
 	var
 		undef,
-		core = {},
+		SPARK = {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		readyqueue = [], // just callbacks to execute when ready
 		animations = [], // array of array [callback, firstframe]
 		animationschedule = 0, // next scheduled tick or 0 if stopped
 		ready = 0,
 		gid = 0;
+
+	var makeobject = function(base) {
+		var
+			Constructor = function() {};
+		Constructor.prototype = base;
+		return new Constructor();
+	};
 
 	var getprevioussibling = function(element) {
 	// find the previous sibling of this element which is an element node
@@ -37,8 +44,7 @@ SPARK = (function() {
 
 	var checkinarray = {
 		">>" : function(elements, newelement) {
-			var i = elements.length;
-			while (i--) {
+			for (var i = elements.length;i--;) {
 				if (elements[i].compareDocumentPosition ?
 						elements[i].compareDocumentPosition(newelement) & 16 :
 					elements[i].contains ?
@@ -50,24 +56,21 @@ SPARK = (function() {
 			}
 		},
 		">" : function(elements, newelement) {
-			var i = elements.length;
-			while (i--) {
+			for (var i = elements.length;i--;) {
 				if (elements[i] === newelement.parentNode) {
 					return 1;
 				}
 			}
 		},
 		"+" : function(elements, newelement) {
-			var i = elements.length;
-			while (i--) {
+			for (var i = elements.length;i--;) {
 				if (elements[i] === getprevioussibling(newelement)) {
 					return 1;
 				}
 			}
 		},
 		"&" : function(elements, newelement) {
-			var i = elements.length;
-			while (i--) {
+			for (var i = elements.length;i--;) {
 				if (elements[i] === newelement) {
 					return 1;
 				}
@@ -126,6 +129,131 @@ SPARK = (function() {
 		}
 	};
 
+	var myqueryselector = function(selector) {
+	// css selector engine for SPARK.  returns array of elements according to
+	// the given selector string.  as much of CSS 2.1 selector syntax as
+	// possible is supported including A > B, A + B, A:first-child
+	// processes the selector string as a CSS style selector and returns
+	// just an array of elements matching.  for internal use - call
+	// SPARK.select() in your own code.
+		var
+			i, len,
+			parts,
+			tmp,
+			elements = [],
+			cascade,
+			singleparent,
+			searchwithin,
+			pass,
+			regex = /(([>+]?)\s*)([#.\[:]?)([*\w\-]+)(([|~]?=)("|'|)((\\.|[^\\])*?)\7\])?|,/g,
+			collected = [];
+
+		selector += ","; // makes the loop with the regex easier
+
+		// grab the parts of the selector one by one, and process it as we go.
+		// whether there is whitespace before the part is significant
+		while	((parts = regex.exec(selector))) {
+
+			if (parts[4]) {
+				// we have at least a name; this is part of a selector and not a comma or the end
+				var
+					// set these parts for readability, mostly
+					//whitespace = parts[1],
+					//combine = parts[2],
+					type = parts[3],
+					name = parts[4],
+					//attrcompare = parts[6],
+					attrvalue = (parts[8]+"").replace(/\\(.)/g, "$1"), // strip slashes
+					skipcascade = !cascade,
+					skipfilter = 0,
+					newelements = [];
+
+				// the cascade is the way in which the new set of elements must relate
+				// to the previous set.  >> is just a ancestor-descendent relationship
+				// like a space in a CSS selector
+
+				cascade = parts[2] ? parts[2] :
+					parts[1] && cascade ? ">>" :
+					cascade;
+
+				singleparent = elements.length==1 && (cascade == ">" || cascade == ">>");
+				searchwithin = singleparent ? elements[0] : document;
+
+				// if we have no starting elements and this isn't the first run,
+				// then don't bother
+				if (elements.length || skipcascade) {
+
+					// see if we can skip the cascade, narrow down only
+					if (cascade == '&') {
+						skipcascade = 1;
+						newelements = elements.slice(0);
+					}
+					else {
+						// see if we can narrow down.  in some cases if there's a single
+						// parent we can still skip the cascade
+						if (type == '#') {
+							skipfilter = 1;
+							// get element by ID (quick - there's only one!)
+							if ((tmp = document.getElementById(name))) {
+								newelements.push(tmp);
+							}
+						}
+						else {
+							// get element by tag name or get all elements (worst case, when comparing
+							// attributes and there's no '&' cascade)
+							skipfilter = !type;
+							tmp = searchwithin.getElementsByTagName(type ? "*" : name);
+							for (i = 0, len = tmp.length; i < len;) {
+								newelements.push(tmp[i++]);
+							}
+							if (singleparent && cascade == ">>") {
+								skipcascade = 1;
+							}
+						}
+					}
+					// now we do filtering and cascading in one big loop!  stand back!
+					for (i = newelements.length; i--;) {
+
+						// phase one, filtering of existing nodes to narrow down
+						// selection
+						pass = skipfilter ? 1 : 
+							!type ? name == "*" || newelements[i].nodeName.toLowerCase() ==
+								name.toLowerCase() :
+							type == '#' ? newelements[i].id == name :
+							type == "." ? checkattr(newelements[i].className,
+								"~=", name) :
+							type == "[" ? checkattr(newelements[i].getAttribute(name),
+								parts[6], attrvalue) :
+							name.toLowerCase() == "first-child" ? 
+								!getprevioussibling(newelements[i]) :
+							0;
+
+						// phase two, filtering of nodes against the previously matched
+						// set according to cascade type
+						if (!pass ||
+							(!skipcascade && !checkinarray[cascade](elements, newelements[i]))) {
+							newelements.splice(i, 1);
+						}
+					}
+					elements = newelements;
+					cascade = "&";
+				}
+			}
+			else {
+				// if we have reached either a comma or the end of the selector
+				while ((tmp = elements.shift())) {
+
+					if (!checkinarray["&"](collected, tmp)) {
+						// if elements[p] DOESN'T exist in newelement
+						collected.push(tmp);
+					}
+				}
+				cascade = 0;
+			}
+		}
+		return collected;
+	};
+
 	var animationtick = function() {
 	// process a single frame for all registered animations.  Any
 	// animation callback that returns false is deregistered, and when
@@ -157,7 +285,7 @@ SPARK = (function() {
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
 
-	core.repeat = function(callback) {
+	SPARK.repeat = function(callback) {
 	// registers the given callback to be included in the animation loop.
 	// The callback will be called periodically; each call may be
 	// considered a 'frame' of animation.
@@ -179,7 +307,7 @@ SPARK = (function() {
 	// I'm considering removing this function because it's not very
 	// performant.  You should do your own looping or call one of set(), get()
 	// etc.
-	core.each = function(callback) {
+	SPARK.each = function(callback) {
 	// simply executes the given callback for each currently selected element.
 	// the callback's 'this' variable will be the element it applies to
 		for (var i = 0, len = this.length; i < len;) {
@@ -188,149 +316,36 @@ SPARK = (function() {
 	};
 	*/
 
-	core.select = function(selector) {
-	// css selector engine for SPARK.  returns array of elements according to
-	// the given selector string.  as much of CSS 2.1 selector syntax as
-	// possible is supported including A > B, A + B, A:first-child
+	SPARK.select = function(selector) {
+	// main way of selecting elements in SPARK.  accepts a CSS selector
+	// string, or a node or array of nodes.  also accepts the window object
+	// returns a SPARK object with the given elements selected.
 		var
-			i, len,
-			parts,
-			tmp,
-			elements = [],
-			cascade,
-			singleparent,
-			searchwithin,
-			Constructor = function() {},
-			pass,
-			regex = /(([>+]?)\s*)([#.\[:]?)([*\w\-]+)(([|~]?=)("|'|)((\\.|[^\\])*?)\7\])?|,/g,
-			newelement;
+			elements,
+			len,
+			newelement = makeobject(this);
 
-		// construct new spark object
-		Constructor.prototype = this;
-		newelement = new Constructor();
-		newelement.length = 0;
-
-		if (typeof selector == 'string') {
-			// if the selector is a string, then treat it as a CSS style selector
-
-			selector += ","; // makes the loop with the regex easier
-
-			// grab the parts of the selector one by one, and process it as we go.
-			// whether there is whitespace before the part is significant
-			while	((parts = regex.exec(selector))) {
-
-				if (parts[4]) {
-					// we have at least a name; this is part of a selector and not a comma or the end
-					var
-						// set these parts for readability, mostly
-						//whitespace = parts[1],
-						//combine = parts[2],
-						type = parts[3],
-						name = parts[4],
-						//attrcompare = parts[6],
-						attrvalue = (parts[8]+"").replace(/\\(.)/g, "$1"), // strip slashes
-						skipcascade = !cascade,
-						skipfilter = 0,
-						newelements = [];
-
-					// the cascade is the way in which the new set of elements must relate
-					// to the previous set
-
-					cascade = parts[2] ? parts[2] :
-						parts[1] && cascade ? ">>" :
-						cascade;
-
-					singleparent = elements.length==1 && (cascade == ">" || cascade == ">>");
-					searchwithin = singleparent ? elements[0] : document;
-
-					// if we have no starting elements and this isn't the first run,
-					// then don't bother
-					if (elements.length || skipcascade) {
-
-						// see if we can skip the cascade, narrow down only
-						if (cascade == '&') {
-							skipcascade = 1;
-							newelements = elements.slice(0);
-						}
-						else {
-							// see if we can narrow down.  in some cases if there's a single
-							// parent we can still skip the cascade
-							if (type == '#') {
-								skipfilter = 1;
-								// get element by ID (quick - there's only one!)
-								if ((tmp = document.getElementById(name))) {
-									newelements.push(tmp);
-								}
-							}
-							else {
-								// get element by tag name or get all elements (worst case, when comparing
-								// attributes and there's no '&' cascade)
-								skipfilter = !type;
-								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
-								for (i = 0, len = tmp.length; i < len;) {
-									newelements.push(tmp[i++]);
-								}
-								if (singleparent && cascade == ">>") {
-									skipcascade = 1;
-								}
-							}
-						}
-						// now we do filtering and cascading in one big loop!  stand back!
-						for (i = newelements.length; i--;) {
-
-							// phase one, filtering of existing nodes to narrow down
-							// selection
-							pass = skipfilter ? 1 : 
-								!type ? name == "*" || newelements[i].nodeName.toLowerCase() ==
-									name.toLowerCase() :
-								type == '#' ? newelements[i].id == name :
-								type == "." ? checkattr(newelements[i].className,
-									"~=", name) :
-								type == "[" ? checkattr(newelements[i].getAttribute(name),
-									parts[6], attrvalue) :
-								name.toLowerCase() == "first-child" ? 
-									!getprevioussibling(newelements[i]) :
-								0;
-
-							// phase two, filtering of nodes against the previously matched
-							// set according to cascade type
-							if (!pass ||
-								(!skipcascade && !checkinarray[cascade](elements, newelements[i]))) {
-								newelements.splice(i, 1);
-							}
-						}
-						elements = newelements;
-						cascade = "&";
-					}
-				}
-				else {
-					// if we have reached either a comma or the end of the selector
-					while ((tmp = elements.shift())) {
-
-						if (!checkinarray["&"](newelement, tmp)) {
-							// if elements[p] DOESN'T exist in newelement
-							newelement[newelement.length++] = tmp;
-						}
-					}
-					cascade = 0;
-				}
-			}
-		}
-		else {
-			// handle the case where the argument was a node or array of nodes rather than
-			// a CSS selector
-			elements = selector.nodeType == 11 ? selector.childNodes :
+		if (typeof selector != "string") {
+		// handle the case where no selector is given, or a node, window,
+		// or array of nodes
+			elements = !selector ? [] :
+				selector.nodeType == 11 ? selector.childNodes :
 				selector.nodeType || selector.setTimeout ? [selector] :
 				selector;
 
-			for (i = 0, len = elements.length; i < len;) {
-				newelement[newelement.length++] = elements[i++];
+			for (newelement.length = 0, len = elements.length;
+				newelement.length < len;) {
+				newelement[newelement.length] = elements[newelement.length++];
 			}
+			return newelement;
 		}
-		return newelement;
+
+		return this.select(document.querySelectorAll ?
+			document.querySelectorAll(selector) :
+			myqueryselector(selector));
 	};
 
-	core.watch = function(eventname, callback) {
+	SPARK.watch = function(eventname, callback) {
 	// simple cross-platform event handling. registers the given callback
 	// as an even handler for each currently selected element, for the event
 	// named by eventname.  eventname should not include the "on" prefix.
@@ -338,8 +353,6 @@ SPARK = (function() {
 	// The callback will be able to access the event object via the first
 	// parameter, which will contain event.target, event.preventDefault()
 	// and event.stopPropagation() across browsers.
-	// Other things, such as the this keyword cannot be relied upon to
-	// work cross-browser
 		var
 			i,
 			myelement,
@@ -390,7 +403,7 @@ SPARK = (function() {
 		}
 	};
 
-	core.unwatch = function(eventname, callback) {
+	SPARK.unwatch = function(eventname, callback) {
 	// removes an event handler added with watch(). While SPARK can be mixed
 	// with other frameworks and even with native browser calls, you need to
 	// always un-register each event handler with the same framework/method
@@ -418,7 +431,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	core.ready = function(callback) {
+	SPARK.ready = function(callback) {
 	// specify a callback function that should be executed when the document is
 	// ready, ie has fully loaded (not necessarily images, other external files)
 	// will run instantly if the document is already ready.
@@ -431,19 +444,19 @@ SPARK = (function() {
 		// ready asks for callback so don't chain
 	};
 
-	core.extend = function(name, property) {
-	// for extending prototype for all SPARK objects. overwrites existing
-	// properties
-	// you must take steps not to choose names that collide with
+	SPARK.extend = function(name, property) {
+	// for extending the prototype for all SPARK objects.  will refuse
+	// to overwrite existing properties.
+	// you must therefore take steps not to choose names that collide with
 	// current or future SPARK properties.
 	//todo a standard for this should be created.  don't use this yet
-		if (core[name] === undef) {
-			core[name] = property;
+		if (SPARK[name] === undef) {
+			SPARK[name] = property;
 		}
 		return this;
 	};
 
-	core.load = function(files, callback) {
+	SPARK.load = function(files, callback) {
 	// dynamically load and execute other javascript files asynchronously,
 	// allowing the rest of the page to continue loading and the user to
 	// interact with it while loading.  files may be a single URL or an
@@ -480,7 +493,7 @@ SPARK = (function() {
 				loadstate[file] = 1;
 				myscript.watch('load', gencallback);
 				myscript.watch('readystatechange', gencallback);
-				that.select(document.documentElement.firstChild).append(myscript);
+				that.select(document.documentElement.childNodes[0]).append(myscript);
 			};
 
 		mycallback.SPARKl = mycallback.SPARKl || {};
@@ -489,8 +502,7 @@ SPARK = (function() {
 		mycallback.SPARKl[loadid] = 0;
 
 		this.ready(function() {
-			i = myfiles.length;
-			while (i--) {
+			for (i = myfiles.length; i--;) {
 				if (!loadstate[myfiles[i]]) {
 					mycallback.SPARKl[loadid]++;
 					registerscript(myfiles[i]);
@@ -502,13 +514,13 @@ SPARK = (function() {
 		});
 	};
 
-	core.get = function(prop) {
+	SPARK.get = function(prop) {
 	// fetches and returns the value of the given property, for the
 	// first selected element.
 		return this.length && this[0][prop];
 	};
 
-	core.getstyle = function(style) {
+	SPARK.getstyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
 	// the given style, for the first selected element.  Note that
 	// this is a value computed by the browser and they may each
@@ -523,16 +535,17 @@ SPARK = (function() {
 	};
 
 	/*
-	core.gettext = function() {
+	SPARK.gettext = function() {
 	// fetches and returns the text content of the selected nodes.
 	// to set the text content of a node, you should just use
-	// append("text") - preceded by empty() if necessary
+	// .append("text") - preceded by .empty() if replacing existing
+	// contents
 		return !this.length ? undef :
 			this[0].textContent || this[0].innerText;
 	};
 	*/
 
-	core.set = function(prop, value) {
+	SPARK.set = function(prop, value) {
 	// really simple method, just sets one or more properties on each
 	// selected node.  prop can be an object of {property: value, ...}
 	// or you can set a single property with prop and value.
@@ -542,7 +555,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	core.setstyle = function(style, value) {
+	SPARK.setstyle = function(style, value) {
 	// sets one or more styles on each selected node.  style can be
 	// an object of {style: styleval, ...} or you can set a single
 	// style with style and value.
@@ -554,7 +567,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	core.build = function(spec) {
+	SPARK.build = function(spec) {
 	// builds one or more new nodes (elements/text nodes) according to
 	// the given spec and returns a spark object with the new nodes
 	// selected. this can be used to generate nodes for the document
@@ -614,7 +627,7 @@ SPARK = (function() {
 		return element;
 	};
 	
-	core.append = function(spec) {
+	SPARK.append = function(spec) {
 	// inserts a new element or array of elements into the document.
 	// the parameter may be either a node, a spec as defined in build(),
 	// or an array containing a mixture of such.
@@ -645,7 +658,7 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
-	core.insert = function(spec) {
+	SPARK.insert = function(spec) {
 	// inserts a new element or array of elements into the document.
 	// the parameter may be either a node, a spec as defined in build(),
 	// or an array containing a mixture of such.
@@ -676,7 +689,7 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
-	core.remove = function() {
+	SPARK.remove = function() {
 	// removes the selected nodes from the document and all their contents.
 		for (var i = this.length; i--;) {
 			if (this[i].parentNode) {
@@ -686,13 +699,13 @@ SPARK = (function() {
 		return this;
 	};
 
-	core.empty = function() {
+	SPARK.empty = function() {
 	// deletes the contents of the selected nodes, but not the nodes
 	// themselves
 		var
 			i, tmp;
 		for (i = this.length; i--;) {
-			while ((tmp = this[i].firstChild)) {
+			while ((tmp = this[i].lastChild)) {
 				this[i].removeChild(tmp);
 			}
 		}
@@ -700,7 +713,7 @@ SPARK = (function() {
 	};
 
 	/*
-	core.jsonencode = function(obj, _exclude) {
+	SPARK.jsonencode = function(obj, _exclude) {
 	// serialises the value obj into a JSON string.  the second parameter is
 	// intended for internal use only and must not be relied upon in case
 	// of future changes
@@ -751,7 +764,7 @@ SPARK = (function() {
 	};
 	*/
 
-	core.gethttp = function(url, callback, method, body) {
+	SPARK.gethttp = function(url, callback, method, body) {
 	// places an HTTP request (using XMLHttpRequest) for the given URL.
 	// method and body are optional.
 	// callback is only called when the load is 100% complete (that is, you
@@ -796,20 +809,20 @@ SPARK = (function() {
 
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
-	// SPARKf = true before loading spark core
+	// SPARKf = true before loading spark SPARK
 	if (self !== top && !window.SPARKf) {
 		top.location.replace(location.href);
 		location.replace(null);
 	}
 
 	// set up ready listening
-	core.select(document).watch("DOMContentLoaded", processreadyqueue);
-	core.select(window).watch("load", processreadyqueue);
+	SPARK.select(document).watch("DOMContentLoaded", processreadyqueue);
+	SPARK.select(window).watch("load", processreadyqueue);
 	// IE only hack; testing doscroll method - check IE9 support
 	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
 
-	return core.select([]);
+	return SPARK.select();
 }()); 
 

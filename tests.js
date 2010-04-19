@@ -15,19 +15,6 @@ SPARK.load("SPARK.tester.js", function() {
 	
 	SPARK.ready(function() {
 
-		/*
-		SPARK.tester.test("Iterating over elements", function() {
-
-			this.testdiv.append([{p:""}, {p:""}]).set("className", "test1");
-			var
-				count = 0;
-			SPARK.select("body, head").
-				each(function(){ count = count + !!this.nodeName; });
-			this.assert(count == 2, "Test each() with 2 elements");
-			this.finish();
-		});
-		*/
-
 		SPARK.tester.test("Selectors", function() {
 
 			this.testdiv.append([

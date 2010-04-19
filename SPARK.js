@@ -43,7 +43,7 @@ SPARK = (function() {
 	};
 
 	var checkinarray = {
-		">>" : function(elements, newelement) {
+		" " : function(elements, newelement) {
 			for (var i = elements.length;i--;) {
 				if (elements[i].compareDocumentPosition ?
 						elements[i].compareDocumentPosition(newelement) & 16 :
@@ -122,9 +122,9 @@ SPARK = (function() {
 		});
 		*/
 		if (/^[\],:{}\s]*$/.test(
-			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, '&').
-			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
-			replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
+			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$").
+			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").
+			replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
 			return eval("("+json+")");
 		}
 	};
@@ -173,10 +173,10 @@ SPARK = (function() {
 				// like a space in a CSS selector
 
 				cascade = parts[2] ? parts[2] :
-					parts[1] && cascade ? ">>" :
+					parts[1] && cascade ? " " :
 					cascade;
 
-				singleparent = elements.length==1 && (cascade == ">" || cascade == ">>");
+				singleparent = elements.length==1 && (cascade == ">" || cascade == " ");
 				searchwithin = singleparent ? elements[0] : document;
 
 				// if we have no starting elements and this isn't the first run,
@@ -184,14 +184,14 @@ SPARK = (function() {
 				if (elements.length || skipcascade) {
 
 					// see if we can skip the cascade, narrow down only
-					if (cascade == '&') {
+					if (cascade == "&") {
 						skipcascade = 1;
 						newelements = elements.slice(0);
 					}
 					else {
 						// see if we can narrow down.  in some cases if there's a single
 						// parent we can still skip the cascade
-						if (type == '#') {
+						if (type == "#") {
 							skipfilter = 1;
 							// get element by ID (quick - there's only one!)
 							if ((tmp = document.getElementById(name))) {
@@ -206,7 +206,7 @@ SPARK = (function() {
 							for (i = 0, len = tmp.length; i < len;) {
 								newelements.push(tmp[i++]);
 							}
-							if (singleparent && cascade == ">>") {
+							if (singleparent && cascade == " ") {
 								skipcascade = 1;
 							}
 						}
@@ -219,7 +219,7 @@ SPARK = (function() {
 						pass = skipfilter ? 1 : 
 							!type ? name == "*" || newelements[i].nodeName.toLowerCase() ==
 								name.toLowerCase() :
-							type == '#' ? newelements[i].id == name :
+							type == "#" ? newelements[i].id == name :
 							type == "." ? checkattr(newelements[i].className,
 								"~=", name) :
 							type == "[" ? checkattr(newelements[i].getAttribute(name),
@@ -279,6 +279,14 @@ SPARK = (function() {
 				animations.splice(i, 1);
 			}
 		}
+
+		// todo: when starting to animate an object's property, we need
+		// to keep a record of the fact that property is animating.  if
+		// anything else then wants to animate the same property, we need
+		// to be able to stop the current animation in its existing state
+		// or change its destination time and position.
+
+
 	};
 
 	// ##################################################################
@@ -302,19 +310,6 @@ SPARK = (function() {
 			animationtick();
 		}
 	};
-
-	/*
-	// I'm considering removing this function because it's not very
-	// performant.  You should do your own looping or call one of set(), get()
-	// etc.
-	SPARK.each = function(callback) {
-	// simply executes the given callback for each currently selected element.
-	// the callback's 'this' variable will be the element it applies to
-		for (var i = 0, len = this.length; i < len;) {
-			callback.call(this[i], i++);
-		}
-	};
-	*/
 
 	SPARK.select = function(selector) {
 	// main way of selecting elements in SPARK.  accepts a CSS selector
@@ -383,7 +378,7 @@ SPARK = (function() {
 			};
 
 		callback.SPARK = callback.SPARK || {};
-		callback.SPARK.i = callback.SPARK.i || ++gid;
+		callback.SPARK.$i = callback.SPARK.$i || ++gid;
 
 		for (i = this.length; i--;) {
 			myelement = this[i];
@@ -397,9 +392,9 @@ SPARK = (function() {
 				// So we maintain a separate handler with its in-closure reference
 				// to 'myelement' for each element we apply to
 				myelement.SPARK = myelement.SPARK || {};
-				myelement.SPARK["e"+callback.SPARK.i] = 
-					myelement.SPARK["e"+callback.SPARK.i] || makecallback(myelement);
-				myelement.attachEvent("on"+eventname, myelement.SPARK["e"+callback.SPARK.i]);
+				myelement.SPARK["$e"+callback.SPARK.$i] = 
+					myelement.SPARK["$e"+callback.SPARK.$i] || makecallback(myelement);
+				myelement.attachEvent("on"+eventname, myelement.SPARK["$e"+callback.SPARK.$i]);
 			}
 		}
 	};
@@ -422,11 +417,11 @@ SPARK = (function() {
 			} 
 			else {
 				if (myelement.SPARK && callback.SPARK && 
-					myelement.SPARK["e"+callback.SPARK.i]) {
+					myelement.SPARK["$e"+callback.SPARK.$i]) {
 					// special IE handling
 					myelement.detachEvent("on"+eventname,
-						myelement.SPARK["e"+callback.SPARK.i]);
-					delete myelement.SPARK["e"+callback.SPARK.i];
+						myelement.SPARK["$e"+callback.SPARK.$i]);
+					delete myelement.SPARK["$e"+callback.SPARK.$i];
 				}
 			}
 		}
@@ -460,45 +455,45 @@ SPARK = (function() {
 	// just resolving to the same URL).
 		var
 			i,
-			myfiles = typeof files == 'string' ? [files] : files,
+			myfiles = typeof files == "string" ? [files] : files,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
 			registerscript = function(file) {
 				var
-					myscript = that.build({script:""}).set('src', file),
+					myscript = that.build({script:""}).set("src", file),
 					gencallback = function() {
 						if (loadstate[file] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
 							loadstate[file] = 2;
-							myscript.unwatch('load', gencallback).unwatch('readystatechange',
+							myscript.unwatch("load", gencallback).unwatch("readystatechange",
 								gencallback).remove();
-							if (!(--mycallback.SPARK["l"+loadid])) {
+							if (!(--mycallback.SPARK["$l"+loadid])) {
 								// this callback is no longer waiting on any files, so call it
 								mycallback();
-								delete mycallback.SPARK["l"+loadid];
+								delete mycallback.SPARK["$l"+loadid];
 							}
 						}
 					};
 				loadstate[file] = 1;
-				myscript.watch('load', gencallback);
-				myscript.watch('readystatechange', gencallback);
+				myscript.watch("load", gencallback);
+				myscript.watch("readystatechange", gencallback);
 				that.select(document.documentElement.childNodes[0]).append(myscript);
 			};
 
 		mycallback.SPARK = mycallback.SPARK || {};
 		// store a count of how many files this callback (for this loadid)
 		// is still "waiting on"
-		mycallback.SPARK["l"+loadid] = 0;
+		mycallback.SPARK["$l"+loadid] = 0;
 
 		this.ready(function() {
 			for (i = myfiles.length; i--;) {
 				if (!loadstate[myfiles[i]]) {
-					mycallback.SPARK["l"+loadid]++;
+					mycallback.SPARK["$l"+loadid]++;
 					registerscript(myfiles[i]);
 				}
 			}
-			if (!mycallback.SPARK["l"+loadid]) {
+			if (!mycallback.SPARK["$l"+loadid]) {
 				mycallback();
 			}
 		});
@@ -582,14 +577,14 @@ SPARK = (function() {
 		if (spec.cloneNode && spec.nodeType) { // is a node
 			return this.select(spec);
 		}
-		if (spec.length && spec[0] && typeof spec != 'string') { //arraylike
+		if (spec.length && spec[0] && typeof spec != "string") { //arraylike
 			element = document.createDocumentFragment();
 			for (tmp = 0, len = spec.length; tmp < len;) {
 				element.appendChild(this.build(spec[tmp++])[0]);
 			}
 			return this.select(element);
 		}
-		if (typeof spec != 'object') {
+		if (typeof spec != "object") {
 			return this.select(document.createTextNode(spec));
 		}
 		for (tmp in spec) {
@@ -607,10 +602,10 @@ SPARK = (function() {
 		}
 		for (tmp = attributes.length; tmp--;) {
 			element[0].setAttribute(attributes[tmp][0], attributes[tmp][1]);
-			if (attributes[tmp][0].toLowerCase() == 'style' && element[0].style) {
+			if (attributes[tmp][0].toLowerCase() == "style" && element[0].style) {
 				element[0].style.cssText = attributes[tmp][1];
 			}
-			if (attributes[tmp][0].toLowerCase() == 'class') {
+			if (attributes[tmp][0].toLowerCase() == "class") {
 				element[0].className = attributes[tmp][1];
 			}
 		}
@@ -766,7 +761,7 @@ SPARK = (function() {
 			i,
 			collected = [],
 			xmlhttprequest = window.XMLHttpRequest ?
-				new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
 
 		xmlhttprequest.onreadystatechange = function() {
 			if (xmlhttprequest.readyState == 4) {
@@ -781,15 +776,15 @@ SPARK = (function() {
 			}
 		};
 		xmlhttprequest.open(method || "GET", url, !0);
-		if (body && typeof body.cloneNode != 'function' &&
-			typeof body.read != 'function') {
+		if (body && typeof body.cloneNode != "function" &&
+			typeof body.read != "function") {
 			for (i in body) {
 				if (Object.hasOwnProperty.call(body, i)) {
 					collected.push(encodeURIComponent(i) + "=" +
 						encodeURIComponent(body[i]));
 				}
 			}
-			body = collected.join('&');
+			body = collected.join("&");
 			xmlhttprequest.setRequestHeader("Content-type",
 				"application/x-www-form-urlencoded");
 		}
@@ -800,6 +795,8 @@ SPARK = (function() {
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
 	// SPARK.inframe before loading SPARK
+	// I consider this temporary until stable Firefox implements
+	// X-FRAME-OPTIONS which is a better clickjacking fix
 	if (self !== top && !SPARK.allowframing) {
 		top.location.replace(location.href);
 		location.replace(null);

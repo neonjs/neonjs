@@ -20,8 +20,8 @@ SPARK = (function() {
 		undef,
 		SPARK = window.SPARK || {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
+		animations = {}, 
 		readyqueue = [], // just callbacks to execute when ready
-		animations = [], // array of array [callback, firstframe]
 		animationschedule = 0, // next scheduled tick or 0 if stopped
 		ready = 0,
 		gid = 0;
@@ -176,7 +176,7 @@ SPARK = (function() {
 					parts[1] && cascade ? " " :
 					cascade;
 
-				singleparent = elements.length==1 && (cascade == ">" || cascade == " ");
+				singleparent = elements.length==1 && (cascade === ">" || cascade === " ");
 				searchwithin = singleparent ? elements[0] : document;
 
 				// if we have no starting elements and this isn't the first run,
@@ -184,7 +184,7 @@ SPARK = (function() {
 				if (elements.length || skipcascade) {
 
 					// see if we can skip the cascade, narrow down only
-					if (cascade == "&") {
+					if (cascade === "&") {
 						skipcascade = 1;
 						newelements = elements.slice(0);
 					}
@@ -206,7 +206,7 @@ SPARK = (function() {
 							for (i = 0, len = tmp.length; i < len;) {
 								newelements.push(tmp[i++]);
 							}
-							if (singleparent && cascade == " ") {
+							if (singleparent && cascade === " ") {
 								skipcascade = 1;
 							}
 						}
@@ -272,10 +272,10 @@ SPARK = (function() {
 		}
 
 		while (i--) {
-			if (!animations[i][1]) {
-				animations[i][1] = time;
+			if (!animations[i].t) {
+				animations[i].t = time;
 			}
-			if (!animations[i][0](time - animations[i][1])) {
+			if (!animations[i].f(time - animations[i].t)) {
 				animations.splice(i, 1);
 			}
 		}
@@ -293,7 +293,7 @@ SPARK = (function() {
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
 
-	SPARK.repeat = function(callback) {
+	SPARK._animate = function(obj, prop, finalval, msec) {
 	// registers the given callback to be included in the animation loop.
 	// The callback will be called periodically; each call may be
 	// considered a 'frame' of animation.
@@ -305,7 +305,11 @@ SPARK = (function() {
 	// won't ever exceed 60 fps by very much.
 	// Due to delays in the browser there may be larger gaps between 
 	// frames; there is no queuing of late frames.
-		animations.push([callback, 0]);
+	// todo the above is due to change
+	
+		obj.SPARK = obj.SPARK || {};
+
+		animations.push({o:obj,p:prop,b:finalval,d:msec});
 		if (!animationschedule) {
 			animationtick();
 		}

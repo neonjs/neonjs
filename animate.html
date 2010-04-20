@@ -11,18 +11,7 @@ SPARK.ready(function() {
 	var betweens = [];
 	var previous = 0;
 	var el = SPARK.select('body').append({div:""}).setstyle('height', '20px').setstyle('width', '20px').setstyle('background', 'gray').setstyle('position', 'absolute');
-	SPARK.repeat(function(msec) {
-		betweens.push(msec - previous);
-		previous = msec;
-		el.setstyle('left', (msec / 2.5) + "px");
-		if (msec >= 3000) {
-			for (var i = 0; i < betweens.length; i++) {
-				SPARK.select('body').append({span:" "+betweens[i]}).setstyle('background', betweens[i] > 20 ? 'yellow' : 'white');
-			}
-			SPARK.select('body').append({p:"Period: "+(3000/(betweens.length-1))});
-		}
-		else return true;
-	});
+	SPARK._animate(el[0].style, "left", "0%", "95%", 9000, 2);
 });
 
 </script>

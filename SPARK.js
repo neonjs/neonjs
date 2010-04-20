@@ -17,10 +17,10 @@ SPARK = (function() {
 	// PRIVATE VARIABLES
 	
 	var
-		undef,
 		SPARK = window.SPARK || {},
+		undef,
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
-		animations = {}, 
+		animations = [], 
 		readyqueue = [], // just callbacks to execute when ready
 		animationschedule = 0, // next scheduled tick or 0 if stopped
 		ready = 0,
@@ -261,7 +261,8 @@ SPARK = (function() {
 	// calling itself.
 		var
 			i = animations.length,
-			time = +new Date();
+			time = +new Date(),
+			anim;
 
 		animationschedule = !i ? 0 :
 			time < animationschedule + 10 ? animationschedule + (50/3) :
@@ -272,44 +273,47 @@ SPARK = (function() {
 		}
 
 		while (i--) {
-			if (!animations[i].t) {
-				animations[i].t = time;
-			}
-			if (!animations[i].f(time - animations[i].t)) {
+			anim = animations[i];
+			anim.o[anim.p] = (anim.a =
+				time >= anim.d ? anim.b :
+				anim.a + (anim.b - anim.a)
+				* Math.pow((time - animlast) / (anim.d - animlast), anim.e)) + anim.s;
+
+			if (time >= anim.d) {
 				animations.splice(i, 1);
 			}
 		}
-
-		// todo: when starting to animate an object's property, we need
-		// to keep a record of the fact that property is animating.  if
-		// anything else then wants to animate the same property, we need
-		// to be able to stop the current animation in its existing state
-		// or change its destination time and position.
-
-
 	};
 
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
 
-	SPARK._animate = function(obj, prop, finalval, msec) {
-	// registers the given callback to be included in the animation loop.
-	// The callback will be called periodically; each call may be
-	// considered a 'frame' of animation.
-	// The callback will be passed a single parameter: the time in
-	// milliseconds since the callback was registered.
-	// The callback will be called continuously as long as it returns
-	// true.
+	SPARK._animate = function(obj, prop, firstval, lastval, msec, ease) {
 	// The frequency of frames will aim for the smoothest animation.  It
-	// won't ever exceed 60 fps by very much.
-	// Due to delays in the browser there may be larger gaps between 
-	// frames; there is no queuing of late frames.
-	// todo the above is due to change
+	// won't ever significantly exceed 60 fps, but may be less frequent.
+		var
+			i = animations.length,
+			time = +new Date();
 	
-		obj.SPARK = obj.SPARK || {};
+		// if this property is already animating, stop it. // todo optimise
+		while (i--) {
+			if (animations[i].o === obj && animations[i].p === prop) {
+				animations.splice(i, 1);
+			}
+		}
 
-		animations.push({o:obj,p:prop,b:finalval,d:msec});
+		animations.push({
+			o: obj,
+			p: prop,
+			a: parseFloat(firstval),
+			b: parseFloat(lastval),
+			c: time,
+			d: time + msec,
+			e: ease || 1,
+			s: lastval.replace(/[\d.]+/, '')
+			});
+
 		if (!animationschedule) {
 			animationtick();
 		}

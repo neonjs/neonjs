@@ -12,8 +12,8 @@ SPARK.ready(function() {
 		var el = SPARK.select('body').append({div:""}).setstyle('height', '30px').
 			setstyle('width', '30px').setstyle('background', 'grey').
 			setstyle('position', 'absolute');
-		SPARK._animate(el[0].style, "left", "0", evt.pageX+"px", 'out');
-		SPARK._animate(el[0].style, "top", "0", evt.pageY+"px", 'el');
+		SPARK._animate(el[0].style, "left", "0", evt.pageX+"px", 'el', 40000, 11000);
+		SPARK._animate(el[0].style, "top", "0", evt.pageY+"px", 'el', 40000, 9400);
 	});
 });
 

@@ -80,7 +80,7 @@ SPARK = (function() {
 
 	var checkattr = function(attr, attrcompare, attrvalue) {
 	// check if attribute attr matches the attribute comparison specified
-		return !attrcompare ? attr !== null && attr != "" :
+		return !attrcompare ? attr !== null && attr !== "" :
 			attrcompare == "=" ? attrvalue == attr :
 			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
 			(attr+"-").indexOf(attrvalue) === 0;
@@ -582,7 +582,7 @@ SPARK = (function() {
 			tmp, len,
 			element,
 			attributes = [];
-		if (!spec || spec.length === 0) {
+		if (spec === "" || spec === null || spec.length === 0) {
 			return this.select([]);
 		}
 		if (spec.cloneNode && spec.nodeType) { // is a node

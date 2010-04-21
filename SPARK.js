@@ -262,7 +262,8 @@ SPARK = (function() {
 		var
 			i = animations.length,
 			time = +new Date(),
-			anim;
+			anim,
+			x;
 
 		animationschedule = !i ? 0 :
 			time < animationschedule + 10 ? animationschedule + (50/3) :
@@ -274,14 +275,19 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			anim.o[anim.p] = (anim.a =
-				time >= anim.d ? anim.b :
-				anim.a + (anim.b - anim.a)
-				* Math.pow((time - animlast) / (anim.d - animlast), anim.e)) + anim.s;
-
-			if (time >= anim.d) {
+			if ((x = (time - anim[4]) / anim[5]) > 1) {
+				x = 1;
 				animations.splice(i, 1);
 			}
+
+			anim[0][anim[1]] = anim[2] + anim[3] * (
+				anim[7] == 'lin'   ? x :
+				anim[7] == 'in'    ? x * x :
+				anim[7] == 'inout' ? (1 - Math.cos(Math.PI * x)) / 2 :
+				anim[7] == 'el'    ? ((2-x) * x - 1) * Math.cos(Math.PI * 2/anim[6] * x) + 1 :
+				(2-x) * x // 'out' (default)
+				) + anim[8];
+
 		}
 	};
 
@@ -289,30 +295,27 @@ SPARK = (function() {
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
 
-	SPARK._animate = function(obj, prop, firstval, lastval, msec, ease) {
+	SPARK._animate = function(obj, prop, firstval, lastval, ease, msec, period) {
 	// The frequency of frames will aim for the smoothest animation.  It
 	// won't ever significantly exceed 60 fps, but may be less frequent.
 		var
 			i = animations.length,
 			time = +new Date();
 	
-		// if this property is already animating, stop it. // todo optimise
+		// if this property is already animating, stop it. todo optimise 
 		while (i--) {
-			if (animations[i].o === obj && animations[i].p === prop) {
+			if (animations[i][0] === obj && animations[i][1] === prop) {
 				animations.splice(i, 1);
 			}
 		}
 
-		animations.push({
-			o: obj,
-			p: prop,
-			a: parseFloat(firstval),
-			b: parseFloat(lastval),
-			c: time,
-			d: time + msec,
-			e: ease || 1,
-			s: lastval.replace(/[\d.]+/, '')
-			});
+		firstval = parseFloat(firstval);
+		animations.push([
+			obj, prop,
+			firstval, parseFloat(lastval) - firstval,
+			time, msec || 444, (period || 333) / (msec || 444), ease,
+			lastval.replace(/[\d.]+/, "")
+			]);
 
 		if (!animationschedule) {
 			animationtick();

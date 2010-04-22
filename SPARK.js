@@ -275,18 +275,18 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			if ((x = (time - anim[4]) / anim[5]) > 1) {
+			if ((x = (time - anim[4]) / (anim[6][1] || 400)) > 1) {
 				x = 1;
 				animations.splice(i, 1);
 			}
 
 			anim[0][anim[1]] = anim[2] + anim[3] * (
-				anim[7] == 'lin'   ? x :
-				anim[7] == 'in'    ? x * x :
-				anim[7] == 'inout' ? (1 - Math.cos(Math.PI * x)) / 2 :
-				anim[7] == 'el'    ? ((2-x) * x - 1) * Math.cos(Math.PI * 2/anim[6] * x) + 1 :
-				(2-x) * x // 'out' (default)
-				) + anim[8];
+				anim[6][0] == 'lin'   ? x :
+				anim[6][0] == 'in'    ? x*x :
+				anim[6][0] == 'inout' ? (1-Math.cos(Math.PI*x)) / 2 :
+				anim[6][0] == 'el'    ? 1 + ((2-x)*x-1) * Math.cos(Math.PI*x*2*(anim[6][1]||400)/(anim[6][2]||300)) :
+				(2-x)*x // 'out' (default)
+				) + anim[5];
 
 		}
 	};
@@ -294,33 +294,6 @@ SPARK = (function() {
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
-
-	SPARK._animate = function(obj, prop, firstval, lastval, ease, msec, period) {
-	// The frequency of frames will aim for the smoothest animation.  It
-	// won't ever significantly exceed 60 fps, but may be less frequent.
-		var
-			i = animations.length,
-			time = +new Date();
-	
-		// if this property is already animating, stop it. todo optimise 
-		while (i--) {
-			if (animations[i][0] === obj && animations[i][1] === prop) {
-				animations.splice(i, 1);
-			}
-		}
-
-		firstval = parseFloat(firstval);
-		animations.push([
-			obj, prop,
-			firstval, parseFloat(lastval) - firstval,
-			time, msec || 444, (period || 333) / (msec || 444), ease,
-			lastval.replace(/[\d.]+/, "")
-			]);
-
-		if (!animationschedule) {
-			animationtick();
-		}
-	};
 
 	SPARK.select = function(selector) {
 	// main way of selecting elements in SPARK.  accepts a CSS selector
@@ -523,11 +496,10 @@ SPARK = (function() {
 	// return the same value in quite different notations, eg
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
-		return !this.length ? undef :
+		return !this.length || !this[0].style ? undef :
 			window.getComputedStyle ?
 				getComputedStyle(this[0], null)[style] :
-			this[0].currentStyle ? this[0].currentStyle[style] :
-			undef;
+			this[0].currentStyle[style];
 	};
 
 	/*
@@ -541,24 +513,55 @@ SPARK = (function() {
 	};
 	*/
 
+	SPARK.setstyle = function(style, value, animation) {
+	// sets one or more styles on each selected node.  style can be
+	// an object of {style: styleval, ...} or you can set a single
+	// style with style and value.
+		var
+			i = this.length, j,
+			firstval, lastval = parseFloat(value);
+
+		while (i--) {
+
+			if (this[i].style) {
+
+				for (j = animations.length; j--;) {
+					if (animations[j][0] === this[i].style &&
+						animations[j][1] === style) {
+						animations.splice(j, 1);
+					}
+				}
+
+				if (animation && lastval == lastval && 
+					(firstval = parseFloat(window.getComputedStyle ?
+						getComputedStyle(this[i], null)[style] :
+						this[i].currentStyle[style])) == firstval) {
+
+					animations.push([
+						this[i].style, style, firstval, lastval - firstval,
+						+new Date(), value.replace(/[\d.]+/, ""),
+						typeof animation == "string" ? [animation] : animation]);
+
+					if (!animationschedule) {
+						animationtick();
+					}
+
+				}
+				else {
+					this[i].style[style] = value;
+				}
+			}
+		}
+
+		return this;
+	};
+
 	SPARK.set = function(prop, value) {
 	// really simple method, just sets one or more properties on each
 	// selected node.  prop can be an object of {property: value, ...}
 	// or you can set a single property with prop and value.
 		for (var i = this.length; i--;) {
 			this[i][prop] = value;
-		}
-		return this;
-	};
-
-	SPARK.setstyle = function(style, value) {
-	// sets one or more styles on each selected node.  style can be
-	// an object of {style: styleval, ...} or you can set a single
-	// style with style and value.
-		for (var i = this.length; i--;) {
-			if (this[i].style) {
-				this[i].style[style] = value;
-			}
 		}
 		return this;
 	};

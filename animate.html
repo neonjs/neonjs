@@ -8,12 +8,16 @@
 <script type="text/javascript">
 
 SPARK.ready(function() {
-	SPARK.select(document.documentElement).watch('click', function(evt) {
+	var notice = SPARK.select('body').append({p:"Click somewhere with your mouse"});
+	SPARK.select(document.documentElement).watch('mouseup', function(evt) {
 		var el = SPARK.select('body').append({div:""}).setstyle('height', '30px').
 			setstyle('width', '30px').setstyle('background', 'grey').
 			setstyle('position', 'absolute');
-		SPARK._animate(el[0].style, "left", "0", evt.pageX+"px", 'el', 40000, 11000);
-		SPARK._animate(el[0].style, "top", "0", evt.pageY+"px", 'el', 40000, 9400);
+		notice.remove();
+		el.setstyle('left', evt.pageX-15+"px", 'el');
+		el.setstyle('top', evt.pageY-15+"px", 'el');
+		//SPARK._animate(el[0].style, "left", "0", evt.pageX-15+"px", 'el', 12000, 2000);
+		//SPARK._animate(el[0].style, "top", "0", evt.pageY-15+"px", 'el', 12000, 2245);
 	});
 });
 

@@ -22,7 +22,7 @@ SPARK = (function() {
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		animations = [], 
 		readyqueue = [], // just callbacks to execute when ready
-		animationschedule = 0, // next scheduled tick or 0 if stopped
+		animationschedule, // next scheduled tick or 0 if stopped
 		ready = 0,
 		gid = 0;
 
@@ -52,7 +52,6 @@ SPARK = (function() {
 					0) {
 					return 1;
 				}
-
 			}
 		},
 		">" : function(elements, newelement) {
@@ -76,14 +75,6 @@ SPARK = (function() {
 				}
 			}
 		}
-	};
-
-	var checkattr = function(attr, attrcompare, attrvalue) {
-	// check if attribute attr matches the attribute comparison specified
-		return !attrcompare ? attr !== null && attr !== "" :
-			attrcompare == "=" ? attrvalue == attr :
-			attrcompare == "~=" ? (" "+attr+" ").indexOf(" "+attrvalue+" ") >= 0 :
-			(attr+"-").indexOf(attrvalue) === 0;
 	};
 
 	var processreadyqueue = function() {
@@ -120,8 +111,7 @@ SPARK = (function() {
 		json = json.replace(cx, function(ch) {
 			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
 		});
-		*/
-		if (/^[\],:{}\s]*$/.test(
+		*/ if (/^[\],:{}\s]*$/.test(
 			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$").
 			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").
 			replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
@@ -220,10 +210,18 @@ SPARK = (function() {
 							!type ? name == "*" || newelements[i].nodeName.toLowerCase() ==
 								name.toLowerCase() :
 							type == "#" ? newelements[i].id == name :
-							type == "." ? checkattr(newelements[i].className,
-								"~=", name) :
-							type == "[" ? checkattr(newelements[i].getAttribute(name),
-								parts[6], attrvalue) :
+							type == "." ?
+								(" "+newelements[i].className+" ").
+								indexOf(" "+name+" ") >= 0 :
+							type == "[" ? (
+								!attrcompare ? newelements[i].hasAttribute(name) :
+								attrcompare == "=" ?
+									newelements[i].getAttribute(name) == attrvalue :
+								attrcompare == "~=" ?
+									(" "+newelements[i].getAttribute(name)+" ").
+									indexOf(" "+attrvalue+" ") >= 0 :
+								(newelements[i].getAttribute(name)+"-").
+									indexOf(attrvalue) === 0) :
 							name.toLowerCase() == "first-child" ? 
 								!getprevioussibling(newelements[i]) :
 							0;
@@ -275,18 +273,20 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			if ((x = (time - anim[4]) / (anim[6][1] || 400)) > 1) {
+			x = (time - anim[4]) / (anim[7]||410);
+			if (x > 1) {
 				x = 1;
 				animations.splice(i, 1);
 			}
 
-			anim[0][anim[1]] = anim[2] + anim[3] * (
-				anim[6][0] == 'lin'   ? x :
-				anim[6][0] == 'in'    ? x*x :
-				anim[6][0] == 'inout' ? (1-Math.cos(Math.PI*x)) / 2 :
-				anim[6][0] == 'el'    ? 1 + ((2-x)*x-1) * Math.cos(Math.PI*x*2*(anim[6][1]||400)/(anim[6][2]||300)) :
+			anim[0][anim[1]] = (
+				anim[6] == 'lin'   ? x :
+				anim[6] == 'in'    ? x*x :
+				anim[6] == 'inout' ? (1-Math.cos(Math.PI*x)) / 2 :
+				anim[6] == 'el'    ? ((2-x)*x-1) *
+					Math.cos(Math.PI*x*2*(anim[7]||410)/(anim[8]||310)) + 1 :
 				(2-x)*x // 'out' (default)
-				) + anim[5];
+				) * anim[3] + anim[2] + anim[5];
 
 		}
 	};
@@ -308,7 +308,6 @@ SPARK = (function() {
 		// handle the case where no selector is given, or a node, window,
 		// or array of nodes
 			elements = !selector ? [] :
-				selector.nodeType == 11 ? selector.childNodes :
 				selector.nodeType || selector.setTimeout ? [selector] :
 				selector;
 
@@ -513,44 +512,41 @@ SPARK = (function() {
 	};
 	*/
 
-	SPARK.setstyle = function(style, value, animation) {
+	SPARK.setstyle = function(style, value, lastval, ease, msec, parm) {
 	// sets one or more styles on each selected node.  style can be
 	// an object of {style: styleval, ...} or you can set a single
 	// style with style and value.
 		var
 			i = this.length, j,
-			firstval, lastval = parseFloat(value);
+			time = +new Date(),
+			mylastval,
+			myval,
+			animated = 
+				(mylastval = parseFloat(lastval)) == mylastval &&
+				(myval = parseFloat(value)) == myval,
+			suffix = animated && /\D*$/.exec(lastval)[0];
 
 		while (i--) {
 
-			if (this[i].style) {
+			this[i].style[style] = value;
 
-				for (j = animations.length; j--;) {
-					if (animations[j][0] === this[i].style &&
-						animations[j][1] === style) {
-						animations.splice(j, 1);
-					}
-				}
-
-				if (animation && lastval == lastval && 
-					(firstval = parseFloat(window.getComputedStyle ?
-						getComputedStyle(this[i], null)[style] :
-						this[i].currentStyle[style])) == firstval) {
-
-					animations.push([
-						this[i].style, style, firstval, lastval - firstval,
-						+new Date(), value.replace(/[\d.]+/, ""),
-						typeof animation == "string" ? [animation] : animation]);
-
-					if (!animationschedule) {
-						animationtick();
-					}
-
-				}
-				else {
-					this[i].style[style] = value;
+			for (j = animations.length; j--;) {
+				if (animations[j][0] === this[i].style &&
+					animations[j][1] === style) {
+					animations.splice(j, 1);
 				}
 			}
+
+			if (animated) {
+				animations.push([
+					this[i].style, style, myval, mylastval - myval,
+					time, suffix, ease, msec, parm
+					]);
+			}
+		}
+
+		if (animated && !animationschedule) {
+			animationtick();
 		}
 
 		return this;
@@ -596,7 +592,7 @@ SPARK = (function() {
 			for (tmp = 0, len = spec.length; tmp < len;) {
 				element.appendChild(this.build(spec[tmp++])[0]);
 			}
-			return this.select(element);
+			return this.select(element.childNodes);
 		}
 		if (typeof spec != "object") {
 			return this.select(document.createTextNode(spec));

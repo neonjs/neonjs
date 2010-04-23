@@ -510,6 +510,24 @@ SPARK = (function() {
 	};
 	*/
 
+	/*
+	SPARK.act = function(method) {
+		var
+			obj,
+			parts = method.split(".");
+			i = this.length;
+
+		while (i--) {
+
+			for (obj = this[i]; parts[1];) {
+				obj = obj[parts.shift()];
+			}
+			obj[parts[0]].call(obj, [].slice.call(arguments, 0));
+		}
+		return this;
+	};
+	*/
+
 	SPARK.get = function(prop) {
 	// fetches and returns the value of the given property, for the
 	// first selected element.

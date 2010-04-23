@@ -18,20 +18,13 @@ SPARK = (function() {
 	
 	var
 		SPARK = window.SPARK || {},
-		undef,
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
-		animations = [], 
+		animations = [], // information about properties currently animating
 		readyqueue = [], // just callbacks to execute when ready
-		animationschedule, // next scheduled tick or 0 if stopped
+		animationschedule, // next scheduled tick or 0/undefined if stopped
+		undef, // shortcut for undefined
 		ready = 0,
 		gid = 0;
-
-	var makeobject = function(base) {
-		var
-			Constructor = function() {};
-		Constructor.prototype = base;
-		return new Constructor();
-	};
 
 	var getprevioussibling = function(element) {
 	// find the previous sibling of this element which is an element node
@@ -131,12 +124,12 @@ SPARK = (function() {
 			parts,
 			tmp,
 			elements = [],
+			collected = [],
 			cascade,
 			singleparent,
 			searchwithin,
 			pass,
-			regex = /(([>+]?)\s*)([#.\[:]?)([*\w\-]+)(([|~]?=)("|'|)((\\.|[^\\])*?)\7\])?|,/g,
-			collected = [];
+			regex = /(([>+]?)\s*)([#.\[:]?)([*\w\-]+)(([|~]?=)("|'|)((\\.|[^\\])*?)\7\])?|,/g;
 
 		selector += ","; // makes the loop with the regex easier
 
@@ -152,7 +145,7 @@ SPARK = (function() {
 					//combine = parts[2],
 					type = parts[3],
 					name = parts[4],
-					//attrcompare = parts[6],
+					attrcompare = parts[6],
 					attrvalue = (parts[8]+"").replace(/\\(.)/g, "$1"), // strip slashes
 					skipcascade = !cascade,
 					skipfilter = 0,
@@ -191,8 +184,14 @@ SPARK = (function() {
 						else {
 							// get element by tag name or get all elements (worst case, when comparing
 							// attributes and there's no '&' cascade)
-							skipfilter = !type;
-							tmp = searchwithin.getElementsByTagName(type ? "*" : name);
+							if (type == "." && searchwithin.getElementsByClassName) {
+								skipfilter = 1;
+								tmp = searchwithin.getElementsByClassName(name);
+							}
+							else {
+								skipfilter = !type;
+								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
+							}
 							for (i = 0, len = tmp.length; i < len;) {
 								newelements.push(tmp[i++]);
 							}
@@ -261,7 +260,9 @@ SPARK = (function() {
 			i = animations.length,
 			time = +new Date(),
 			anim,
-			x;
+			x,
+			cos = Math.cos,
+			PI = Math.PI;
 
 		animationschedule = !i ? 0 :
 			time < animationschedule + 10 ? animationschedule + (50/3) :
@@ -273,18 +274,18 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			x = (time - anim[4]) / (anim[7]||410);
+			x = (time - anim[4]) / (anim[7] = anim[7]||410);
 			if (x > 1) {
 				x = 1;
 				animations.splice(i, 1);
 			}
 
 			anim[0][anim[1]] = (
-				anim[6] == 'lin'   ? x :
-				anim[6] == 'in'    ? x*x :
-				anim[6] == 'inout' ? (1-Math.cos(Math.PI*x)) / 2 :
-				anim[6] == 'el'    ? ((2-x)*x-1) *
-					Math.cos(Math.PI*x*2*(anim[7]||410)/(anim[8]||310)) + 1 :
+				anim[6] == "lin"   ? x :
+				anim[6] == "in"    ? x*x :
+				anim[6] == "inout" ? (1-cos(PI*x)) / 2 :
+				anim[6] == "el"    ? ((2-x)*x-1) * cos(PI*x*2*anim[7]/(anim[8]||310)) + 1 :
+				anim[6] == "fn"    ? anim[8](x) :
 				(2-x)*x // 'out' (default)
 				) * anim[3] + anim[2] + anim[5];
 
@@ -300,20 +301,23 @@ SPARK = (function() {
 	// string, or a node or array of nodes.  also accepts the window object
 	// returns a SPARK object with the given elements selected.
 		var
+			i,
 			elements,
-			len,
-			newelement = makeobject(this);
+			newelement,
+			Constructor = function() {};
+		
+		Constructor.prototype = this;
+		newelement = new Constructor();
 
-		if (typeof selector != "string") {
+		if (selector !== selector+"") {
 		// handle the case where no selector is given, or a node, window,
 		// or array of nodes
 			elements = !selector ? [] :
 				selector.nodeType || selector.setTimeout ? [selector] :
 				selector;
 
-			for (newelement.length = 0, len = elements.length;
-				newelement.length < len;) {
-				newelement[newelement.length] = elements[newelement.length++];
+			for (newelement.length = i = elements.length; i--;) {
+				newelement[i] = elements[i];
 			}
 			return newelement;
 		}
@@ -438,7 +442,7 @@ SPARK = (function() {
 	// just resolving to the same URL).
 		var
 			i,
-			myfiles = typeof files == "string" ? [files] : files,
+			myfiles = files===files+"" ? [files] : files,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
@@ -482,12 +486,6 @@ SPARK = (function() {
 		});
 	};
 
-	SPARK.get = function(prop) {
-	// fetches and returns the value of the given property, for the
-	// first selected element.
-		return this.length && this[0][prop];
-	};
-
 	SPARK.getstyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
 	// the given style, for the first selected element.  Note that
@@ -495,7 +493,7 @@ SPARK = (function() {
 	// return the same value in quite different notations, eg
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
-		return !this.length || !this[0].style ? undef :
+		return !this[0] ? undef :
 			window.getComputedStyle ?
 				getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
@@ -512,11 +510,27 @@ SPARK = (function() {
 	};
 	*/
 
-	SPARK.setstyle = function(style, value, lastval, ease, msec, parm) {
-	// sets one or more styles on each selected node.  style can be
-	// an object of {style: styleval, ...} or you can set a single
-	// style with style and value.
+	SPARK.get = function(prop) {
+	// fetches and returns the value of the given property, for the
+	// first selected element.
 		var
+			obj = this[0],
+			parts = prop.split(".");
+
+		while (parts[1]) {
+			obj = obj[parts.shift()];
+		}
+		
+		return obj[prop];
+	};
+
+	SPARK.set = function(prop, value, lastval, ease, msec, parm) {
+	// really simple method, just sets one or more properties on each
+	// selected node.  prop can be an object of {property: value, ...}
+	// or you can set a single property with prop and value.
+		var
+			obj,
+			parts = prop.split("."),
 			i = this.length, j,
 			time = +new Date(),
 			mylastval,
@@ -528,18 +542,21 @@ SPARK = (function() {
 
 		while (i--) {
 
-			this[i].style[style] = value;
+			for (obj = this[i]; parts[1];) {
+				obj = obj[parts.shift()];
+			}
+			obj[parts[0]] = value;
 
 			for (j = animations.length; j--;) {
-				if (animations[j][0] === this[i].style &&
-					animations[j][1] === style) {
+				if (animations[j][0] === obj &&
+					animations[j][1] === parts[0]) {
 					animations.splice(j, 1);
 				}
 			}
 
 			if (animated) {
 				animations.push([
-					this[i].style, style, myval, mylastval - myval,
+					obj, parts[0], myval, mylastval - myval,
 					time, suffix, ease, msec, parm
 					]);
 			}
@@ -552,14 +569,11 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.set = function(prop, value) {
-	// really simple method, just sets one or more properties on each
-	// selected node.  prop can be an object of {property: value, ...}
-	// or you can set a single property with prop and value.
-		for (var i = this.length; i--;) {
-			this[i][prop] = value;
-		}
-		return this;
+	SPARK.setstyle = function(style, value, lastval, ease, msec, parm) {
+	// sets one or more styles on each selected node.  style can be
+	// an object of {style: styleval, ...} or you can set a single
+	// style with style and value.
+		return this.set("style."+style, value, lastval, ease, msec, parm);
 	};
 
 	SPARK.build = function(spec) {
@@ -587,7 +601,7 @@ SPARK = (function() {
 		if (spec.cloneNode && spec.nodeType) { // is a node
 			return this.select(spec);
 		}
-		if (spec.length && spec[0] && typeof spec != "string") { //arraylike
+		if (spec.length && spec[0] && spec !== spec+"") { //arraylike
 			element = document.createDocumentFragment();
 			for (tmp = 0, len = spec.length; tmp < len;) {
 				element.appendChild(this.build(spec[tmp++])[0]);

@@ -260,9 +260,7 @@ SPARK = (function() {
 			i = animations.length,
 			time = +new Date(),
 			anim,
-			x,
-			cos = Math.cos,
-			PI = Math.PI;
+			x;
 
 		animationschedule = !i ? 0 :
 			time < animationschedule + 10 ? animationschedule + (50/3) :
@@ -274,17 +272,17 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			x = (time - anim[4]) / (anim[7] = anim[7]||410);
+			x = (time - anim[4]) / (anim[7]||410);
 			if (x > 1) {
-				x = 1;
-				animations.splice(i, 1);
+				animations.splice(i, x = 1);
 			}
 
 			anim[0][anim[1]] = (
 				anim[6] == "lin"   ? x :
 				anim[6] == "in"    ? x*x :
-				anim[6] == "inout" ? (1-cos(PI*x)) / 2 :
-				anim[6] == "el"    ? ((2-x)*x-1) * cos(PI*x*2*anim[7]/(anim[8]||310)) + 1 :
+				anim[6] == "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
+				anim[6] == "el"    ? ((2-x)*x-1) *
+					Math.cos(Math.PI*x*2*(anim[7]||410)/(anim[8]||310)) + 1 :
 				anim[6] == "fn"    ? anim[8](x) :
 				(2-x)*x // 'out' (default)
 				) * anim[3] + anim[2] + anim[5];
@@ -531,24 +529,46 @@ SPARK = (function() {
 	SPARK.get = function(prop) {
 	// fetches and returns the value of the given property, for the
 	// first selected element.
-		var
-			obj = this[0],
-			parts = prop.split(".");
-
-		while (parts[1]) {
-			obj = obj[parts.shift()];
-		}
-		
-		return obj[prop];
+		return this[0][prop];
 	};
 
-	SPARK.set = function(prop, value, lastval, ease, msec, parm) {
+	SPARK.set = function(prop, value) {
 	// really simple method, just sets one or more properties on each
 	// selected node.  prop can be an object of {property: value, ...}
 	// or you can set a single property with prop and value.
 		var
-			obj,
-			parts = prop.split("."),
+			i = this.length;
+
+		while (i--) {
+			this[i][prop] = value;
+		}
+
+		return this;
+	};
+
+	/*
+	var startanimation = function(obj, prop) {
+	// internal function to start animating some object property
+
+		var
+			i = animations.length;
+
+		while (i--) {
+			if (animations[i][0] === obj && animations[i][1] == prop) {
+				animations.splice(i, 1);
+				i = 0;
+			}
+		}
+
+		animations.push(arguments);
+	}
+	*/
+
+	SPARK.setstyle = function(style, value, lastval, easing, msec, parm) {
+	// sets one or more styles on each selected node.  style can be
+	// an object of {style: styleval, ...} or you can set a single
+	// style with style and value.
+		var
 			i = this.length, j,
 			time = +new Date(),
 			mylastval,
@@ -559,23 +579,20 @@ SPARK = (function() {
 			suffix = animated && /\D*$/.exec(lastval)[0];
 
 		while (i--) {
-
-			for (obj = this[i]; parts[1];) {
-				obj = obj[parts.shift()];
-			}
-			obj[parts[0]] = value;
+			this[i].style[style] = value;
 
 			for (j = animations.length; j--;) {
-				if (animations[j][0] === obj &&
-					animations[j][1] === parts[0]) {
+				if (animations[j][0] === this[i].style &&
+					animations[j][1] == style) {
 					animations.splice(j, 1);
+					j = 0;
 				}
 			}
 
 			if (animated) {
 				animations.push([
-					obj, parts[0], myval, mylastval - myval,
-					time, suffix, ease, msec, parm
+					this[i].style, style, myval, mylastval - myval,
+					time, suffix, easing, msec, parm
 					]);
 			}
 		}
@@ -585,13 +602,6 @@ SPARK = (function() {
 		}
 
 		return this;
-	};
-
-	SPARK.setstyle = function(style, value, lastval, ease, msec, parm) {
-	// sets one or more styles on each selected node.  style can be
-	// an object of {style: styleval, ...} or you can set a single
-	// style with style and value.
-		return this.set("style."+style, value, lastval, ease, msec, parm);
 	};
 
 	SPARK.build = function(spec) {

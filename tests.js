@@ -124,6 +124,7 @@ SPARK.load("SPARK.tester.js", function() {
 			});
 		});
 
+		/*
 		SPARK.tester.test("Getting/setting element properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
@@ -133,27 +134,33 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(newdiv.get('SPARKtest') === 555, "Setting and getting custom property");
 			this.finish();
 		});
+		*/
 
 		SPARK.tester.test("Getting/setting style properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$style:"width:66px"});
-			this.assert(newdiv.getstyle('width') == "66px", "Read inline style");
-			newdiv.setstyle('width', '555px');
-			this.assert(newdiv.getstyle('width') == '555px', "Set and read element style");
+			this.assert(newdiv.getStyle('width') == "66px", "Read inline style");
+			newdiv.style('width', '555px');
+			this.assert(newdiv.getStyle('width') == '555px', "Set and read element style");
 			this.finish();
 		});
 
 		SPARK.tester.test("Building elements", function() {
 			var
 				elements = SPARK.build({p:"Contents",$title:"Mytitle"}),
-				pandtext = SPARK.build([{p:""},"Mycontents"]);
+				pandtext = SPARK.build([{p:""},"Mycontents"]),
+				complex = SPARK.build({p:"",$style:"width:66px",$class:"mysomething"});
 
 			this.assert(elements[0].nodeName.toLowerCase() == "p", "Correct element name created");
 			this.assert(elements[0].firstChild.nodeType == 3, "Text node child created");
 			this.assert(pandtext[0].nodeName.toLowerCase() == "p", "Accepts array");
 			this.assert(pandtext[1].nodeType == 3, "Text node second part of array");
+			this.assert(/width:\s*66px/.test(complex[0].style.cssText), "Building style attribute");
+			this.assert(/\bmysomething\b/.test(complex[0].className), "Building class attribute");
 			this.finish();
 		});
+
+
 
 		/*
 		SPARK.tester.test("JSON encoding and decoding", function() {

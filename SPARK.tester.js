@@ -28,11 +28,11 @@ SPARK.tester = SPARK.tester || (function() {
 			mytesttbody = testtbody || (testtbody = setuptable()),
 			testrow = mytesttbody.append({tr:""}),
 			resultcell = testrow.append({td:"TESTING ..."}).
-				setstyle('background', 'gray').
-				setstyle('color', 'white').
-				setstyle('padding', '5px'),
+				style('background', 'gray').
+				style('color', 'white').
+				style('padding', '5px'),
 			messagecell = testrow.append({td:{div:testname}}).
-				setstyle('padding', '2px'),
+				style('padding', '2px'),
 			failures = 0,
 			assertions = 0,
 			testobj = {};
@@ -42,7 +42,7 @@ SPARK.tester = SPARK.tester || (function() {
 				testobj.testdiv.remove();
 			}
 			if (!failures) {
-				resultcell.empty().setstyle('background', 'brown').append("TIMEOUT");
+				resultcell.empty().style('background', 'brown').append("TIMEOUT");
 			}
 		}; 
 
@@ -50,7 +50,7 @@ SPARK.tester = SPARK.tester || (function() {
 		// test cases should call this.assert() as many times as they have something
 		// to test
 			if (!assertval) {
-				resultcell.empty().setstyle('background', 'brown').append("FAILURE");
+				resultcell.empty().style('background', 'brown').append("FAILURE");
 				messagecell = messagecell.
 					append({div:"Assertion failed: "+shortdesc});
 				failures++;
@@ -66,7 +66,7 @@ SPARK.tester = SPARK.tester || (function() {
 				testobj.testdiv.remove();
 			}
 			if (!failures) {
-				resultcell.empty().setstyle('background', 'green').append("SUCCESS");
+				resultcell.empty().style('background', 'green').append("SUCCESS");
 			}
 			clearTimeout(testobj.timeout);
 		};

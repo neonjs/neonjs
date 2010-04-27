@@ -94,24 +94,6 @@ SPARK = (function() {
 		}
 	};
 
-	var jsondecode = function(json) {
-	// unserialises the JSON string into the equivalent value.  Does a check
-	// on the string that is only thorough enough to prevent arbitrary code
-	// execution.
-	
-		/*
-		var cx = /[\x00\u007f-\uffff]/g;
-		json = json.replace(cx, function(ch) {
-			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-		});
-		*/ if (/^[\],:{}\s]*$/.test(
-			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$").
-			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").
-			replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
-			return eval("("+json+")");
-		}
-	};
-
 	var myqueryselector = function(selector) {
 	// css selector engine for SPARK.  returns array of elements according to
 	// the given selector string.  as much of CSS 2.1 selector syntax as
@@ -146,7 +128,7 @@ SPARK = (function() {
 					type = parts[3],
 					name = parts[4],
 					attrcompare = parts[6],
-					attrvalue = (parts[8]+"").replace(/\\(.)/g, "$1"), // strip slashes
+					attrvalue = (""+parts[8]).replace(/\\(.)/g, "$1"), // strip slashes
 					skipcascade = !cascade,
 					skipfilter = 0,
 					newelements = [];
@@ -210,7 +192,7 @@ SPARK = (function() {
 								name.toLowerCase() :
 							type == "#" ? newelements[i].id == name :
 							type == "." ?
-								(" "+newelements[i].className+" ").
+								(" "+newelements[i].className+" ").replace(/\s/g, " ").
 								indexOf(" "+name+" ") >= 0 :
 							type == "[" ? (
 								!attrcompare ? newelements[i].hasAttribute(name) :
@@ -307,7 +289,7 @@ SPARK = (function() {
 		Constructor.prototype = this;
 		newelement = new Constructor();
 
-		if (selector !== selector+"") {
+		if (selector !== ""+selector) {
 		// handle the case where no selector is given, or a node, window,
 		// or array of nodes
 			elements = !selector ? [] :
@@ -440,13 +422,13 @@ SPARK = (function() {
 	// just resolving to the same URL).
 		var
 			i,
-			myfiles = files===files+"" ? [files] : files,
+			myfiles = files===""+files ? [files] : files,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
 			registerscript = function(file) {
 				var
-					myscript = that.build({script:""}).set("src", file),
+					myscript = that.build({script:""}),
 					gencallback = function() {
 						if (loadstate[file] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
@@ -461,6 +443,7 @@ SPARK = (function() {
 						}
 					};
 				loadstate[file] = 1;
+				myscript[0].src = file;
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
 				that.select(document.documentElement.childNodes[0]).append(myscript);
@@ -484,7 +467,7 @@ SPARK = (function() {
 		});
 	};
 
-	SPARK.getstyle = function(style) {
+	SPARK.getStyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
 	// the given style, for the first selected element.  Note that
 	// this is a value computed by the browser and they may each
@@ -498,7 +481,7 @@ SPARK = (function() {
 	};
 
 	/*
-	SPARK.gettext = function() {
+	SPARK.getText = function() {
 	// fetches and returns the text content of the selected nodes.
 	// to set the text content of a node, you should just use
 	// .append("text") - preceded by .empty() if replacing existing
@@ -509,23 +492,6 @@ SPARK = (function() {
 	*/
 
 	/*
-	SPARK.act = function(method) {
-		var
-			obj,
-			parts = method.split(".");
-			i = this.length;
-
-		while (i--) {
-
-			for (obj = this[i]; parts[1];) {
-				obj = obj[parts.shift()];
-			}
-			obj[parts[0]].call(obj, [].slice.call(arguments, 0));
-		}
-		return this;
-	};
-	*/
-
 	SPARK.get = function(prop) {
 	// fetches and returns the value of the given property, for the
 	// first selected element.
@@ -545,35 +511,75 @@ SPARK = (function() {
 
 		return this;
 	};
-
-	/*
-	var startanimation = function(obj, prop) {
-	// internal function to start animating some object property
-
-		var
-			i = animations.length;
-
-		while (i--) {
-			if (animations[i][0] === obj && animations[i][1] == prop) {
-				animations.splice(i, 1);
-				i = 0;
-			}
-		}
-
-		animations.push(arguments);
-	}
 	*/
 
-	SPARK.setstyle = function(style, value, lastval, easing, msec, parm) {
-	// sets one or more styles on each selected node.  style can be
-	// an object of {style: styleval, ...} or you can set a single
-	// style with style and value.
+	SPARK.setAttribute = function(attr, value) {
+	// shortcut, for setting attribute on all selected elements
+	// note that in this function, setting the value to "" (empty
+	// string) removes that attribute.  handy for boolean attributes
+	// like 'selected'
+		for (var i = this.length, lower = attr.toLowerCase(); i--;) {
+
+			if (lower == "style") {
+				this[i].style.cssText = value;
+			}
+			else if (lower == "for") {
+				this[i].htmlFor = value;
+			}
+			else if (lower == "class") {
+				this[i].className = value;
+			}
+			else if (!value) {
+				this[i].removeAttribute(attr);
+			}
+			else {
+				this[i].setAttribute(attr, value);
+			}
+		}
+		return this;
+	};
+
+	SPARK.removeAttribute = function(attr) {
+		return this.setAttribute(attr, "");
+	};
+
+	SPARK.removeClass = function(myclass) {
+	// removes the given class from all selected nodes.
+	// it's assumed that classes are always separated by spaces
+		for (var i = this.length; i--;) {
+			this[i].className =
+				(" "+this[i].className+" ").replace(/\s/g, " ").
+				replace(" "+myclass+" ", " ").slice(1,-1);
+		}
+		return this;
+	};
+
+	SPARK.addClass = function(myclass) {
+	// adds the given class to all selected nodes.
+	// removes the class first if it's already there, to prevent
+	// duplication
+		for (var i = this.length; i--;) {
+			this[i].className =
+				(" "+this[i].className+" ").replace(/\s/g, " ").
+				replace(" "+myclass+" ", " ").slice(1) + myclass;
+		}
+		return this;
+	};
+
+	SPARK.style = function(style, value, lastval, easing, msec, parm) {
+	// sets an inline style to the given value on all selected nodes.
+	// if lastval is given, then after the style is initially set to
+	// the first value, it is animated towards the last value.  easing,
+	// msec and parm are all optional and specify parameters for the
+	// animation; if they are not given, a fairly basic and short
+	// animation is used by default.
 		var
 			i = this.length, j,
 			time = +new Date(),
 			mylastval,
 			myval,
 			animated = 
+				lastval !== undef &&
 				(mylastval = parseFloat(lastval)) == mylastval &&
 				(myval = parseFloat(value)) == myval,
 			suffix = animated && /\D*$/.exec(lastval)[0];
@@ -629,7 +635,7 @@ SPARK = (function() {
 		if (spec.cloneNode && spec.nodeType) { // is a node
 			return this.select(spec);
 		}
-		if (spec.length && spec[0] && spec !== spec+"") { //arraylike
+		if (spec.length && spec[0] && spec !== ""+spec) { //arraylike
 			element = document.createDocumentFragment();
 			for (tmp = 0, len = spec.length; tmp < len;) {
 				element.appendChild(this.build(spec[tmp++])[0]);
@@ -653,13 +659,7 @@ SPARK = (function() {
 			}
 		}
 		for (tmp = attributes.length; tmp--;) {
-			element[0].setAttribute(attributes[tmp][0], attributes[tmp][1]);
-			if (attributes[tmp][0].toLowerCase() == "style" && element[0].style) {
-				element[0].style.cssText = attributes[tmp][1];
-			}
-			if (attributes[tmp][0].toLowerCase() == "class") {
-				element[0].className = attributes[tmp][1];
-			}
+			element.setAttribute(attributes[tmp][0], attributes[tmp][1]);
 		}
 		return element;
 	};
@@ -739,9 +739,7 @@ SPARK = (function() {
 	SPARK.empty = function() {
 	// deletes the contents of the selected nodes, but not the nodes
 	// themselves
-		var
-			i, tmp;
-		for (i = this.length; i--;) {
+		for (var i = this.length, tmp; i--;) {
 			while ((tmp = this[i].lastChild)) {
 				this[i].removeChild(tmp);
 			}
@@ -749,59 +747,26 @@ SPARK = (function() {
 		return this;
 	};
 
-	/*
-	SPARK.jsonencode = function(obj, _exclude) {
-	// serialises the value obj into a JSON string.  the second parameter is
-	// intended for internal use only and must not be relied upon in case
-	// of future changes
-		var
-			i, current, len,
-			exclude = _exclude || [],
-			meta = {'\n': '\\n', '\r': '\\r', '"' : '\\"', '\\': '\\\\'},
-			escapechars = /[\\\"\x00-\x1f\u007f-\uffff]/g,
-			collected = [];
-
-		if (typeof obj == 'object' && obj !== null) {
-
-			// prevent endless recursion; check if processing same object inside itself
-			if (checkinarray["&"](exclude, obj)) {
-				return undef;
-			}
-			exclude.push(obj);
-
-			if (Object.prototype.toString.call(obj) == '[object Array]') {
-				for (i = 0, len = obj.length; i < len; i++) {
-					try {
-						collected.push(this.jsonencode(obj[i], exclude) || 'null');
-					} catch (err1) {}
-				}
-				return '[' + collected.join() + ']';
-			}
-
-			// not array so treat it as pairs of name:value
-			for (i in obj) {
-				if (Object.hasOwnProperty.call(obj, i)) {
-					try {
-						if ((current = this.jsonencode(obj[i], exclude))) {
-							collected.push(this.jsonencode(i) + ':' + current);
-						}
-					} catch (err2) {}
-				}
-			}
-			return '{' + collected.join() + '}';
+	SPARK.jsonDecode = function(json) {
+	// unserialises the JSON string into the equivalent value.  Does a check
+	// on the string that is only thorough enough to prevent arbitrary code
+	// execution.
+	
+		/*
+		var cx = /[\x00\u007f-\uffff]/g;
+		json = json.replace(cx, function(ch) {
+			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
+		});
+		*/
+		if (/^[\],:{}\s]*$/.test(
+			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$").
+			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").
+			replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
+			return eval("("+json+")");
 		}
-
-		return typeof obj == 'string' ? '"' + obj.replace(escapechars, function(ch) {
-				return meta[ch] || '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-				}) + '"' :
-			typeof obj == 'number' ? (isFinite(obj) ? String(obj) : 'null') :
-			typeof obj == 'boolean' ? String(obj) :
-			obj === null ? "null" :
-			undef;
 	};
-	*/
 
-	SPARK.gethttp = function(url, callback, method, body) {
+	SPARK.getHttp = function(url, callback, method, body) {
 	// places an HTTP request (using XMLHttpRequest) for the given URL.
 	// method and body are optional.
 	// callback is only called when the load is 100% complete (that is, you
@@ -821,14 +786,15 @@ SPARK = (function() {
 				// implement JSON parsing
 				if (!xmlhttprequest.responseJSON) {
 					xmlhttprequest.responseJSON =
-					jsondecode(xmlhttprequest.responseText);
+					this.jsonDecode(xmlhttprequest.responseText);
 				}
 
 				callback.call(xmlhttprequest);
 			}
 		};
 		xmlhttprequest.open(method || "GET", url, !0);
-		if (body && typeof body.cloneNode != "function" &&
+		if (body && ""+body!==body &&
+			typeof body.cloneNode != "function" &&
 			typeof body.read != "function") {
 			for (i in body) {
 				if (Object.hasOwnProperty.call(body, i)) {
@@ -849,7 +815,7 @@ SPARK = (function() {
 	// SPARK.inframe before loading SPARK
 	// I consider this temporary until stable Firefox implements
 	// X-FRAME-OPTIONS which is a better clickjacking fix
-	if (self !== top && !SPARK.allowframing) {
+	if (self !== top && !SPARK.framing) {
 		top.location.replace(location.href);
 		location.replace(null);
 	}

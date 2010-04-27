@@ -254,7 +254,7 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			x = (time - anim[4]) / (anim[7]||410);
+			x = (time - anim[4]) / (anim[7]||400);
 			if (x > 1) {
 				animations.splice(i, x = 1);
 			}
@@ -264,7 +264,7 @@ SPARK = (function() {
 				anim[6] == "in"    ? x*x :
 				anim[6] == "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
 				anim[6] == "el"    ? ((2-x)*x-1) *
-					Math.cos(Math.PI*x*2*(anim[7]||410)/(anim[8]||310)) + 1 :
+					Math.cos(Math.PI*x*2*(anim[7]||400)/(anim[8]||300)) + 1 :
 				anim[6] == "fn"    ? anim[8](x) :
 				(2-x)*x // 'out' (default)
 				) * anim[3] + anim[2] + anim[5];
@@ -467,6 +467,7 @@ SPARK = (function() {
 		});
 	};
 
+/*
 	SPARK.getStyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
 	// the given style, for the first selected element.  Note that
@@ -475,10 +476,11 @@ SPARK = (function() {
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
 		return !this[0] ? undef :
-			window.getComputedStyle ?
-				getComputedStyle(this[0], null)[style] :
+			window.defaultView && defaultView.getComputedStyle ?
+				defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
 	};
+	*/
 
 	/*
 	SPARK.getText = function() {

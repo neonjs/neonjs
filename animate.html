@@ -11,11 +11,11 @@ SPARK.ready(function() {
 	var notice = SPARK.select('body').append({p:"Click somewhere with your mouse"});
 	SPARK.select(document.documentElement).watch('mouseup', function(evt) {
 		var el = SPARK.select('body').append({div:""}).
-			setstyle('height', '30px').
-			setstyle('width', '30px').setstyle('background', 'grey').
-			setstyle('position', 'absolute').
-			setstyle('left', '-30px', evt.pageX-15+"px").
-			setstyle('top', '-30px', evt.pageY-15+"px");
+			style('height', '30px').
+			style('width', '30px').style('background', 'grey').
+			style('position', 'absolute').
+			style('left', '-30px', evt.pageX-15+"px", 'el').
+			style('top', '-30px', evt.pageY-15+"px", 'el');
 		notice.remove();
 	});
 });

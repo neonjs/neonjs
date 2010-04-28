@@ -467,9 +467,9 @@ SPARK = (function() {
 
 	SPARK.getStyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
-	// the given style, for the first selected element.  Note that
-	// this is a value computed by the browser and they may each
-	// return the same value in quite different notations, eg
+	// the given style, for the first selected element.
+	// Note that this value may be returned in a range of different
+	// notations, in particular in IE where it's as it was set eg.
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
 		return !this[0] ? undef :

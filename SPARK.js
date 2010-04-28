@@ -465,7 +465,6 @@ SPARK = (function() {
 		});
 	};
 
-/*
 	SPARK.getStyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
 	// the given style, for the first selected element.  Note that
@@ -474,11 +473,10 @@ SPARK = (function() {
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
 		return !this[0] ? undef :
-			window.defaultView && defaultView.getComputedStyle ?
-				defaultView.getComputedStyle(this[0], null)[style] :
+			document.defaultView && document.defaultView.getComputedStyle ?
+				document.defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
 	};
-	*/
 
 	/*
 	SPARK.getText = function() {

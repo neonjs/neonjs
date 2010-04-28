@@ -1,3 +1,9 @@
+
+if (!document.createDocumentFragment) {
+	document.open();
+	document.write("<p>Your browser appears to be too old to support SPARK</p>");
+}
+
 SPARK.load("SPARK.tester.js", function() {
 
 	SPARK.tester.test("Document ready state", function() {
@@ -12,7 +18,7 @@ SPARK.load("SPARK.tester.js", function() {
 		});
 		
 	});
-	
+
 	SPARK.ready(function() {
 
 		SPARK.tester.test("Selectors", function() {
@@ -155,7 +161,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(elements[0].firstChild.nodeType == 3, "Text node child created");
 			this.assert(pandtext[0].nodeName.toLowerCase() == "p", "Accepts array");
 			this.assert(pandtext[1].nodeType == 3, "Text node second part of array");
-			this.assert(/width:\s*66px/.test(complex[0].style.cssText), "Building style attribute");
+			this.assert(/width:\s*66px/i.test(complex[0].style.cssText), "Building style attribute");
 			this.assert(/\bmysomething\b/.test(complex[0].className), "Building class attribute");
 			this.finish();
 		});

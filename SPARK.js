@@ -195,14 +195,13 @@ SPARK = (function() {
 								(" "+newelements[i].className+" ").replace(/\s/g, " ").
 								indexOf(" "+name+" ") >= 0 :
 							type == "[" ? (
-								!attrcompare ? newelements[i].hasAttribute(name) :
-								attrcompare == "=" ?
-									newelements[i].getAttribute(name) == attrvalue :
-								attrcompare == "~=" ?
-									(" "+newelements[i].getAttribute(name)+" ").
+								!attrcompare || !attrvalue ? newelements[i].hasAttribute(name) :
+								(tmp = name == "class" ? newelements[i].className :
+								 	newelements[i].getAttribute(name)) &&
+								attrcompare == "=" ? tmp == attrvalue :
+								attrcompare == "~=" ? (" "+tmp+" ").
 									indexOf(" "+attrvalue+" ") >= 0 :
-								(newelements[i].getAttribute(name)+"-").
-									indexOf(attrvalue) === 0) :
+								(tmp+"-").indexOf(attrvalue) === 0) :
 							name.toLowerCase() == "first-child" ? 
 								!getprevioussibling(newelements[i]) :
 							0;
@@ -428,7 +427,7 @@ SPARK = (function() {
 			loadid = ++gid,
 			registerscript = function(file) {
 				var
-					myscript = that.build({script:""}),
+					myscript = that.build({script:"",$src:file}),
 					gencallback = function() {
 						if (loadstate[file] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
@@ -443,7 +442,6 @@ SPARK = (function() {
 						}
 					};
 				loadstate[file] = 1;
-				myscript[0].src = file;
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
 				that.select(document.documentElement.childNodes[0]).append(myscript);
@@ -531,6 +529,12 @@ SPARK = (function() {
 			else if (lower == "class") {
 				this[i].className = value;
 			}
+			// i'm not sure if the following is necessary (src):
+			/*
+			else if (lower == "src") {
+				this[i].src = value;
+			}
+			*/
 			else if (!value) {
 				this[i].removeAttribute(attr);
 			}
@@ -814,7 +818,7 @@ SPARK = (function() {
 
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
-	// SPARK.inframe before loading SPARK
+	// SPARK.framing before loading SPARK
 	// I consider this temporary until stable Firefox implements
 	// X-FRAME-OPTIONS which is a better clickjacking fix
 	if (self !== top && !SPARK.framing) {
@@ -832,4 +836,3 @@ SPARK = (function() {
 
 	return SPARK;
 }()); 
-

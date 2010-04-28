@@ -36,7 +36,7 @@ SPARK.tester = SPARK.tester || (function() {
 			failures = 0,
 			assertions = 0,
 			testobj = {};
-			
+
 		var mytimeout = function() {
 			if (testobj.testdiv) {
 				testobj.testdiv.remove();

@@ -1,0 +1,5 @@
+/*
+ SPARK js lib (c) Thomas Rutter SPARKlib.com
+*/
+SPARK.tester=SPARK.tester||function(){var e=window.SPARK,f,k=0,g={};g.test=function(l,m){var h=(f||(f=e.select("body").append({table:""}).append({tbody:""}))).append({tr:""}),b=h.append({td:"TESTING ..."}).style("background","gray").style("color","white").style("padding","5px"),i=h.append({td:{div:l}}).style("padding","2px"),c=0,n=0,a={},j=function(){a.testdiv&&a.testdiv.remove();c||b.empty().style("background","brown").append("TIMEOUT")};a.assert=function(d,o){if(!d){b.empty().style("background",
+"brown").append("FAILURE");i=i.append({div:"Assertion failed: "+o});c++}n++};a.finish=function(){a.testdiv&&a.testdiv.remove();c||b.empty().style("background","green").append("SUCCESS");clearTimeout(a.timeout)};a.id="SPARK-tester-"+ ++k;a.testdiv=e.select("body>:first-child").insert({div:"",$id:a.id});a.timeout=setTimeout(j,2490);a.wait=function(d){clearTimeout(a.timeout);a.timeout=setTimeout(j,d);c||b.empty().append("WAITING ...")};setTimeout(function(){m.call(a)},0)};return g}();

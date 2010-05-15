@@ -197,7 +197,7 @@ SPARK = (function() {
 							type == "[" ? (
 								!attrcompare || !attrvalue ? newelements[i].hasAttribute(name) :
 								(tmp = name == "class" ? newelements[i].className :
-								 	newelements[i].getAttribute(name)) &&
+									newelements[i].getAttribute(name)) &&
 								attrcompare == "=" ? tmp == attrvalue :
 								attrcompare == "~=" ? (" "+tmp+" ").
 									indexOf(" "+attrvalue+" ") >= 0 :

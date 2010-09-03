@@ -206,8 +206,8 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(obj3.a.a === 5, "Read nested object");
 			this.assert(obj4 === 7, "Read primitive value");
 
-			this.assert(invalid === undefined);
-			this.assert(invalid2 === undefined);
+			this.assert(invalid === undefined, "Reject invalid expression");
+			this.assert(invalid2 === undefined, "Reject invalid function call");
 
 			this.finish();
 
@@ -232,6 +232,25 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(newobj.nested.length == 0, "Correct empty array reconstructed");
 			this.finish();
 			*/
+		});
+
+		SPARK.tester.test("AJAX requests", function() {
+			var
+				that = this,
+				finished = false,
+				callback = function() {
+					if (!finished) {
+						alert(this.readyState);
+						that.assert(this.responseText, "Fetch text");
+						that.finish();
+					}
+				};
+
+			this.wait(10000);
+
+			SPARK.getHttp('http://example.org/', callback);
+			SPARK.getHttp('http://localhost/', callback);
+
 		});
 
 	});

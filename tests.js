@@ -240,9 +240,9 @@ SPARK.load("SPARK.tester.js", function() {
 				finished = false,
 				callback = function() {
 					if (!finished) {
-						alert(this.readyState);
 						that.assert(this.responseText, "Fetch text");
 						that.finish();
+						finished = true;
 					}
 				};
 

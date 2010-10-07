@@ -166,10 +166,52 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
+		SPARK.tester.test("Document manipulation", function() {
+			var
+				testelement = this.testdiv.append({div:{p:""}}),
+				appended2 = this.testdiv.append({p:"TestAppend"}),
+				inserted = appended2.insert({p:"TestInsert"});
+
+			this.assert(this.testdiv[0].lastChild.firstChild.data ==
+				'TestAppend', "Append to an element");
+			this.assert(this.testdiv[0].firstChild.nextSibling.firstChild.data ==
+				'TestInsert', "Insert an element");
+
+			testelement.empty();
+			appended2.remove();
+
+			this.assert(testelement[0].hasChildNodes() == false, "Remove an element's children");
+			this.assert(this.testdiv[0].lastChild.firstChild.data == 
+				'TestInsert', "Remove an element");
+				
+			this.finish();
+		});
+
+		SPARK.tester.test("JSON decoding", function() {
+			var
+				obj = SPARK.jsonDecode('{"a":5.3e2,"b":false,"c":null}'),
+				obj2 = SPARK.jsonDecode('{"a":"my\\"string\\n","b":[1,2]}'),
+				obj3 = SPARK.jsonDecode('{"a":{"a":5}}'),
+				obj4 = SPARK.jsonDecode('7');
+				invalid = SPARK.jsonDecode('{"a":5+5}'),
+				invalid2 = SPARK.jsonDecode('{"a":alert(\'2\')}');
 
 
-		/*
-		SPARK.tester.test("JSON encoding and decoding", function() {
+			this.assert(obj.a === 5.3e2, "Read decimal number with exponent");
+			this.assert(obj.b === false, "Read boolean value");
+			this.assert(obj.c === null, "Read null value");
+			this.assert(obj2.a === "my\"string\n", "Read string value");
+			this.assert(obj2.b.length == 2 && obj2.b[1] === 2, 
+				"Read array value");
+			this.assert(obj3.a.a === 5, "Read nested object");
+			this.assert(obj4 === 7, "Read primitive value");
+
+			this.assert(invalid === undefined, "Reject invalid expression");
+			this.assert(invalid2 === undefined, "Reject invalid function call");
+
+			this.finish();
+
+			/*
 			var
 				windowjson = SPARK.jsonencode(window),
 				arrjson = SPARK.jsonencode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]),
@@ -189,8 +231,27 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(newobj["val\n"] === null, "Correct null reconstructed");
 			this.assert(newobj.nested.length == 0, "Correct empty array reconstructed");
 			this.finish();
+			*/
 		});
-		*/
+
+		SPARK.tester.test("AJAX requests", function() {
+			var
+				that = this,
+				finished = false,
+				callback = function() {
+					if (!finished) {
+						that.assert(this.responseText, "Fetch text");
+						that.finish();
+						finished = true;
+					}
+				};
+
+			this.wait(10000);
+
+			SPARK.getHttp('http://example.org/', callback);
+			SPARK.getHttp('http://localhost/', callback);
+
+		});
 
 	});
 

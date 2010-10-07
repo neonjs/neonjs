@@ -762,7 +762,7 @@ SPARK = (function() {
 			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
 		});
 		*/
-		if (/^[\],:{}\s]*$/.test(
+		if (/^[\],:{}\s]+$/.test(
 			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$").
 			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").
 			replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
@@ -790,7 +790,7 @@ SPARK = (function() {
 				// implement JSON parsing
 				if (!xmlhttprequest.responseJSON) {
 					xmlhttprequest.responseJSON =
-					this.jsonDecode(xmlhttprequest.responseText);
+					SPARK.jsonDecode(xmlhttprequest.responseText);
 				}
 
 				callback.call(xmlhttprequest);

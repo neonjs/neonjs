@@ -1,0 +1,21 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<title>Rich text editor test</title>
+<script type="text/javascript" src="SPARK.js"></script>
+<script type="text/javascript">
+
+SPARK.load('SPARK.richtext.js', function() {
+	SPARK.select('textarea.richtext').richText();
+	});
+
+</script>
+</head>
+
+<body>
+	<h1>Text field</h1>
+	<textarea class="richtext" cols="65" rows="4">&lt;p>Test&lt;/p></textarea>
+</body>
+</html>

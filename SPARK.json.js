@@ -1,6 +1,5 @@
 
 // SPARK json - json encoding for Javascript
-// and event handling, and a way of loading in modules
 // Part of the SPARK Javascript library
 // Copyright (c) 2010 Thomas Rutter
 

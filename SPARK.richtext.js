@@ -13,41 +13,55 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
-SPARK.richText = SPARK.richText || (function() {
+SPARK.richText = SPARK.richText || function(opts) {
 
-	return function(opts) {
+	var setupeditor = function(that) {
 		var
 			i,
-			area,
 			el,
-			textareas = [];
-		
-		for (i = this.length; i--;) {
-			if (this[i].tagName.toLowerCase() == 'textarea') {
-				textareas.push((el = SPARK.select(this[i])));
-				area = el.insert({div:""}).
+			container,
+			toolbar,
+			savebar,
+			div,
+			source,
+			canedit;
+
+		for (var i = that.length; i--; ) {
+			el = SPARK.select(that[i]);
+			container = el.insert({div:''});
+			canedit = container.contenteditable !== null;
+
+
+
+
+
+			if (el[0].tagName.toLowerCase() == 'textarea') {
+				div = container.append({div:''}).
 					style('minWidth', el.getStyle('width')).
 					style('minHeight', el.getStyle('height'));
-				area[0].innerHTML = el[0].value;
+				div[0].innerHTML = el[0].value;
 				el.insert({
 					input:'',
 					$type:'hidden',
 					$name:el[0].name,
 					$value:''
 					});
-				el.remove();
 			}
 			else {
-				area = SPARK.select(this[i]);
+				div = container.append(el);
 			}
-			area.setAttribute('contenteditable', 'true').
+			el.remove();
+			div.setAttribute('contenteditable', 'true').
 				style('border', '1px inset #aaa').
 				style('padding', '1px').
 				style('maxHeight', '26em').
 				style('overflow', 'auto').
 				addClass('SPARK-richtext-area');
+			toolbar = div.insert({div:''}).
+				addClass('SPARK-richtext-toolbar');
 		}
-		
-	};
+	}
 	
-}());
+	setupeditor(this);
+
+};

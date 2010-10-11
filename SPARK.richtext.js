@@ -15,6 +15,39 @@
 
 SPARK.richText = SPARK.richText || function(opts) {
 
+	var 
+		parsereg = /[^<]+|<(\/?)([\w!]+)[^>"]*(?:"[^"]*"[^>"]*)*>?|(<!--)[\S\s]*?-->/g;
+
+	var htmlconvert = function(input) {
+		var
+			tag,
+			output = '',
+			prelevel = 0;
+
+		while (matches = parsereg.exec(input)) {
+			tag = matches[2] ? matches[2].toLowerCase() : null;
+			if (!matches[1]) {
+				if (tag==='p'||tag==='ul'||tag==='ol'||tag==='dl'||
+					tag==='blockquote'||tag==='h1'||tag==='h2'||tag==='h3'||
+					tag==='h4'||tag==='h5'||tag==='h6'||tag==='pre') {
+					output += output !== '' ? "\n\n" : '';
+				}
+				else if (tag==='li'||tag==='tr'||tag==='br') {
+					output += output !== '' ? "\n" : '';
+				}
+			}
+			if (tag !== 'p' || !/<\/?p\s*>/i.test(matches[0])) {
+				if (tag==='pre') {
+					prelevel += matches[1] ? -1 : 1;
+				}
+				output += (prelevel > 0 || matches[3]) ? matches[0] :
+					matches[0].replace(/\s+/, ' ');
+			}
+		}
+
+		return output;
+	}
+
 	var setupeditor = function(that) {
 		var
 			i,
@@ -26,45 +59,6 @@ SPARK.richText = SPARK.richText || function(opts) {
 			source,
 			canedit = document.body.contentEditable == undefined;
 
-		/*
-		var totext = function(html) {
-
-
-			var 
-				matches,
-				output = '',
-				lastpos = 0,
-				mybreak = 0,
-				regex = /\s*+<\/?+(\w++)[^>"]*(?:"[^"]*"[^>"]*+)*+>\s*|\x20\s+|\t\s*|\n\s*|\r\s*|<!(?:--[\S\s]*?--|[^-][^>]*)>\s*+/;
-			while (matches = regex.exec(html)) {
-				output .= html.substr(lastpos, regex.lastIndex - lastpos);
-				if (regex.lastIndex > lastpos) {
-					mybreak = 0;
-				}
-				if ($matches[1] == '') {
-					mybreak = Math.max(mybreak, 1);
-				}
-				else {
-					if (/^(p|ul|ol|li|blockquote|h[1-6])$/i.test(matches[1])) {
-						mybreak = Math.max(mybreak, 3);
-					}
-					else {
-						if (matches[1] == 'br' || matches[1] == 'tr') {
-							mybreak = Math.max(mybreak, 2);
-						}
-						else {
-							mybreak = Math.max(mybreak, 1);
-						}
-					}
-				}
-				lastpos = regex.lastIndex;
-			}
-
-
-
-			return html;
-		};
-		*/
 
 		for (var i = that.length; i--; ) {
 			el = SPARK.select(that[i]);
@@ -106,7 +100,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 			el.remove();
 
 			editor[0][canedit ? 'innerHTML' : 'value'] = canedit ? source :
-				totext(source);
+				htmlconvert(source);
 		}
 	}
 	

@@ -18,6 +18,15 @@ SPARK.richText = SPARK.richText || function(opts) {
 	var 
 		parsereg = /[^<]+|<(\/?)([\w!]+)[^>"]*(?:"[^"]*"[^>"]*)*>?|(<!--)[\S\s]*?-->/g;
 
+	/*
+		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
+			p|div|isindex|fieldset|table
+		optional end tag: p
+		no end tag (autoclose): hr isindex
+		contains paragraphs: blockquote|address|center|div|fieldset
+	*/
+
+
 	var htmlconvert = function(input) {
 		var
 			tag,

@@ -16,7 +16,10 @@
 SPARK.richText = SPARK.richText || function(opts) {
 
 	var 
-		parsereg = /[^<]+|<(\/?)([\w!]+)[^>"]*(?:"[^"]*"[^>"]*)*>?|(<!--)[\S\s]*?-->/g;
+		parsereg = /([^]*?)(<(\/?)([\w!]+)(?:[^>"-]+|"[^]*?"|--[^]*?--)*>)/g,
+		blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/;
+		//parsereg = /(<\/?)([\w!]+)(?:[^>"-]+|"[^]*?"|--[^]*?--)*>|(?:[^<]+|<[^/\w!])+/g;
+		//parsereg = /[^<]+|<(\/?)([\w!]+)[^>"]*(?:"[^"]*"[^>"]*)*>?|(<!--)[\S\s]*?-->/g;
 
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
@@ -27,13 +30,38 @@ SPARK.richText = SPARK.richText || function(opts) {
 	*/
 
 
-	var htmlconvert = function(input) {
+	var htmlconvert = function(input, /*bool*/ backtohtml) {
 		var
 			tag,
+			matches,
 			output = '',
-			prelevel = 0;
+			stack = [];
 
 		while (matches = parsereg.exec(input)) {
+			// 1: text; 2: tag; 3: slash; 4: tagname
+
+			if (matches[1] != '') {
+				// deal with free text
+				output += stack[stack.length-1] == 'pre' ? matches[1] :
+					matches[1].replace(/\s+/, ' ');
+			}
+
+			if (matches[4]) {
+				tag = matches[4].toLowerCase();
+				if (blockreg.test(tag)) {
+					if (!matches[3]) {
+						stack.push(tag);
+					}
+					else if (tag == stack[stack.length-1]) {
+						stack.pop();
+					}
+				}
+				// deal with tag
+				output += matches[2];
+			}
+
+			/*
+
 			tag = matches[2] ? matches[2].toLowerCase() : null;
 			if (!matches[1]) {
 				if (tag==='p'||tag==='ul'||tag==='ol'||tag==='dl'||
@@ -52,6 +80,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				output += (prelevel > 0 || matches[3]) ? matches[0] :
 					matches[0].replace(/\s+/, ' ');
 			}
+			*/
 		}
 
 		return output;

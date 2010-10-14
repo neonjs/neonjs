@@ -17,9 +17,9 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 	var 
 		// 1: text; 2: tag; 3: slash; 4: tagname; 5: tagcontents; 6: endtext;
-
-		parsereg = /([^]*?)(<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?)|([^]+$)/g,
+		parsereg = /([^]*?(?=<[/\w!])|[^]+)((?:<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?)?)/g,
 		blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/;
+		// older versions:
 		//parsereg = /([^]*?)(<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?)|[^]+/g,
 		//parsereg = /<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?|(?:[^<]+|<[^/\w!])+/g,
 		//parsereg = /(<\/?)([\w!]+)(?:[^>"-]+|"[^]*?"|--[^]*?--)*>|(?:[^<]+|<[^/\w!])+/g;
@@ -36,36 +36,61 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 	var htmlconvert = function(input, /*bool*/ tohtml) {
 		var
-			tag,
 			matches,
+			tagname,
+			text,
+			tag,
+			topstack,
 			output = '',
+			lastdelta = 0,
+			delta = 0,  // delta is +1 for moving into a block, -1 for leaving, 
+				// 0 for non-block
 			stack = [];
 
 		while (matches = parsereg.exec(input)) {
 
-			output += ":" + matches[0] + "\n";
-			continue;
-
-			if (matches[2]) {
-				tag = matches[2].toLowerCase();
-				if (blockreg.test(tag)) {
-					if (!matches[1]) {
-						stack.push(tag);
+			lastdelta = delta;
+			lasttag = tag;
+			delta = 0;
+			topstack = stack[stack.length-1];
+			if (matches[4]) {
+				tagname = matches[4].toLowerCase();
+				if (blockreg.test(tagname)) {
+					if (!matches[3]) {
+						delta = 1;
+						stack.push(tagname);
 					}
-					else if (tag == stack[stack.length-1]) {
+					else if (tagname == topstack) {
+						delta = -1;
 						stack.pop();
 					}
 				}
-				// deal with tag
-				output += matches[0];
 			}
-			else {
-				// deal with free text
-				output += matches[0];
+			text = matches[1];
+			tag = matches[2];
+
+			if (topstack != 'pre') {
+				// normalise whitespace
+				text = text.replace(/\s+/g, ' ');
+				// remove leading spaces
+				if (lastdelta || !topstack || lasttag == 'p') {
+					text = text.replace(/^\s+/, '');
+				}
+				// remove trailing spaces
+				if (delta || !topstack || tag == 'p') {
+					text = text.replace(/\s+$/, '');
+				}
+				// add newline at end (before tag)
+				if (lasttag && (delta == 1 || (!matches[3] && (tagname == 'tr' || tagname == 'li' || tagname == 'p')))) {
+					text += "\n";
+				}
+				// add newline at start (after last tag)
+				if (tagname && lastdelta == -1) {
+					text = "\n" + text;
+				}
 			}
 
-
-
+			output += text + tag;
 
 			/*
 

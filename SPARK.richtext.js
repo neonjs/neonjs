@@ -16,8 +16,12 @@
 SPARK.richText = SPARK.richText || function(opts) {
 
 	var 
-		parsereg = /([^]*?)(<(\/?)([\w!]+)(?:[^>"-]+|"[^]*?"|--[^]*?--)*>)/g,
+		// 1: text; 2: tag; 3: slash; 4: tagname; 5: tagcontents; 6: endtext;
+
+		parsereg = /([^]*?)(<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?)|([^]+$)/g,
 		blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/;
+		//parsereg = /([^]*?)(<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?)|[^]+/g,
+		//parsereg = /<(\/?)([\w!]+)((?:[^>"-]+|"[^]*?"|--[^]*?--)*)>?|(?:[^<]+|<[^/\w!])+/g,
 		//parsereg = /(<\/?)([\w!]+)(?:[^>"-]+|"[^]*?"|--[^]*?--)*>|(?:[^<]+|<[^/\w!])+/g;
 		//parsereg = /[^<]+|<(\/?)([\w!]+)[^>"]*(?:"[^"]*"[^>"]*)*>?|(<!--)[\S\s]*?-->/g;
 
@@ -30,7 +34,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 	*/
 
 
-	var htmlconvert = function(input, /*bool*/ backtohtml) {
+	var htmlconvert = function(input, /*bool*/ tohtml) {
 		var
 			tag,
 			matches,
@@ -38,18 +42,14 @@ SPARK.richText = SPARK.richText || function(opts) {
 			stack = [];
 
 		while (matches = parsereg.exec(input)) {
-			// 1: text; 2: tag; 3: slash; 4: tagname
 
-			if (matches[1] != '') {
-				// deal with free text
-				output += stack[stack.length-1] == 'pre' ? matches[1] :
-					matches[1].replace(/\s+/, ' ');
-			}
+			output += ":" + matches[0] + "\n";
+			continue;
 
-			if (matches[4]) {
-				tag = matches[4].toLowerCase();
+			if (matches[2]) {
+				tag = matches[2].toLowerCase();
 				if (blockreg.test(tag)) {
-					if (!matches[3]) {
+					if (!matches[1]) {
 						stack.push(tag);
 					}
 					else if (tag == stack[stack.length-1]) {
@@ -57,8 +57,15 @@ SPARK.richText = SPARK.richText || function(opts) {
 					}
 				}
 				// deal with tag
-				output += matches[2];
+				output += matches[0];
 			}
+			else {
+				// deal with free text
+				output += matches[0];
+			}
+
+
+
 
 			/*
 

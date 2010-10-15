@@ -16,11 +16,16 @@ SPARK.load('SPARK.richtext.js', function() {
 
 <body>
 	<h1>Text field</h1>
-	<textarea name="myinput" class="richtext" cols="65" rows="8">&lt;p> Test &lt;/p> &lt;p>Test
-2&lt;/p>&lt;pre>   as  s  ss 
-s&lt;/pre>
+	<textarea name="myinput" class="richtext" cols="65" rows="8">
+		&lt;p>  Line 1  &lt;br>  Line 2  &lt;/P>&lt;p>New para &lt;/p>&lt;!--comment last-->&lt;P>Para after comment&lt;blockquote> &lt;!--comment--> &lt;p>Para in 
+block&lt;p> New para in block&lt;br>
+New line&lt;/blockquote>&lt;h3>Heading
+3&lt;/h3>  Text outside P
 
-&lt;!-- comment &lt;p> -->
-END</textarea>
+
+&lt;ul>&lt;li>Dotpoint1&lt;/li>&lt;li>Dotpoint2&lt;li>
+
+Dotpoint3&lt;/ul>END
+</textarea>
 </body>
 </html>

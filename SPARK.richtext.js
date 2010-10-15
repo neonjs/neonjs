@@ -74,18 +74,28 @@ SPARK.richText = SPARK.richText || function(opts) {
 			if (topstack != 'pre') {
 				if (wstopara && !strippara &&
 					(!topstack || topstack == 'blockquote' || topstack == 'center')) {
-					text = text.replace("\n\n", '<p>').replace("\n", '<br>');
+					if (delta || tagname == 'p' || !tagname) {
+						text = text.replace(/\s+$/, '');
+					}
+					if (!popen) {
+						text = text.replace(/^\s+/, '');
+					}
+					text = text.replace("\n\n", '</p><p>')
+						.replace("\n", "<br>\n")
+						.replace('</p><p>', "</p>\n\n<p>");
 				}
-				// normalise whitespace
-				text = text.replace(/\s+/g, ' ');
+				else {
+					// normalise whitespace
+					text = text.replace(/\s+/g, ' ');
+				}
 				// remove leading spaces
-				if (lastdelta || !topstack || 
+				if (lastdelta || (!topstack && last != '!') || 
 					last == 'p' || last == 'br' || last == 'li' || last == 'tr') {
 					text = text.replace(/^\s+/, '');
 				}
 				// remove trailing spaces
-				if (delta || !topstack ||
-					tag == 'p' || tag == 'br' || tag == 'li' || last == 'tr') {
+				if (delta || (!topstack && tagname != '!') ||
+					tagname == 'p' || tagname == 'br' || tagname == 'li' || last == 'tr') {
 					text = text.replace(/\s+$/, '');
 				}
 				// add missing <p>
@@ -93,7 +103,12 @@ SPARK.richText = SPARK.richText || function(opts) {
 					(!topstack || topstack == 'blockquote' || topstack == 'center') &&
 					((!closetag && !delta && tagname && tagname != 'p' && tagname != '!') ||
 						/[^\s]/.test(text))) {
-					text = (strippara ? "\n" : "\n<p>") + text;
+					if (!strippara) {
+						text = "<p>" + text;
+					}
+					if (last) {
+						text = "\n" + text;
+					}
 					popen = 1;
 				}
 				// add missing </p>
@@ -146,6 +161,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 			container,
 			editor,
 			toolbar,
+			savebar,
 			source,
 			//canedit = document.body.contentEditable !== undefined;
 			canedit = 0;
@@ -171,6 +187,10 @@ SPARK.richText = SPARK.richText || function(opts) {
 			}
 			toolbar = editor.insert({div:''})
 				.addClass('SPARK-richtext-toolbar');
+			savebar = container.append({a:'CLICK'}).
+				watch('click', function() {
+					editor[0].value = htmlconvert(editor[0].value, 0, 1);
+				});
 
 			// transfer to new editor and remove old
 			if (el[0].tagName.toLowerCase() == 'textarea') {

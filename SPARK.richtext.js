@@ -59,8 +59,10 @@ SPARK.richText = SPARK.richText || function(opts) {
 				closetag = matches[3];
 				if (blockreg.test(tagname)) {
 					if (!closetag) {
-						delta = 1;
-						stack.push(tagname);
+						if (tagname != 'hr' && tagname != 'isindex') {
+							delta = 1;
+							stack.push(tagname);
+						}
 					}
 					else if (tagname == topstack) {
 						delta = -1;
@@ -73,30 +75,27 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 			if (topstack != 'pre') {
 				if (wstopara && !strippara &&
+					// convert whitespace into paragraphs/br implicitly
 					(!topstack || topstack == 'blockquote' || topstack == 'center')) {
-					if (delta || tagname == 'p' || !tagname) {
-						text = text.replace(/\s+$/, '');
-					}
-					if (!popen) {
-						text = text.replace(/^\s+/, '');
-					}
-					text = text.replace("\n\n", '</p><p>')
-						.replace("\n", "<br>\n")
-						.replace('</p><p>', "</p>\n\n<p>");
+
+					text = text.replace(/(\S\s*)\n\r?\n(?=\s*\S)/g, '$1</p><p>')
+						.replace(/^\s*\n\r?\n/, (popen && (!lastdelta || last == '!')) ? '<p>' : '')
+						.replace(/\n\r?\n\s*$/, (!delta || tagname == '!') ? '</p>' : '')
+						.replace(/^\s+|\s+$/g, '')
+						.replace(/\n/g, '<br>\n')
+						.replace(/<\/p>$/, "</p>\n\n")
+						.replace(/^<p>/, "\n\n<p>")
+						.replace(/<\/p><p>/g, "</p>\n\n<p>");
+					text = text.replace(/[^\S\n]+/g, ' ');
 				}
 				else {
 					// normalise whitespace
 					text = text.replace(/\s+/g, ' ');
 				}
 				// remove leading spaces
-				if (lastdelta || (!topstack && last != '!') || 
+				if (lastdelta || !last || !popen || 
 					last == 'p' || last == 'br' || last == 'li' || last == 'tr') {
 					text = text.replace(/^\s+/, '');
-				}
-				// remove trailing spaces
-				if (delta || (!topstack && tagname != '!') ||
-					tagname == 'p' || tagname == 'br' || tagname == 'li' || last == 'tr') {
-					text = text.replace(/\s+$/, '');
 				}
 				// add missing <p>
 				if (!popen && 
@@ -110,6 +109,11 @@ SPARK.richText = SPARK.richText || function(opts) {
 						text = "\n" + text;
 					}
 					popen = 1;
+				}
+				// remove trailing spaces
+				if (delta || !tagname || !popen ||
+					tagname == 'p' || tagname == 'br' || tagname == 'li' || last == 'tr') {
+					text = text.replace(/\s+$/, '');
 				}
 				// add missing </p>
 				if (popen && (
@@ -125,7 +129,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				}
 				// add newline at end (before tag)
 				if ((
-						delta == 1 ||
+						delta == 1 || (!popen && tagname == '!') || 
 						(!closetag && (tagname == 'tr' || tagname == 'li' || tagname == 'p')) || 
 						(popen && delta) ||
 						(closetag && (tagname == 'table' || tagname == 'ul'))) &&
@@ -134,7 +138,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				}
 				// add newline at start (after last tag)
 				if ((
-					lastdelta == -1 || 
+					lastdelta == -1 || (!popen && last == '!') ||
 					(lastclose && last == 'p') ||
 					last == 'br')) {
 					text = "\n" + text;
@@ -187,8 +191,8 @@ SPARK.richText = SPARK.richText || function(opts) {
 			}
 			toolbar = editor.insert({div:''})
 				.addClass('SPARK-richtext-toolbar');
-			savebar = container.append({a:'CLICK'}).
-				watch('click', function() {
+			savebar = container.append({a:'CLICK'})
+				.watch('click', function() {
 					editor[0].value = htmlconvert(editor[0].value, 0, 1);
 				});
 
@@ -210,7 +214,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 			el.remove();
 
 			editor[0][canedit ? 'innerHTML' : 'value'] = canedit ? source :
-				htmlconvert(source, 1, 1);
+				htmlconvert(source, 1, 0);
 		}
 	};
 	

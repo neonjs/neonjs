@@ -36,7 +36,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 			text,
 			tag,
 			topstack,
-			popen = 0, // whether a <p> is open
+			popen = 0, falsepopen, // whether a <p> is open
 			output = '',
 			delta = 0, lastdelta, // delta is +1 for moving into a block, -1 for leaving, 
 				// 0 for non-block
@@ -54,6 +54,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				lastdelta ? 0 :
 				last != 'p' ? popen :
 				lastclose ? 0 : 1;
+			falsepopen = 0;
 			if (matches[4]) {
 				tagname = matches[4].toLowerCase();
 				closetag = matches[3];
@@ -97,41 +98,29 @@ SPARK.richText = SPARK.richText || function(opts) {
 					last == 'p' || last == 'br' || last == 'li' || last == 'tr') {
 					text = text.replace(/^\s+/, '');
 				}
-				// add missing <p>
-				if (!popen && 
-					(!topstack || topstack == 'blockquote' || topstack == 'center') &&
-					((!closetag && !delta && tagname && tagname != 'p' && tagname != '!') ||
-						/[^\s]/.test(text))) {
-					if (!strippara) {
-						text = "<p>" + text;
-					}
-					if (last) {
-						text = "\n" + text;
-					}
-					popen = 1;
-				}
 				// remove trailing spaces
 				if (delta || !tagname || !popen ||
 					tagname == 'p' || tagname == 'br' || tagname == 'li' || last == 'tr') {
 					text = text.replace(/\s+$/, '');
 				}
-				// add missing </p>
-				if (popen && (
+				// account for missing <p> and add \n
+				if (!popen && 
+					(!topstack || topstack == 'blockquote' || topstack == 'center') &&
+					((!closetag && !delta && tagname && tagname != 'p' && tagname != '!') ||
+						/[^\s]/.test(text))) {
+					text = (strippara ? "\n" : "\n<p>") + text;
+					popen = 1;
+				}
+				// account for missing </p> and add \n
+				if ((popen || falsepopen) && (
 					(!closetag && tagname == 'p') ||
-					delta ||
-					!tagname)) {
-					if (!strippara) {
-						text += "</p>";
-					}
-					if ((!closetag && tagname == 'p') || delta == 1 || !tagname) {
-						text += "\n";
-					}
+					delta || !tagname)) {
+					text = text + (strippara ? '' : "</p>") + (!tagname ? '' : "\n");
 				}
 				// add newline at end (before tag)
 				if ((
 						delta == 1 || (!popen && tagname == '!') || 
 						(!closetag && (tagname == 'tr' || tagname == 'li' || tagname == 'p')) || 
-						(popen && delta) ||
 						(closetag && (tagname == 'table' || tagname == 'ul'))) &&
 					last) {
 					text += "\n";
@@ -140,7 +129,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				if ((
 					lastdelta == -1 || (!popen && last == '!') ||
 					(lastclose && last == 'p') ||
-					last == 'br')) {
+					last == 'br') && (tagname || popen)) {
 					text = "\n" + text;
 				}
 			}

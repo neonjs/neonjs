@@ -15,11 +15,6 @@
 
 SPARK.richText = SPARK.richText || function(opts) {
 
-	var 
-		// 1: text; 2: tag; 3: slash; 4: tagname; 5: tagcontents; 6: endtext;
-		parsereg = /([\s\S]*?(?=<[\/\w!])|[\s\S]+)((?:<(\/?)([\w!]+)((?:[^>"\-]+|"[\s\S]*?"|--[\s\S]*?--)*)>?)?)/g,
-		blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/;
-
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
 			p|div|isindex|fieldset|table
@@ -32,15 +27,17 @@ SPARK.richText = SPARK.richText || function(opts) {
 		var
 			matches,
 			tagname, last,
-			closetag = 0, lastclose, // whether there is/was a slash to indicate close tag
-			text,
-			tag,
-			topstack,
-			popen = 0, falsepopen, // whether a <p> is open
-			output = '',
 			delta = 0, lastdelta, // delta is +1 for moving into a block, -1 for leaving, 
 				// 0 for non-block
-			stack = [];
+			closetag = 0, lastclose, // whether there is/was a slash to indicate close tag
+			text,	tagcode,
+			popen = 0, pinitially, // whether a <p> is open
+			output = '',
+			stack = [],
+			topstack,
+			parsereg = /([\s\S]*?(?=<[\/\w!])|[\s\S]+)((?:<(\/?)([\w!]+)((?:[^>"\-]+|"[\s\S]*?"|--[\s\S]*?--)*)>?)?)/g,
+			blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/;
+				// 1: text; 2: tag; 3: slash; 4: tagname; 5: tagcontents; 6: endtext;
 
 		while ((matches = parsereg.exec(input))) {
 
@@ -50,11 +47,10 @@ SPARK.richText = SPARK.richText || function(opts) {
 			delta = closetag = 0;
 			tagname = 0;
 			topstack = stack[stack.length-1];
-			popen = 
+			popen = pinitially =
 				lastdelta ? 0 :
 				last != 'p' ? popen :
 				lastclose ? 0 : 1;
-			falsepopen = 0;
 			if (matches[4]) {
 				tagname = matches[4].toLowerCase();
 				closetag = matches[3];
@@ -72,29 +68,39 @@ SPARK.richText = SPARK.richText || function(opts) {
 				}
 			}
 			text = matches[1];
-			tag = matches[2];
+			tagcode = matches[2];
 
 			if (topstack != 'pre') {
-				if (wstopara && !strippara &&
-					// convert whitespace into paragraphs/br implicitly
-					(!topstack || topstack == 'blockquote' || topstack == 'center')) {
-
-					text = text.replace(/(\S\s*)\n\r?\n(?=\s*\S)/g, '$1</p><p>')
-						.replace(/^\s*\n\r?\n/, (popen && (!lastdelta || last == '!')) ? '<p>' : '')
-						.replace(/\n\r?\n\s*$/, (!delta || tagname == '!') ? '</p>' : '')
-						.replace(/^\s+|\s+$/g, '')
-						.replace(/\n/g, '<br>\n')
-						.replace(/<\/p>$/, "</p>\n\n")
-						.replace(/^<p>/, "\n\n<p>")
-						.replace(/<\/p><p>/g, "</p>\n\n<p>");
-					text = text.replace(/[^\S\n]+/g, ' ');
-				}
-				else {
-					// normalise whitespace
-					text = text.replace(/\s+/g, ' ');
+				// process paragraphs
+				if (!topstack || topstack == 'blockquote' || topstack == 'center' || popen) {
+					// add missing <p> at start
+					if (!popen && (/\S/.test(text) ||
+						(tagname && !delta && tagname != '!' && tagname != 'p'))) {
+						popen = 1;
+						text = '<p>' + text.replace(/^\s*/, '');
+					}
+					if (popen) {
+						// add missing </p> at end
+						if (delta ||
+							(!closetag && tagname == 'p') ||
+							!tagname ||
+							(wstopara && /\n\r?\n\s*$/.test(text))
+							) {
+							popen = 0;
+							text = text.replace(/\s*$/, '') + '</p>';
+						}
+						// add paragraph breaks within based on whitespace
+						if (wstopara) {
+							if (last == 'br') {
+								text = text.replace(/^\s+/, '');
+							}
+							text = text.replace(/\s*\n\r?\n\s*(?=\S)/g, '</p><p>')
+								.replace(/\s*\n\s*/g, '<br>');
+						}
+					}
 				}
 				// remove leading spaces
-				if (lastdelta || !last || !popen || 
+				if (lastdelta || !last || !pinitially || 
 					last == 'p' || last == 'br' || last == 'li' || last == 'tr') {
 					text = text.replace(/^\s+/, '');
 				}
@@ -103,48 +109,49 @@ SPARK.richText = SPARK.richText || function(opts) {
 					tagname == 'p' || tagname == 'br' || tagname == 'li' || last == 'tr') {
 					text = text.replace(/\s+$/, '');
 				}
-				// account for missing <p> and add \n
-				if (!popen && 
-					(!topstack || topstack == 'blockquote' || topstack == 'center') &&
-					((!closetag && !delta && tagname && tagname != 'p' && tagname != '!') ||
-						/[^\s]/.test(text))) {
-					text = (strippara ? "\n" : "\n<p>") + text;
-					popen = 1;
-				}
-				// account for missing </p> and add \n
-				if ((popen || falsepopen) && (
-					(!closetag && tagname == 'p') ||
-					delta || !tagname)) {
-					text = text + (strippara ? '' : "</p>") + (!tagname ? '' : "\n");
-				}
+				// normalise remaining whitespace
+				text = text.replace(/\s+/g, ' ');
+				// escape unwanted < and &
+				text = text.replace(/<(?![\/\w!])/g, '&lt;')
+					.replace(/&(?![\w#])/g, '&amp;');
+
+				// account for added para tags
+				text = strippara ? text.replace(/<\/?\w+>/g, "\n") :
+					text.replace(/<p>/g, "\n<p>").replace(/<\/p>/g, "</p>\n")
+					.replace(/<br>/g, "<br>\n");
 				// add newline at end (before tag)
-				if ((
-						delta == 1 || (!popen && tagname == '!') || 
-						(!closetag && (tagname == 'tr' || tagname == 'li' || tagname == 'p')) || 
-						(closetag && (tagname == 'table' || tagname == 'ul'))) &&
-					last) {
+				if (
+					delta == 1 || (!popen && tagname == '!') || 
+					(!closetag && (tagname == 'tr' || tagname == 'li' || tagname == 'p')) || 
+					(closetag && (tagname == 'table' || tagname == 'ul'))
+					) {
 					text += "\n";
 				}
 				// add newline at start (after last tag)
-				if ((
-					lastdelta == -1 || (!popen && last == '!') ||
+				if (
+					lastdelta == -1 || (!pinitially && last == '!') ||
 					(lastclose && last == 'p') ||
-					last == 'br') && (tagname || popen)) {
+					last == 'br') {
 					text = "\n" + text;
 				}
 			}
 
+			// process the actual tag
 			if (strippara &&
 				(tagname == 'p' || (tagname == 'br' && (!topstack ||
 					topstack == 'blockquote' || topstack == 'center'))) &&
-				!/[^\s]/.test(matches[5])) {
-				tag = '';
+				!/\S/.test(matches[5])) {
+				tagcode = '';
 			}
 
-			output += text + tag;
+			output += text + tagcode;
+		}
+		// close last p tag
+		if (popen && !strippara && !delta && (tagname != 'p' || !closetag)) {
+			 output += '</p>';
 		}
 
-		return output;
+		return output.replace(/^\s+|\s+$/g, '');
 	};
 
 	var setupeditor = function(that) {

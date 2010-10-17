@@ -6,7 +6,7 @@
 // A simple, reliable, easy (for users) rich text control is needed.
 // Who needs a toolbar with 63 buttons when just writing some text
 
-/*jslint  */
+/*jslint browser:true */
 /*global SPARK:true */
 
 /**
@@ -111,9 +111,10 @@ SPARK.richText = SPARK.richText || function(opts) {
 				}
 				// normalise remaining whitespace
 				text = text.replace(/\s+/g, ' ');
-				// escape unwanted < and &
-				text = text.replace(/<(?![\/\w!])/g, '&lt;')
-					.replace(/&(?![\w#])/g, '&amp;');
+				// convert < and & where it is not part of tag or entity
+				text = strippara ? 
+					text.replace(/&lt;(?![\/\w!])/g, '<').replace(/&amp;(?![\w#])/g, '&') :
+					text.replace(/<(?![\/\w!])/g, '&lt;').replace(/&(?![\w#])/g, '&amp;');
 
 				// account for added para tags
 				text = strippara ? text.replace(/<\/?\w+>/g, "\n") :
@@ -161,11 +162,9 @@ SPARK.richText = SPARK.richText || function(opts) {
 			container,
 			editor,
 			toolbar,
-			savebar,
+			//savebar,
 			source,
-			//canedit = document.body.contentEditable !== undefined;
-			canedit = 0;
-
+			canedit = 0 && document.body.contentEditable !== undefined;
 
 		for (i = that.length; i--; ) {
 			el = SPARK.select(that[i]);
@@ -173,30 +172,34 @@ SPARK.richText = SPARK.richText || function(opts) {
 			// set up editor
 			container = el.insert({div:''});
 			editor = container.insert(canedit ? {div:''} : {textarea:''})
-				.setAttribute('contenteditable', 'true')
 				.addClass('SPARK-richtext-editor')
-				.style('border', '1px inset #aaa')
+				.style('border', '1px inset #888')
 				.style('padding', '1px')
-				.style('maxHeight', '26em')
-				.style('overflow', 'auto');
-			if (!canedit) {
-				editor.style('width', '98%')
+				.style('maxHeight', '25em');
+			if (canedit) {
+				editor.setAttribute('contenteditable', 'true')
+					.style('overflow', 'auto');
+			}
+			else {
+				editor.style('width', '97.5%')
 					.style('background', 'transparent')
 					.style('minHeight', '14em')
 					.style('color', 'inherit');
 			}
 			toolbar = editor.insert({div:''})
 				.addClass('SPARK-richtext-toolbar');
-			savebar = container.append({a:'CLICK'})
+				/*
+			savebar = container.append({div:'CLICK'})
 				.watch('click', function() {
 					editor[0].value = htmlconvert(editor[0].value, 0, 1);
 				});
+				*/
 
 			// transfer to new editor and remove old
 			if (el[0].tagName.toLowerCase() == 'textarea') {
 				source = el[0].value;
-				editor.style('minWidth', el.getStyle('width'))
-					.style('minHeight', el.getStyle('height'));
+				//editor.style('minWidth', el.getStyle('width'))
+			//		.style('minHeight', el.getStyle('height'));
 				el.insert({
 					input:'',
 					$type:'hidden',
@@ -207,10 +210,10 @@ SPARK.richText = SPARK.richText || function(opts) {
 			else {
 				source = el[0].innerHTML;
 			}
-			el.remove();
+			el.style('display', 'none');
 
-			editor[0][canedit ? 'innerHTML' : 'value'] = canedit ? source :
-				htmlconvert(source, 1, 0);
+			editor[0][canedit ? 'innerHTML' : 'value'] =
+				htmlconvert(source, !canedit, 0);
 		}
 	};
 	

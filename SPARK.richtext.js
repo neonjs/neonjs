@@ -181,7 +181,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 					.style('overflow', 'auto');
 			}
 			else {
-				editor.style('width', '97.5%')
+				editor.style('width', '98%')
 					.style('background', 'transparent')
 					.style('minHeight', '14em')
 					.style('color', 'inherit');
@@ -198,8 +198,8 @@ SPARK.richText = SPARK.richText || function(opts) {
 			// transfer to new editor and remove old
 			if (el[0].tagName.toLowerCase() == 'textarea') {
 				source = el[0].value;
-				//editor.style('minWidth', el.getStyle('width'))
-			//		.style('minHeight', el.getStyle('height'));
+				editor.style('minWidth', el.getStyle('width'))
+					.style('minHeight', el.getStyle('height'));
 				el.insert({
 					input:'',
 					$type:'hidden',

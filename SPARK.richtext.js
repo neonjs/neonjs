@@ -36,8 +36,9 @@ SPARK.richText = SPARK.richText || function(opts) {
 			stack = [],
 			topstack,
 			parsereg = /([\s\S]*?(?=<[\/\w!])|[\s\S]+)((?:<(\/?)([\w!]+)((?:[^>"\-]+|"[\s\S]*?"|--[\s\S]*?--)*)>?)?)/g,
-			blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/;
 				// 1: text; 2: tag; 3: slash; 4: tagname; 5: tagcontents; 6: endtext;
+			blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/,
+			blockseparator = /^(?:li|tr|div|dd|dt|the|tbo|tfo)/;
 
 		while ((matches = parsereg.exec(input))) {
 
@@ -101,12 +102,12 @@ SPARK.richText = SPARK.richText || function(opts) {
 				}
 				// remove leading spaces
 				if (lastdelta || !last || !pinitially || 
-					last == 'p' || last == 'br' || last == 'li' || last == 'tr') {
+					last == 'p' || last == 'br' || blockseparator.test(last)) {
 					text = text.replace(/^\s+/, '');
 				}
 				// remove trailing spaces
 				if (delta || !tagname || !popen ||
-					tagname == 'p' || tagname == 'br' || tagname == 'li' || last == 'tr') {
+					tagname == 'p' || tagname == 'br' || blockseparator.test(tagname)) {
 					text = text.replace(/\s+$/, '');
 				}
 				// normalise remaining whitespace
@@ -123,7 +124,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				// add newline at end (before tag)
 				if (
 					delta == 1 || (!popen && tagname == '!') || 
-					(!closetag && (tagname == 'tr' || tagname == 'li' || tagname == 'p')) || 
+					(!closetag && (tagname == 'p' || blockseparator.test(tagname))) || 
 					(closetag && (tagname == 'table' || tagname == 'ul'))
 					) {
 					text += "\n";
@@ -164,7 +165,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 			toolbar,
 			//savebar,
 			source,
-			canedit = 0 && document.body.contentEditable !== undefined;
+			canedit = document.body.contentEditable !== undefined;
 
 		for (i = that.length; i--; ) {
 			el = SPARK.select(that[i]);
@@ -173,18 +174,22 @@ SPARK.richText = SPARK.richText || function(opts) {
 			container = el.insert({div:''});
 			editor = container.insert(canedit ? {div:''} : {textarea:''})
 				.addClass('SPARK-richtext-editor')
-				.style('border', '1px inset #888')
-				.style('padding', '1px')
-				.style('maxHeight', '25em');
+				.style('border', '1px solid ButtonShadow')
+				.style('background', '#fff')
+				.style('color', '#000')
+				.style('maxHeight', '28em');
 			if (canedit) {
 				editor.setAttribute('contenteditable', 'true')
-					.style('overflow', 'auto');
+					.style('padding', '2px 3px')
+					.style('cursor', 'text')
+					.style('outline', '0') // avoid dotted line while focused in firefox
+					.style('position', 'relative') // in case people paste in absolute positioned things
+					.style('overflow', 'auto'); // crop and scroll
 			}
 			else {
 				editor.style('width', '98%')
-					.style('background', 'transparent')
-					.style('minHeight', '14em')
-					.style('color', 'inherit');
+					.style('font', 'inherit') // so it doesn't get fixed-width font by default
+					.style('minHeight', '14em'); // textareas don't auto-expand so need a height
 			}
 			toolbar = editor.insert({div:''})
 				.addClass('SPARK-richtext-toolbar');
@@ -206,11 +211,12 @@ SPARK.richText = SPARK.richText || function(opts) {
 					$name:el[0].name,
 					$value:''
 					});
+				el.remove();
 			}
 			else {
 				source = el[0].innerHTML;
+				el.style('display', 'none');
 			}
-			el.style('display', 'none');
 
 			editor[0][canedit ? 'innerHTML' : 'value'] =
 				htmlconvert(source, !canedit, 0);

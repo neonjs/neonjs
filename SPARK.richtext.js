@@ -15,6 +15,9 @@
 
 SPARK.richText = SPARK.richText || function(opts) {
 
+	var
+		i;
+
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
 			p|div|isindex|fieldset|table
@@ -156,10 +159,9 @@ SPARK.richText = SPARK.richText || function(opts) {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
-	var setupeditor = function(that) {
+	var setupeditor = function(el) {
 		var
 			i,
-			el,
 			container,
 			editor,
 			toolbar,
@@ -167,62 +169,98 @@ SPARK.richText = SPARK.richText || function(opts) {
 			source,
 			canedit = document.body.contentEditable !== undefined;
 
-		for (i = that.length; i--; ) {
-			el = SPARK.select(that[i]);
-
-			// set up editor
-			container = el.insert({div:''});
-			editor = container.insert(canedit ? {div:''} : {textarea:''})
-				.addClass('SPARK-richtext-editor')
-				.style('border', '1px solid ButtonShadow')
-				.style('background', '#fff')
-				.style('color', '#000')
-				.style('maxHeight', '28em');
-			if (canedit) {
-				editor.setAttribute('contenteditable', 'true')
-					.style('padding', '2px 3px')
-					.style('cursor', 'text')
-					.style('outline', '0') // avoid dotted line while focused in firefox
-					.style('position', 'relative') // in case people paste in absolute positioned things
-					.style('overflow', 'auto'); // crop and scroll
-			}
-			else {
-				editor.style('width', '98%')
-					.style('font', 'inherit') // so it doesn't get fixed-width font by default
-					.style('minHeight', '14em'); // textareas don't auto-expand so need a height
-			}
-			toolbar = editor.insert({div:''})
-				.addClass('SPARK-richtext-toolbar');
-				/*
-			savebar = container.append({div:'CLICK'})
-				.watch('click', function() {
-					editor[0].value = htmlconvert(editor[0].value, 0, 1);
-				});
-				*/
-
-			// transfer to new editor and remove old
-			if (el[0].tagName.toLowerCase() == 'textarea') {
-				source = el[0].value;
-				editor.style('minWidth', el.getStyle('width'))
-					.style('minHeight', el.getStyle('height'));
-				el.insert({
-					input:'',
-					$type:'hidden',
-					$name:el[0].name,
-					$value:''
-					});
-				el.remove();
-			}
-			else {
-				source = el[0].innerHTML;
-				el.style('display', 'none');
-			}
-
-			editor[0][canedit ? 'innerHTML' : 'value'] =
-				htmlconvert(source, !canedit, 0);
+		// set up editor
+		container = el.insert({div:''});
+		editor = container.insert(canedit ? {div:''} : {textarea:''})
+			.addClass('SPARK-richtext-editor')
+			.style('border', '1px solid ButtonShadow')
+			.style('background', '#fff')
+			.style('color', '#000')
+			.style('maxHeight', '28em');
+		if (canedit) {
+			editor.setAttribute('contenteditable', 'true')
+				.style('padding', '2px 3px')
+				.style('cursor', 'text')
+				.style('outline', '0') // avoid dotted line while focused in firefox
+				.style('position', 'relative') // in case people paste in absolute positioned things
+				.style('minHeight', '6em')
+				.style('overflow', 'auto'); // crop and scroll
 		}
+		else {
+			editor.style('width', '98%')
+				.style('font', 'inherit') // so it doesn't get fixed-width font by default
+				.style('minHeight', '14em'); // textareas don't auto-expand so need a height
+		}
+		toolbar = editor.insert({div:''});
+		populatetoolbar(SPARK.select(toolbar), canedit);
+			/*
+		savebar = container.append({div:'CLICK'})
+			.watch('click', function() {
+				editor[0].value = htmlconvert(editor[0].value, 0, 1);
+			});
+			*/
+
+		// transfer to new editor and remove old
+		if (el[0].tagName.toLowerCase() == 'textarea') {
+			source = el[0].value;
+			editor.style('minWidth', el.getStyle('width'))
+				.style('minHeight', el.getStyle('height'));
+			el.insert({
+				input:'',
+				$type:'hidden',
+				$name:el[0].name,
+				$value:''
+				});
+			el.remove();
+		}
+		else {
+			source = el[0].innerHTML;
+			el.style('display', 'none');
+		}
+
+		editor[0][canedit ? 'innerHTML' : 'value'] =
+			htmlconvert(source, !canedit, 0);
+
+
+	};
+
+	var addbutton = function(toolbar, command, alt, title) {
+		var button = toolbar.insert({button:alt,$title:title});
+	
+		button.watch('click', function() {
+			document.execCommand('useCSS', 0, 1);
+			document.execCommand(command, 0, null);
+			updatetoolbar(toolbar);
+		});
+
+	};
+
+	var updatetoolbar = function(toolbar) {
+	};
+
+	var populatetoolbar = function(toolbar, canedit) {
+		toolbar.addClass('SPARK-richtext-toolbar')
+			.style('font', '0.75em sans-serif');
+
+		if (!canedit) {
+			toolbar.append({div:"HTML tags allowed"})
+				.style('fontStyle', 'italic')
+				.style('textAlign', 'right')
+				.style('margin', '0 2.5% 2px');
+			return;
+		}
+
+		addbutton(toolbar, 'bold', 'B', 'Bold');
+		addbutton(toolbar, 'italic', 'I', 'Italic');
+		addbutton(toolbar, 'insertunorderedlist', '*', 'Insert bulleted list');
+		addbutton(toolbar, 'insertorderedlist', '1.', 'Insert numbered list');
+		addbutton(toolbar, 'outdent', '<', 'Decrease indent');
+		addbutton(toolbar, 'indent', '>', 'Increase indent');
 	};
 	
-	setupeditor(this);
+	for (i = this.length; i--;) {
+		setupeditor(SPARK.select(this[i]));
+	}
 
+	return this;
 };

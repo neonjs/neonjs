@@ -26,6 +26,35 @@ SPARK.richText = SPARK.richText || function(opts) {
 		contains paragraphs: blockquote|address|center|div|fieldset
 	*/
 
+	var flyout = function(what, spec, direction) {
+		var
+			i,
+			el,
+			xpos, ypos, // for x and y pos relative to the width/height of viewport
+			oldpos = what.getStyle('position'),
+			flyout = what.style('position', !oldpos || oldpos == 'static' ? 'relative' : oldpos)
+				.append(spec)
+				.style('position', !oldpos || oldpos == 'static' ? 'absolute' : oldpos)
+				.style('zIndex', '1');
+
+		for (i = what.length; i--; ) {
+			el = what[i];
+			xpos = el.offsetWidth / 2;
+			ypos = el.offsetHeight / 2;
+			do {
+				xpos += el.offsetLeft;
+				ypos += el.offsetTop;
+			}
+			while (el = el.offsetParent);
+			xpos -= (document.documentElement.scrollLeft || document.body.scrollLeft);
+			ypos -= (document.documentElement.scrollTop || document.body.scrollTop);
+			xpos /= (window.innerWidth || document.documentElement.clientWidth);
+			ypos /= (window.innerHeight || document.documentElement.clientHeight);
+			SPARK.select(what[i].lastChild).style(ypos > 0.5 ? 'bottom' : 'top', direction == 'h' ? '0' : '100%')
+				.style(xpos > 0.5 ? 'right' : 'left', direction == 'h' ? '100%' : '0');
+		}
+	};
+
 	var htmlconvert = function(input, strippara, wstopara) {
 		var
 			matches,
@@ -192,6 +221,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 				.style('minHeight', '14em'); // textareas don't auto-expand so need a height
 		}
 		toolbar = editor.insert({div:''});
+		flyout(toolbar, {div:"TRY FLYOUT"}, 'v');
 		populatetoolbar(SPARK.select(toolbar), canedit);
 			/*
 		savebar = container.append({div:'CLICK'})
@@ -225,7 +255,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 	};
 
 	var addbutton = function(toolbar, command, alt, title) {
-		var button = toolbar.insert({button:alt,$title:title});
+		var button = toolbar.append({button:alt,$title:title});
 	
 		button.watch('click', function() {
 			document.execCommand('useCSS', 0, 1);

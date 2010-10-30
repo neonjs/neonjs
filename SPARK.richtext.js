@@ -26,6 +26,21 @@ SPARK.richText = SPARK.richText || function(opts) {
 		contains paragraphs: blockquote|address|center|div|fieldset
 	*/
 
+	// which should be added to spark core?
+
+	// .watchoutside(callback) - run callback when event happens OUTSIDE OF
+	// this element.  takes care of figuring out if the target element
+	// is outside the given element
+	// need an unwatchoutside?
+	
+	// .contains(el) - determine if selected element contains passed element
+
+	// .flyout() - watches for click/mousein outside of parent element
+	// and closes child if so.  can also help positioning child
+
+	
+
+
 	var flyout = function(what, spec, direction) {
 		var
 			i,

@@ -38,35 +38,41 @@ SPARK.richText = SPARK.richText || function(opts) {
 	// .flyout() - watches for click/mousein outside of parent element
 	// and closes child if so.  can also help positioning child
 
-	
-
-
 	var flyout = function(what, spec, direction) {
 		var
 			i,
-			el,
-			xpos, ypos, // for x and y pos relative to the width/height of viewport
+			rect, size,
+			clientwidth, clientheight,
 			oldpos = what.getStyle('position'),
 			flyout = what.style('position', !oldpos || oldpos == 'static' ? 'relative' : oldpos)
 				.append(spec)
 				.style('position', !oldpos || oldpos == 'static' ? 'absolute' : oldpos)
+				.style('background', 'yellow')
+				.style('width', '400px')
+				.style('height', '200px')
 				.style('zIndex', '1');
 
-		for (i = what.length; i--; ) {
-			el = what[i];
-			xpos = el.offsetWidth / 2;
-			ypos = el.offsetHeight / 2;
-			do {
-				xpos += el.offsetLeft;
-				ypos += el.offsetTop;
+		if (what[0] && what[0].getBoundingClientRect) {
+
+			clientwidth = window.innerWidth || document.documentElement.clientWidth;
+			clientheight = window.innerHeight || document.documentElement.clientHeight;
+
+			for (i = what.length; i--; ) {
+				rect = what[i].getBoundingClientRect();
+				size = what[i].lastChild.getBoundingClientRect();
+
+				SPARK.select(what[i].lastChild).style((size.right-size.left > clientwidth - rect.left &&
+					size.right-size.left <= rect.right) ? 'right' : 'left', '0')
+					.style((size.bottom-size.top > clientheight - rect.bottom &&
+					size.bottom-size.top <= rect.top) ? 'bottom' : 'top', '100%');
 			}
-			while (el = el.offsetParent);
-			xpos -= (document.documentElement.scrollLeft || document.body.scrollLeft);
-			ypos -= (document.documentElement.scrollTop || document.body.scrollTop);
-			xpos /= (window.innerWidth || document.documentElement.clientWidth);
-			ypos /= (window.innerHeight || document.documentElement.clientHeight);
-			SPARK.select(what[i].lastChild).style(ypos > 0.5 ? 'bottom' : 'top', direction == 'h' ? '0' : '100%')
-				.style(xpos > 0.5 ? 'right' : 'left', direction == 'h' ? '100%' : '0');
+			/*
+				xpos /= (window.innerWidth || document.documentElement.clientWidth);
+				ypos /= (window.innerHeight || document.documentElement.clientHeight);
+				
+				SPARK.select(what[i].lastChild).style(ypos > 0.5 ? 'bottom' : 'top', direction == 'h' ? '0' : '100%')
+					.style(xpos > 0.5 ? 'right' : 'left', direction == 'h' ? '100%' : '0');
+			*/
 		}
 	};
 
@@ -236,7 +242,6 @@ SPARK.richText = SPARK.richText || function(opts) {
 				.style('minHeight', '14em'); // textareas don't auto-expand so need a height
 		}
 		toolbar = editor.insert({div:''});
-		flyout(toolbar, {div:"TRY FLYOUT"}, 'v');
 		populatetoolbar(SPARK.select(toolbar), canedit);
 			/*
 		savebar = container.append({div:'CLICK'})
@@ -266,7 +271,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
 
-
+		flyout(toolbar, {div:"TRY FLYOUT"}, 'v');
 	};
 
 	var addbutton = function(toolbar, command, alt, title) {

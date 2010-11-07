@@ -38,41 +38,71 @@ SPARK.richText = SPARK.richText || function(opts) {
 	// .flyout() - watches for click/mousein outside of parent element
 	// and closes child if so.  can also help positioning child
 
-	var flyout = function(what, spec, direction) {
+	var flyout = function(what, direction, closeevent) {
+	// turns the selected element(s) into fly-out menus.
+	// direction specifies first which side of the offsetparent the flyout
+	// should appear on out of 'l', 'r', 't', 'b', then optionally another
+	// letter specifying the alignment, eg if the first is bottom, whether
+	// to fly towards the right from the left ('r') or vice versa.  default
+	// is 'br'.
+	// make sure that the element you want to fly out FROM is the offsetparent,
+	// that is, give it position 'relative' (or anything other than static)
+
+	// closeevent specifies the event that closes the flyout if received outside
+	// of both it and its offsetparent - recommended
+	// is 'mousedown' for normal menus or 'mousein' for a hover-only (no click
+	// required) menu.
+
 		var
 			i,
+			flyout,
 			rect, size,
-			clientwidth, clientheight,
-			oldpos = what.getStyle('position'),
-			flyout = what.style('position', !oldpos || oldpos == 'static' ? 'relative' : oldpos)
-				.append(spec)
-				.style('position', !oldpos || oldpos == 'static' ? 'absolute' : oldpos)
-				.style('background', 'yellow')
-				.style('width', '400px')
-				.style('height', '200px')
+			addrect, dim,
+			horiz = /^[lr]/.test(direction),
+			clientwidth = window.innerWidth || document.documentElement.clientWidth,
+			clientheight = window.innerHeight || document.documentElement.clientHeight,
+			watchfunc = function(evt) {
+				var
+					i, el = evt.target;
+				do {
+					for (i = what.length; i--;) {
+						if (el == what[i].offsetParent) {
+							return;
+						}
+					}
+				} while ((el = el.parentNode));
+				what.remove();
+				what.select(document.documentElement).unwatch(closeevent, watchfunc);
+			};
+
+		for (i = what.length; i--;) {
+			flyout = what.select(what[i]);
+			flyout.style('position', 'absolute')
 				.style('zIndex', '1');
 
-		if (what[0] && what[0].getBoundingClientRect) {
+			// getBoundingClientRect not supported by some browsers
+			// like firefox 2 and earlier.  Supported in IE5.x+ though
+			// flyout should have an offsetparent, but it may not
+			rect = what[i].offsetParent && what[i].offsetParent.getBoundingClientRect() || 0;
+			size = what[i].getBoundingClientRect() || 0;
 
-			clientwidth = window.innerWidth || document.documentElement.clientWidth;
-			clientheight = window.innerHeight || document.documentElement.clientHeight;
+			addrect = horiz ? 0 : rect.right - rect.left;
+			dim = size.right - size.left || 1e3;
+			flyout.style(rect.left+addrect < dim ? 'left' :
+				clientwidth+addrect-rect.right < dim ? 'right' :
+				/l/.test(direction) ? 'right' : 'left',
+				horiz ? '100%' : '0');
 
-			for (i = what.length; i--; ) {
-				rect = what[i].getBoundingClientRect();
-				size = what[i].lastChild.getBoundingClientRect();
+			addrect = !horiz ? 0 : rect.bottom - rect.top;
+			dim = size.bottom - size.top || 1e3;
+			flyout.style(rect.top+addrect < dim ? 'top' :
+				clientheight+addrect-rect.bottom < dim ? 'bottom' :
+				/t/.test(direction) ? 'bottom' : 'top',
+				!horiz ? '100%' : '0');
+		}
 
-				SPARK.select(what[i].lastChild).style((size.right-size.left > clientwidth - rect.left &&
-					size.right-size.left <= rect.right) ? 'right' : 'left', '0')
-					.style((size.bottom-size.top > clientheight - rect.bottom &&
-					size.bottom-size.top <= rect.top) ? 'bottom' : 'top', '100%');
-			}
-			/*
-				xpos /= (window.innerWidth || document.documentElement.clientWidth);
-				ypos /= (window.innerHeight || document.documentElement.clientHeight);
-				
-				SPARK.select(what[i].lastChild).style(ypos > 0.5 ? 'bottom' : 'top', direction == 'h' ? '0' : '100%')
-					.style(xpos > 0.5 ? 'right' : 'left', direction == 'h' ? '100%' : '0');
-			*/
+		if (closeevent) {
+			what.select(document.documentElement).watch(closeevent, watchfunc);
 		}
 	};
 
@@ -271,7 +301,14 @@ SPARK.richText = SPARK.richText || function(opts) {
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
 
-		flyout(toolbar, {div:"TRY FLYOUT"}, 'v');
+		toolbar.append({p:'Flyout'})
+			.style('display', 'inline-block')
+			.style('position', 'relative')
+			.watch('click', function(evt) {
+			flyout(SPARK.select(this).append({div:"Menu"}), 'br', 'mousedown');
+		});
+			
+			
 	};
 
 	var addbutton = function(toolbar, command, alt, title) {

@@ -478,13 +478,12 @@ SPARK = (function() {
 				document.defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
 
-		return val === undef ? (
-				style == 'opacity' ?
-					((val = /opacity=\d+/.exec(this.getStyle('filter'))) ?
-					parseFloat(val[1]) * 100 : undef) :
-				style == 'cssFloat' ?
-					this.getStyle('styleFloat') : undef) :
-			val;
+		return val !== undef ? val :
+			style == 'opacity' ?
+				((val = /opacity=(\d+)/.exec(this.getStyle('filter'))) ?
+				parseFloat(val[1]) * 100 : undef) :
+			style == 'cssFloat' ?	this.getStyle('styleFloat') :
+			undef;
 	};
 
 	/*
@@ -591,26 +590,22 @@ SPARK = (function() {
 			time = +new Date(),
 			myval = parseFloat(value),
 			mylastval = parseFloat(lastval),
-			animated = lastval !== undef;
-		/*
-				(myval = parseFloat(value)) == myval &&
-				(mylastval = parseFloat(lastval)) == mylastval &&
-				lastval !== undef,
-				*/
+			animated = myval == myval && mylastval == mylastval, // NaN test
 			suffix = animated && /\D*$/.exec(value)[0],
-			prefix = animated && /^\D*/.exec(value)[0];
+			prefix = animated && /^[^\d\.]*/.exec(value)[0];
 
 		while (i--) {
 			this[i].style[style] = value;
 
+			// remove existing animations on same property
 			for (j = animations.length; j--;) {
 				if (animations[j][0] === this[i].style &&
 					animations[j][1] == style) {
 					animations.splice(j, 1);
-					j = 0;
 				}
 			}
 
+			// add this animation into the animation queue
 			if (animated) {
 				animations.push([
 					this[i].style, style, myval, mylastval - myval,
@@ -619,12 +614,13 @@ SPARK = (function() {
 			}
 		}
 
-		if (style == 'opacity') {
-			this.style('filter', 'alpha(opacity='+(myval*100)+')',
-				animated ? mylastval*100 : undef, easing, msec, parm);
+		if (style == 'cssFloat') {
+			this.style('styleFloat', value);
 		}
-		else if (style == 'cssFloat') {
-			this.style('styleFloat', value, lastval, easing, msec, parm);
+
+		if (style == 'opacity') {
+			this.style('filter', 'alpha(opacity='+(100*myval)+')',
+				animated && 100*mylastval, easing, msec, parm);
 		}
 
 		if (animated && !animationschedule) {

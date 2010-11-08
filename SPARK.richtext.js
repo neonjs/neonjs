@@ -303,9 +303,10 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 		toolbar.append({p:'Flyout'})
 			.style('display', 'inline-block')
+			.style('opacity', '0.3')
 			.style('position', 'relative')
-			.watch('click', function(evt) {
-			flyout(SPARK.select(this).append({div:"Menu"}), 'br', 'mousedown');
+			.watch('mouseover', function(evt) {
+			flyout(SPARK.select(this).append({div:"Menu"}), 'br', 'mouseover');
 		});
 			
 			

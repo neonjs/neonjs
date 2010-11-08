@@ -192,15 +192,15 @@ SPARK = (function() {
 								name.toLowerCase() :
 							type == "#" ? newelements[i].id == name :
 							type == "." ?
-								(" "+newelements[i].className+" ").replace(/\s/g, " ").
-								indexOf(" "+name+" ") >= 0 :
+								(" "+newelements[i].className+" ").replace(/\s/g, " ")
+								.indexOf(" "+name+" ") >= 0 :
 							type == "[" ? (
 								!attrcompare || !attrvalue ? newelements[i].hasAttribute(name) :
 								(tmp = name == "class" ? newelements[i].className :
 									newelements[i].getAttribute(name)) &&
 								attrcompare == "=" ? tmp == attrvalue :
-								attrcompare == "~=" ? (" "+tmp+" ").
-									indexOf(" "+attrvalue+" ") >= 0 :
+								attrcompare == "~=" ? (" "+tmp+" ")
+									.indexOf(" "+attrvalue+" ") >= 0 :
 								(tmp+"-").indexOf(attrvalue) === 0) :
 							name.toLowerCase() == "first-child" ? 
 								!getprevioussibling(newelements[i]) :
@@ -253,20 +253,20 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			x = (time - anim[4]) / (anim[7]||400);
+			x = (time - anim[4]) / (anim[8]||400);
 			if (x > 1) {
 				animations.splice(i, x = 1);
 			}
 
-			anim[0][anim[1]] = (
-				anim[6] == "lin"   ? x :
-				anim[6] == "in"    ? x*x :
-				anim[6] == "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
-				anim[6] == "el"    ? ((2-x)*x-1) *
-					Math.cos(Math.PI*x*2*(anim[7]||400)/(anim[8]||300)) + 1 :
-				anim[6] == "fn"    ? anim[8](x) :
+			anim[0][anim[1]] = anim[6] + ((
+				anim[7] == "lin"   ? x :
+				anim[7] == "in"    ? x*x :
+				anim[7] == "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
+				anim[7] == "el"    ? ((2-x)*x-1) *
+					Math.cos(Math.PI*x*2*(anim[8]||400)/(anim[9]||300)) + 1 :
+				anim[7] == "fn"    ? anim[9](x) :
 				(2-x)*x // 'out' (default)
-				) * anim[3] + anim[2] + anim[5];
+				) * anim[3] + anim[2]) + anim[5];
 
 		}
 	};
@@ -472,10 +472,19 @@ SPARK = (function() {
 	// notations, in particular in IE where it's as it was set eg.
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
-		return !this[0] ? undef :
+		var 
+			val = !this[0] ? undef :
 			document.defaultView && document.defaultView.getComputedStyle ?
 				document.defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
+
+		return val === undef ? (
+				style == 'opacity' ?
+					((val = /opacity=\d+/.exec(this.getStyle('filter'))) ?
+					parseFloat(val[1]) * 100 : undef) :
+				style == 'cssFloat' ?
+					this.getStyle('styleFloat') : undef) :
+			val;
 	};
 
 	/*
@@ -552,8 +561,8 @@ SPARK = (function() {
 	// it's assumed that classes are always separated by spaces
 		for (var i = this.length; i--;) {
 			this[i].className =
-				(" "+this[i].className+" ").replace(/\s/g, " ").
-				replace(" "+myclass+" ", " ").slice(1,-1);
+				(" "+this[i].className+" ").replace(/\s/g, " ")
+				.replace(" "+myclass+" ", " ").slice(1,-1);
 		}
 		return this;
 	};
@@ -564,8 +573,8 @@ SPARK = (function() {
 	// duplication
 		for (var i = this.length; i--;) {
 			this[i].className =
-				(" "+this[i].className+" ").replace(/\s/g, " ").
-				replace(" "+myclass+" ", " ").slice(1) + myclass;
+				(" "+this[i].className+" ").replace(/\s/g, " ")
+				.replace(" "+myclass+" ", " ").slice(1) + myclass;
 		}
 		return this;
 	};
@@ -580,13 +589,16 @@ SPARK = (function() {
 		var
 			i = this.length, j,
 			time = +new Date(),
-			mylastval,
-			myval,
-			animated = 
-				lastval !== undef &&
+			myval = parseFloat(value),
+			mylastval = parseFloat(lastval),
+			animated = lastval !== undef;
+		/*
+				(myval = parseFloat(value)) == myval &&
 				(mylastval = parseFloat(lastval)) == mylastval &&
-				(myval = parseFloat(value)) == myval,
-			suffix = animated && /\D*$/.exec(lastval)[0];
+				lastval !== undef,
+				*/
+			suffix = animated && /\D*$/.exec(value)[0],
+			prefix = animated && /^\D*/.exec(value)[0];
 
 		while (i--) {
 			this[i].style[style] = value;
@@ -602,9 +614,17 @@ SPARK = (function() {
 			if (animated) {
 				animations.push([
 					this[i].style, style, myval, mylastval - myval,
-					time, suffix, easing, msec, parm
+					time, suffix, prefix, easing, msec, parm
 					]);
 			}
+		}
+
+		if (style == 'opacity') {
+			this.style('filter', 'alpha(opacity='+(myval*100)+')',
+				animated ? mylastval*100 : undef, easing, msec, parm);
+		}
+		else if (style == 'cssFloat') {
+			this.style('styleFloat', value, lastval, easing, msec, parm);
 		}
 
 		if (animated && !animationschedule) {
@@ -763,9 +783,9 @@ SPARK = (function() {
 		});
 		*/
 		if (/^[\],:{}\s]+$/.test(
-			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$").
-			replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").
-			replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
+			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
+			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
+			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
 			return eval("("+json+")");
 		}
 	};

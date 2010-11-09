@@ -535,6 +535,9 @@ SPARK = (function() {
 			else if (lower == "class") {
 				this[i].className = value;
 			}
+			else if (lower == "tabindex") {
+				this[i].tabIndex = value;
+			}
 			// i'm not sure if the following is necessary (src):
 			/*
 			else if (lower == "src") {
@@ -828,6 +831,72 @@ SPARK = (function() {
 		}
 		xmlhttprequest.send(body);
 		// asks for callback so don't chain
+	};
+
+	SPARK.flyout = function(direction) {
+	// turns the selected element(s) into fly-out menus.
+	// direction specifies first which side of the offsetparent the flyout
+	// should appear on out of 'l', 'r', 't', 'b', then optionally another
+	// letter specifying the alignment, eg if the first is bottom, whether
+	// to fly towards the right from the left ('r') or vice versa.  default
+	// is 'br'.
+	// make sure that the element you want to fly out FROM is the offsetparent,
+	// that is, give it position 'relative' (or anything other than static)
+
+	// closeevent specifies the event that closes the flyout if received outside
+	// of both it and its offsetparent - recommended
+	// is 'mousedown' for normal menus or 'mousein' for a hover-only (no click
+	// required) menu.
+
+/*
+			watchfunc = function(evt) {
+				var
+					i, el = evt.target;
+				do {
+					for (i = this.length; i--;)  {
+						if (el == this[i].offsetParent) {
+							return;
+						}
+					}
+				} while ((el = el.parentNode));
+				this.remove();
+				this.select(document.documentElement).unwatch(closeevent, watchfunc);
+				*/
+		var
+			i,
+			flyout, host,
+			rect, size,
+			addrect, dim,
+			horiz = /^[lr]/.test(direction),
+			clientwidth = window.innerWidth || document.documentElement.clientWidth,
+			clientheight = window.innerHeight || document.documentElement.clientHeight;
+
+		for (i = this.length; i--;) {
+			flyout = this.select(this[i]).style('position', 'absolute').style('zIndex', 1e3);
+			host = this.select(flyout[0].offsetParent);
+
+			// getBoundingClientRect not supported by some browsers
+			// like firefox 2 and earlier.  Supported in IE5.x+ though
+			// flyout should have an offsetparent, but it may not
+			rect = host[0] && host[0].getBoundingClientRect && host[0].getBoundingClientRect();
+			size = flyout[0].getBoundingClientRect && flyout[0].getBoundingClientRect();
+
+			addrect = horiz ? 0 : rect.right - rect.left;
+			dim = size.right - size.left || 1e3;
+			flyout.style(rect.left+addrect < dim ? 'left' :
+				clientwidth+addrect-rect.right < dim ? 'right' :
+				/l/.test(direction) ? 'right' : 'left',
+				horiz ? '100%' : '0');
+
+			addrect = !horiz ? 0 : rect.bottom - rect.top;
+			dim = size.bottom - size.top || 1e3;
+			flyout.style(rect.top+addrect < dim ? 'top' :
+				clientheight+addrect-rect.bottom < dim ? 'bottom' :
+				/t/.test(direction) ? 'bottom' : 'top',
+				!horiz ? '100%' : '0');
+		}
+
+		return this;
 	};
 
 	// frame busting.  this is built in for security

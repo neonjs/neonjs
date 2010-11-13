@@ -182,28 +182,37 @@ SPARK.richText = SPARK.richText || function(opts) {
 			canedit = document.body.contentEditable !== undefined;
 
 		// set up editor
-		container = el.insert({div:''});
-		editor = container.insert(canedit ? {div:''} : {textarea:''})
-			.addClass('SPARK-richtext-editor')
+		container = el.insert({div:''})
 			.style('border', '1px solid ButtonShadow')
+			.style('width', 'auto')
+			.style('padding', '1px')
 			.style('background', '#fff')
-			.style('color', '#000')
+			.style('color', '#000');
+		editor = container.append(canedit ? {div:''} : {textarea:''})
+			.addClass('SPARK-richtext-editor')
 			.style('maxHeight', '28em');
 		if (canedit) {
 			editor.setAttribute('contenteditable', 'true')
-				.style('padding', '2px 3px')
 				.style('cursor', 'text')
+				.style('padding', '1px 0 1px 2px')
 				.style('outline', '0') // avoid dotted line while focused in firefox
 				.style('position', 'relative') // in case people paste in absolute positioned things
 				.style('minHeight', '6em')
 				.style('overflow', 'auto'); // crop and scroll
 		}
 		else {
-			editor.style('width', '98%')
+			editor.style('width', '100%')
+				.style('border', 'none')
+				.style('padding', '0')
+				.style('margin', '0')
+				.style('background', '#fff')
+				.style('color', '#000')
 				.style('font', 'inherit') // so it doesn't get fixed-width font by default
 				.style('minHeight', '14em'); // textareas don't auto-expand so need a height
 		}
-		toolbar = editor.insert({div:''});
+		toolbar = editor.insert({div:''})
+			.style('margin', '0 0 1px 0')
+			.style('background', '#f9f6f3');
 		populatetoolbar(SPARK.select(toolbar), canedit);
 			/*
 		savebar = container.append({div:'CLICK'})
@@ -232,30 +241,26 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
-
-		var trigger = toolbar.append({span:'Flyout'})
-			.setAttribute('tabindex', '0')
-			.style('position', 'relative');
-
-		trigger.watch('focus', function(evt) {
-			SPARK.select(this).append({div:"This is a test of this menu thingy which is a popup menu thingy"})
-				.style('display', 'inline-block')
-				.style('width', '30em')
-				.style('background', 'yellow')
-				.flyout('br');
-			});
-		trigger.watch('blur', function(evt) {
-			SPARK.select(trigger[0].lastChild).remove();
-			});
 	};
 
 	var addbutton = function(toolbar, command, alt, title) {
-		var button = toolbar.append({button:alt,$title:title});
+		var button = toolbar.append({button:'',$title:title})
+			.style('border', 'none')
+			.style('background', 'transparent')
+			.style('padding', '6px 5px 5px')
+			.style('overflow', 'visible');
+
+		button.append({span:""})
+			.style('background', 'red')
+			.style('display', 'inline-block')
+			.style('width', '14px')
+			.style('height', '14px');
 	
 		button.watch('click', function() {
 			document.execCommand('useCSS', 0, 1);
 			document.execCommand(command, 0, null);
 			updatetoolbar(toolbar);
+			alert('clicked');
 		});
 
 	};
@@ -269,9 +274,8 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 		if (!canedit) {
 			toolbar.append({div:"HTML tags allowed"})
-				.style('fontStyle', 'italic')
-				.style('textAlign', 'right')
-				.style('margin', '0 2.5% 2px');
+				.style('padding', '5px')
+				.style('textAlign', 'right');
 			return;
 		}
 

@@ -316,8 +316,8 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			myelement,
-			makecallback = function(myelement) {
+			mycallback = callback,
+			IEwrap = function(callback, myelement) {
 				return function() {
 					var
 						evt = event;
@@ -346,21 +346,30 @@ SPARK = (function() {
 		callback.SPARK.$i = callback.SPARK.$i || ++gid;
 
 		for (i = this.length; i--;) {
-			myelement = this[i];
 
-			if (myelement.addEventListener) {
+			if (this[i].addEventListener) {
 				// other browsers
-				myelement.addEventListener(eventname, callback, !1);
+				this[i].addEventListener(eventname, mycallback, !1);
 			} 
 			else {
 				// all this so we can provide 'this' and 'currentTarget' in IE.
 				// So we maintain a separate handler with its in-closure reference
-				// to 'myelement' for each element we apply to
-				myelement.SPARK = myelement.SPARK || {};
-				myelement.SPARK["$e"+callback.SPARK.$i] = 
-					myelement.SPARK["$e"+callback.SPARK.$i] || makecallback(myelement);
-				myelement.attachEvent("on"+eventname, myelement.SPARK["$e"+callback.SPARK.$i]);
+				// to 'this[i]' for each element we apply to
+				/*
+				this[i].SPARK = this[i].SPARK || {};
+				this[i].SPARK["$e"+callback.SPARK.$i] = 
+					this[i].SPARK["$e"+callback.SPARK.$i] || IEwrap(this[i]);
+				this[i].attachEvent("on"+eventname, this[i].SPARK["$e"+callback.SPARK.$i]);
+				*/
+
+
+				this[i].attachEvent("on"+eventname, (mycallback = IEwrap(mycallback, this[i])));
 			}
+		}
+
+		if (callback !== mycallback) {
+			this[i].SPARK = this[i].SPARK || {};
+			this[i].SPARK["$e"+callback.SPARK.$i+eventname] = mycallback;
 		}
 	};
 
@@ -370,24 +379,30 @@ SPARK = (function() {
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
 		var
-			i,
-			myelement;
+			i;
 
 		for (i = this.length; i--;) {
-			myelement = this[i];
 
-			if (myelement.addEventListener) {
+			// if this callback has been wrapped in another function find that function
+			if (this[i].SPARK && callback.SPARK &&
+				this[i].SPARK["$e"+callback.SPARK.$i+eventname]) {
+				callback = this[i].SPARK["$e"+callback.SPARK.$i+eventname];
+				delete this[i].SPARK["$e"+callback.SPARK.$i+eventname];
+				// free this reference to the original callback
+				/* // commented out for now - probably unnecessary
+				if (!--this[i].SPARK["$r"+callback.SPARK.$i]) { // decrement refcount
+					delete this[i].SPARK["$e"+callback.SPARK.$i];
+				}
+				*/
+			}
+
+			if (this[i].addEventListener) {
 				// other browsers
-				myelement.removeEventListener(eventname, callback, !1);
+				this[i].removeEventListener(eventname, callback, !1);
 			} 
 			else {
-				if (myelement.SPARK && callback.SPARK && 
-					myelement.SPARK["$e"+callback.SPARK.$i]) {
-					// special IE handling
-					myelement.detachEvent("on"+eventname,
-						myelement.SPARK["$e"+callback.SPARK.$i]);
-					delete myelement.SPARK["$e"+callback.SPARK.$i];
-				}
+				// IE
+				this[i].detachEvent("on"+eventname, callback);
 			}
 		}
 		return this;

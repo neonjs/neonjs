@@ -327,12 +327,11 @@ SPARK = (function() {
 					evt.stopPropagation = function() {
 						evt.cancelBubble = !0;
 					};
-					if (!evt.which) {
-						evt.which = 
-							evt.button & 1 ? 1 :
-							evt.button & 2 ? 3 :
-							evt.button & 4 ? 2 : evt.which;
-					}
+					evt.which = evt.which ||
+						(evt.button & 1 ? 1 :
+						evt.button & 2 ? 3 :
+						evt.button & 4 ? 2 : 
+						evt.which);
 					evt.pageX = evt.clientX + 
 						(document.documentElement.scrollLeft || document.body.scrollLeft);
 					evt.pageY = evt.clientY + 

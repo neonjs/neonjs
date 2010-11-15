@@ -317,28 +317,34 @@ SPARK = (function() {
 		var
 			i,
 			mycallback = callback,
-			IEwrap = function(callback, myelement) {
+			iewrap = function(callback, myelement) {
 				return function() {
 					var
-						evt = event;
+						evt = event,
+						retval;
+
 					evt.preventDefault = function() {
 						evt.returnValue = !1;
 					};
 					evt.stopPropagation = function() {
 						evt.cancelBubble = !0;
 					};
-					evt.which = evt.which ||
-						(evt.button & 1 ? 1 :
+					evt.which = 
+						evt.button & 1 ? 1 :
 						evt.button & 2 ? 3 :
 						evt.button & 4 ? 2 : 
-						evt.which);
+						evt.keyCode ? evt.keyCode :
+						evt.charCode;
 					evt.pageX = evt.clientX + 
 						(document.documentElement.scrollLeft || document.body.scrollLeft);
 					evt.pageY = evt.clientY + 
 						(document.documentElement.scrollTop || document.body.scrollTop);
 					evt.currentTarget = myelement;
 					evt.target = evt.srcElement;
-					return callback.call(myelement, evt);
+					retval = callback.call(myelement, evt);
+					// try to solve memory leak in IE - do we need this (investigate more)
+					evt = null;
+					return retval;
 				};
 			};
 
@@ -352,25 +358,18 @@ SPARK = (function() {
 				this[i].addEventListener(eventname, mycallback, !1);
 			} 
 			else {
-				// all this so we can provide 'this' and 'currentTarget' in IE.
-				// So we maintain a separate handler with its in-closure reference
-				// to 'this[i]' for each element we apply to
-				/*
-				this[i].SPARK = this[i].SPARK || {};
-				this[i].SPARK["$e"+callback.SPARK.$i] = 
-					this[i].SPARK["$e"+callback.SPARK.$i] || IEwrap(this[i]);
-				this[i].attachEvent("on"+eventname, this[i].SPARK["$e"+callback.SPARK.$i]);
-				*/
-
-
-				this[i].attachEvent("on"+eventname, (mycallback = IEwrap(mycallback, this[i])));
+				// IE
+				this[i].attachEvent("on"+eventname, (mycallback = iewrap(mycallback, this[i])));
 			}
+
+			if (callback !== mycallback) {
+				this[i].SPARK = this[i].SPARK || {};
+				this[i].SPARK["$e"+callback.SPARK.$i+eventname] = mycallback;
+				// fixme unwrap mycallback
+			}
+
 		}
 
-		if (callback !== mycallback) {
-			this[i].SPARK = this[i].SPARK || {};
-			this[i].SPARK["$e"+callback.SPARK.$i+eventname] = mycallback;
-		}
 	};
 
 	SPARK.unwatch = function(eventname, callback) {
@@ -379,30 +378,25 @@ SPARK = (function() {
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
 		var
-			i;
+			i,
+			mycallback = callback;
 
 		for (i = this.length; i--;) {
 
 			// if this callback has been wrapped in another function find that function
 			if (this[i].SPARK && callback.SPARK &&
 				this[i].SPARK["$e"+callback.SPARK.$i+eventname]) {
-				callback = this[i].SPARK["$e"+callback.SPARK.$i+eventname];
+				mycallback = this[i].SPARK["$e"+callback.SPARK.$i+eventname];
 				delete this[i].SPARK["$e"+callback.SPARK.$i+eventname];
-				// free this reference to the original callback
-				/* // commented out for now - probably unnecessary
-				if (!--this[i].SPARK["$r"+callback.SPARK.$i]) { // decrement refcount
-					delete this[i].SPARK["$e"+callback.SPARK.$i];
-				}
-				*/
 			}
 
 			if (this[i].addEventListener) {
 				// other browsers
-				this[i].removeEventListener(eventname, callback, !1);
+				this[i].removeEventListener(eventname, mycallback, !1);
 			} 
 			else {
 				// IE
-				this[i].detachEvent("on"+eventname, callback);
+				this[i].detachEvent("on"+eventname, mycallback);
 			}
 		}
 		return this;

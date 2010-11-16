@@ -271,6 +271,40 @@ SPARK = (function() {
 		}
 	};
 
+	var eventwrapIE = function(callback, element) {
+	// wraps the given callback function in a function to emulate
+	// a W3C event context when running in a IE event context.
+	// element is needed to provide 'this' (and currentTarget)
+		return function() {
+			var
+				evt = event,
+				retval;
+
+			evt.preventDefault = function() {
+				evt.returnValue = !1;
+			};
+			evt.stopPropagation = function() {
+				evt.cancelBubble = !0;
+			};
+			evt.which = 
+				evt.button & 1 ? 1 :
+				evt.button & 2 ? 3 :
+				evt.button & 4 ? 2 : 
+				evt.keyCode ? evt.keyCode :
+				evt.charCode;
+			evt.pageX = evt.clientX + 
+				(document.documentElement.scrollLeft || document.body.scrollLeft);
+			evt.pageY = evt.clientY + 
+				(document.documentElement.scrollTop || document.body.scrollTop);
+			evt.currentTarget = element;
+			evt.target = evt.srcElement;
+			retval = callback.call(element, evt);
+			// try to solve memory leak in IE - do we need this (investigate more)
+			evt = null;
+			return retval;
+		};
+	};
+
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
@@ -316,42 +350,14 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			mycallback = callback,
-			iewrap = function(callback, myelement) {
-				return function() {
-					var
-						evt = event,
-						retval;
-
-					evt.preventDefault = function() {
-						evt.returnValue = !1;
-					};
-					evt.stopPropagation = function() {
-						evt.cancelBubble = !0;
-					};
-					evt.which = 
-						evt.button & 1 ? 1 :
-						evt.button & 2 ? 3 :
-						evt.button & 4 ? 2 : 
-						evt.keyCode ? evt.keyCode :
-						evt.charCode;
-					evt.pageX = evt.clientX + 
-						(document.documentElement.scrollLeft || document.body.scrollLeft);
-					evt.pageY = evt.clientY + 
-						(document.documentElement.scrollTop || document.body.scrollTop);
-					evt.currentTarget = myelement;
-					evt.target = evt.srcElement;
-					retval = callback.call(myelement, evt);
-					// try to solve memory leak in IE - do we need this (investigate more)
-					evt = null;
-					return retval;
-				};
-			};
+			mycallback;
 
 		callback.SPARK = callback.SPARK || {};
 		callback.SPARK.$i = callback.SPARK.$i || ++gid;
 
 		for (i = this.length; i--;) {
+
+			mycallback = callback;
 
 			if (this[i].addEventListener) {
 				// other browsers
@@ -359,7 +365,7 @@ SPARK = (function() {
 			} 
 			else {
 				// IE
-				this[i].attachEvent("on"+eventname, (mycallback = iewrap(mycallback, this[i])));
+				this[i].attachEvent("on"+eventname, (mycallback = eventwrapIE(mycallback, this[i])));
 			}
 
 			if (callback !== mycallback) {
@@ -379,9 +385,11 @@ SPARK = (function() {
 	// as the event was registered with.
 		var
 			i,
-			mycallback = callback;
+			mycallback;
 
 		for (i = this.length; i--;) {
+
+			mycallback = callback;
 
 			// if this callback has been wrapped in another function find that function
 			if (this[i].SPARK && callback.SPARK &&

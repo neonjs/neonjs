@@ -79,6 +79,9 @@ SPARK = (function() {
 		while ((callback = readyqueue.shift())) {
 			callback();
 		}
+		// unwatch these events - a potential memory leak breaker (and good hygeine)
+		SPARK.select(document).unwatch("DOMContentLoaded", processreadyqueue);
+		SPARK.select(window).unwatch("load", processreadyqueue);
 		ready = 1;
 	};
 

@@ -448,7 +448,7 @@ SPARK = (function() {
 							if (!(--mycallback["$SPARKl"+loadid])) {
 								// this callback is no longer waiting on any files, so call it
 								mycallback();
-								delete mycallback["$SPARKl"+loadid];
+								//delete mycallback["$SPARKl"+loadid];
 							}
 						}
 					};

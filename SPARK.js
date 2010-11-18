@@ -19,6 +19,7 @@ SPARK = (function() {
 	var
 		SPARK = window.SPARK || {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
+		eventstore = {}, // remembering event handlers
 		animations = [], // information about properties currently animating
 		readyqueue = [], // just callbacks to execute when ready
 		animationschedule, // next scheduled tick or 0/undefined if stopped
@@ -352,8 +353,7 @@ SPARK = (function() {
 			i,
 			mycallback;
 
-		callback.SPARK = callback.SPARK || {};
-		callback.SPARK.$i = callback.SPARK.$i || ++gid;
+		callback.$SPARKi = callback.$SPARKi || ++gid;
 
 		for (i = this.length; i--;) {
 
@@ -368,12 +368,8 @@ SPARK = (function() {
 				this[i].attachEvent("on"+eventname, (mycallback = eventwrapIE(mycallback, this[i])));
 			}
 
-			if (callback !== mycallback) {
-				this[i].SPARK = this[i].SPARK || {};
-				this[i].SPARK["$e"+callback.SPARK.$i+eventname] = mycallback;
-				// fixme unwrap mycallback
-			}
-
+			this[i].$SPARKi = this[i].$SPARKi || ++gid;
+			eventstore[this[i].$SPARKi+eventname+callback.$SPARKi] = mycallback;
 		}
 
 	};
@@ -384,28 +380,27 @@ SPARK = (function() {
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
 		var
-			i,
-			mycallback;
+			i;
 
 		for (i = this.length; i--;) {
 
-			mycallback = callback;
+			if (this[i].$SPARKi && callback.$SPARKi &&
+				eventstore[this[i].$SPARKi+eventname+callback.$SPARKi]) {
 
-			// if this callback has been wrapped in another function find that function
-			if (this[i].SPARK && callback.SPARK &&
-				this[i].SPARK["$e"+callback.SPARK.$i+eventname]) {
-				mycallback = this[i].SPARK["$e"+callback.SPARK.$i+eventname];
-				delete this[i].SPARK["$e"+callback.SPARK.$i+eventname];
+				if (this[i].addEventListener) {
+					// other browsers
+					this[i].removeEventListener(eventname,
+						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi], !1);
+				} 
+				else {
+					// IE
+					this[i].detachEvent("on"+eventname,
+						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi]);
+				}
+
+				delete eventstore[this[i].$SPARKi+eventname+callback.$SPARKi];
 			}
 
-			if (this[i].addEventListener) {
-				// other browsers
-				this[i].removeEventListener(eventname, mycallback, !1);
-			} 
-			else {
-				// IE
-				this[i].detachEvent("on"+eventname, mycallback);
-			}
 		}
 		return this;
 	};
@@ -450,10 +445,10 @@ SPARK = (function() {
 							loadstate[file] = 2;
 							myscript.unwatch("load", gencallback).unwatch("readystatechange",
 								gencallback).remove();
-							if (!(--mycallback.SPARK["$l"+loadid])) {
+							if (!(--mycallback["$SPARKl"+loadid])) {
 								// this callback is no longer waiting on any files, so call it
 								mycallback();
-								delete mycallback.SPARK["$l"+loadid];
+								delete mycallback["$SPARKl"+loadid];
 							}
 						}
 					};
@@ -463,19 +458,18 @@ SPARK = (function() {
 				that.select(document.documentElement.childNodes[0]).append(myscript);
 			};
 
-		mycallback.SPARK = mycallback.SPARK || {};
 		// store a count of how many files this callback (for this loadid)
 		// is still "waiting on"
-		mycallback.SPARK["$l"+loadid] = 0;
+		mycallback["$SPARKl"+loadid] = 0;
 
 		this.ready(function() {
 			for (i = myfiles.length; i--;) {
 				if (!loadstate[myfiles[i]]) {
-					mycallback.SPARK["$l"+loadid]++;
+					mycallback["$SPARKl"+loadid]++;
 					registerscript(myfiles[i]);
 				}
 			}
-			if (!mycallback.SPARK["$l"+loadid]) {
+			if (!mycallback["$SPARKl"+loadid]) {
 				mycallback();
 			}
 		});

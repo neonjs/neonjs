@@ -74,11 +74,8 @@ SPARK = (function() {
 	var processreadyqueue = function() {
 	// fairly straightforward.  runs every callback in the ready queue
 	// and sets ready to 1
-		var
-			callback;
-		while ((callback = readyqueue.shift())) {
-			callback();
-		}
+		// shift callbacks from array, and execute them at same time
+		while ((readyqueue.shift()())) {}
 		// unwatch these events - a potential memory leak breaker (and good hygeine)
 		SPARK.select(document).unwatch("DOMContentLoaded", processreadyqueue);
 		SPARK.select(window).unwatch("load", processreadyqueue);
@@ -258,7 +255,7 @@ SPARK = (function() {
 		while (i--) {
 			anim = animations[i];
 			x = (time - anim[4]) / (anim[8]||400);
-			if (x > 1) {
+			if (x >= 1) {
 				animations.splice(i, x = 1);
 			}
 
@@ -334,9 +331,21 @@ SPARK = (function() {
 		};
 	};
 
+	var transformURL = function(url) {
+		return (/^[^\/?#]+:|^\//).test(url) ? url :
+			""+SPARK.baseurl+url;
+	};
+
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
+	
+	SPARK.baseurl = SPARK.baseurl || "";
+	// this not a method, but rather a property.  all methods which take
+	// URLs like load() and getHttp() will use this as a base when given
+	// a relative URL
+	// if used, this must have the trailing slash
+	// eg. "/mydir/" or "http://www.mysite.com/mydir/"
 
 	SPARK.select = function(selector) {
 	// main way of selecting elements in SPARK.  accepts a CSS selector
@@ -379,20 +388,20 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			mycallback,
 			myeventname =
 				eventname == 'mouseenter' ? 'mouseover' :
 				eventname == 'mouseleave' ? 'mouseout' :
-				eventname;
+				eventname,
+			mycallback;
 
 		callback.$SPARKi = callback.$SPARKi || ++gid;
 
 		for (i = this.length; i--;) {
 
-			//mycallback = callback;
-
-			mycallback = myeventname === eventname ? callback :
-				eventwrapfocus(callback);
+			mycallback =
+				eventname == 'mouseenter' ||
+				eventname == 'mouseleave' ? eventwrapfocus(callback) :
+				callback;
 
 			if (this[i].addEventListener) {
 				// other browsers
@@ -477,7 +486,7 @@ SPARK = (function() {
 			loadid = ++gid,
 			registerscript = function(file) {
 				var
-					myscript = that.build({script:"",$src:file}),
+					myscript = that.build({script:"",$src:transformURL(file)}),
 					gencallback = function() {
 						if (loadstate[file] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
@@ -867,11 +876,13 @@ SPARK = (function() {
 				*/
 
 				callback.call(xmlhttprequest);
-				//todo do we need to un-set onreadystatechange to prevent
-				//a memory leak?
+
+				// this may be desirable to free memory, not sure if it's a
+				// memory leak problem though
+				xmlhttprequest.onreadystatechange = null;
 			}
 		};
-		xmlhttprequest.open(method || "GET", url, !0);
+		xmlhttprequest.open(method || "GET", transformURL(url), !0);
 		if (body && ""+body!==body &&
 			typeof body.cloneNode != "function" &&
 			typeof body.read != "function") {
@@ -904,20 +915,6 @@ SPARK = (function() {
 	// is 'mousedown' for normal menus or 'mousein' for a hover-only (no click
 	// required) menu.
 
-/*
-			watchfunc = function(evt) {
-				var
-					i, el = evt.target;
-				do {
-					for (i = this.length; i--;)  {
-						if (el == this[i].offsetParent) {
-							return;
-						}
-					}
-				} while ((el = el.parentNode));
-				this.remove();
-				this.select(document.documentElement).unwatch(closeevent, watchfunc);
-				*/
 		var
 			i,
 			flyout, host,

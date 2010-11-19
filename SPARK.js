@@ -74,8 +74,12 @@ SPARK = (function() {
 	var processreadyqueue = function() {
 	// fairly straightforward.  runs every callback in the ready queue
 	// and sets ready to 1
-		// shift callbacks from array, and execute them at same time
-		while ((readyqueue.shift()())) {}
+		var
+			callback;
+		while ((callback = readyqueue.shift())) {
+			// shift callback from array, and execute it at same time
+			callback();
+		}
 		// unwatch these events - a potential memory leak breaker (and good hygeine)
 		SPARK.select(document).unwatch("DOMContentLoaded", processreadyqueue);
 		SPARK.select(window).unwatch("load", processreadyqueue);
@@ -653,7 +657,7 @@ SPARK = (function() {
 			mylastval = parseFloat(lastval),
 			animated = myval == myval && mylastval == mylastval, // NaN test
 			suffix = animated && /\D*$/.exec(value)[0],
-			prefix = animated && /^[^\d\.]*/.exec(value)[0];
+			prefix = animated && /^[^\d\.\-]*/.exec(value)[0];
 
 		while (i--) {
 			this[i].style[style] = value;

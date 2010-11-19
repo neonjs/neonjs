@@ -856,12 +856,19 @@ SPARK = (function() {
 			if (xmlhttprequest.readyState == 4) {
 
 				// implement JSON parsing
-				if (!xmlhttprequest.responseJSON) {
-					xmlhttprequest.responseJSON =
-					SPARK.jsonDecode(xmlhttprequest.responseText);
-				}
+				// we've disabled setting responseJSON here since setting a value
+				// to it breaks in IE6 - for now user should use SPARK.jsonDecode()
+				// not ideal I know
+				/*
+					if (!xmlhttprequest.responseJSON) {
+						xmlhttprequest.responseJSON =
+							SPARK.jsonDecode(xmlhttprequest.responseText);
+					}
+				*/
 
 				callback.call(xmlhttprequest);
+				//todo do we need to un-set onreadystatechange to prevent
+				//a memory leak?
 			}
 		};
 		xmlhttprequest.open(method || "GET", url, !0);

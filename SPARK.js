@@ -302,10 +302,35 @@ SPARK = (function() {
 				(document.documentElement.scrollTop || document.body.scrollTop);
 			evt.currentTarget = element;
 			evt.target = evt.srcElement;
+			evt.relatedTarget = 
+				evt.fromElement !== evt.target ? evt.fromElement : evt.toElement;
 			retval = callback.call(element, evt);
-			// try to solve memory leak in IE - do we need this (investigate more)
+			// try to solve memory leak in IE - do we need this? (investigate more)
 			evt = null;
 			return retval;
+		};
+	};
+
+	var eventwrapfocus = function(callback) {
+		// checks if the relatedtarget is within the target and only calls the
+		// registered handler if it isn't.  suitable for implementing 
+		// mouseenter/mouseleave
+		return function(evt) {
+			var
+				el = evt.relatedTarget;
+
+			// we're using try/catch here because apparently relatedtarget can
+			// sometimes be from a xul element or some other context which wouldn't
+			// permit us to walk up the tree with el.parentNode
+			try {
+				for (;el;el = el.parentNode) {
+					if (el === evt.currentTarget) {
+						return;
+					}
+				}
+				callback.call(this, evt);
+			}
+			catch (e) {}
 		};
 	};
 
@@ -354,21 +379,28 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			mycallback;
+			mycallback,
+			myeventname =
+				eventname == 'mouseenter' ? 'mouseover' :
+				eventname == 'mouseleave' ? 'mouseout' :
+				eventname;
 
 		callback.$SPARKi = callback.$SPARKi || ++gid;
 
 		for (i = this.length; i--;) {
 
-			mycallback = callback;
+			//mycallback = callback;
+
+			mycallback = myeventname === eventname ? callback :
+				eventwrapfocus(callback);
 
 			if (this[i].addEventListener) {
 				// other browsers
-				this[i].addEventListener(eventname, mycallback, !1);
+				this[i].addEventListener(myeventname, mycallback, !1);
 			} 
 			else {
 				// IE
-				this[i].attachEvent("on"+eventname, (mycallback = eventwrapIE(mycallback, this[i])));
+				this[i].attachEvent("on"+myeventname, (mycallback = eventwrapIE(mycallback, this[i])));
 			}
 
 			this[i].$SPARKi = this[i].$SPARKi || ++gid;
@@ -383,7 +415,11 @@ SPARK = (function() {
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
 		var
-			i;
+			i,
+			myeventname =
+				eventname == 'mouseenter' ? 'mouseover' :
+				eventname == 'mouseleave' ? 'mouseout' :
+				eventname;
 
 		for (i = this.length; i--;) {
 
@@ -392,12 +428,12 @@ SPARK = (function() {
 
 				if (this[i].addEventListener) {
 					// other browsers
-					this[i].removeEventListener(eventname,
+					this[i].removeEventListener(myeventname,
 						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi], !1);
 				} 
 				else {
 					// IE
-					this[i].detachEvent("on"+eventname,
+					this[i].detachEvent("on"+myeventname,
 						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi]);
 				}
 
@@ -912,6 +948,7 @@ SPARK = (function() {
 		return this;
 	};
 
+	/*
 	// frame busting.  this is built in for security
 	// but you can prevent it by setting a global 
 	// SPARK.framing before loading SPARK
@@ -921,6 +958,7 @@ SPARK = (function() {
 		top.location.replace(location.href);
 		location.replace(null);
 	}
+	*/
 
 	// set up ready listening
 	SPARK.select(document).watch("DOMContentLoaded", processreadyqueue);

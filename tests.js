@@ -77,13 +77,17 @@ SPARK.load("SPARK.tester.js", function() {
 			var
 				that = this,
 				p = this.testdiv.append({p:"Testing user input: "}),
-				button = p.append({button:"Please click"}),
+				button = p.append({button:"Please mouse click"}),
 				otherclicked = 0,
 				wrongclicked = 0,
+				mouseentered = 0,
 				mouseup = 1,
 				wrongclickfunc = function() { wrongclicked = 1; };
 
 			this.wait(30000);
+			button.watch('mouseenter', function(evt) {
+				mouseentered = 1;
+			});
 			button.watch('click', function(evt) {
 				that.assert(!!evt, "Event object was passed");
 				that.assert(!!evt.currentTarget.nodeName, "event.currentTarget is a node");
@@ -95,6 +99,7 @@ SPARK.load("SPARK.tester.js", function() {
 					that.assert(otherclicked == 1, "Multiple watchers on event fired");
 					that.assert(wrongclicked == 0, "Unwatched successfully");
 					that.assert(mouseup == 1, "Mouseup event fired");
+					that.assert(mouseentered == 1, "Mouseenter event fired");
 					that.finish();
 				}, 20);
 			});
@@ -105,7 +110,6 @@ SPARK.load("SPARK.tester.js", function() {
 				mouseup = 1;
 				that.assert(evt.which > 0, "event.which has some positive value");
 			});
-
 		});
 
 		SPARK.tester.test("Extending SPARK", function() {

@@ -11,13 +11,14 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
+// overwrites any existing SPARK object
 SPARK = (function() {
 
 	// ##################################################################
 	// PRIVATE VARIABLES
 	
 	var
-		SPARK = window.SPARK || {},
+		SPARK = {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		eventstore = {}, // remembering event handlers
 		animations = [], // information about properties currently animating
@@ -337,17 +338,17 @@ SPARK = (function() {
 
 	var transformURL = function(url) {
 		return (/^[^\/?#]+:|^\//).test(url) ? url :
-			""+SPARK.baseurl+url;
+			""+SPARK.basedir+url;
 	};
 
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
 	
-	SPARK.baseurl = SPARK.baseurl || "";
+	SPARK.basedir = "";
 	// this not a method, but rather a property.  all methods which take
 	// URLs like load() and getHttp() will use this as a base when given
-	// a relative URL
+	// a relative URL (absolute values can still be used though)
 	// if used, this must have the trailing slash
 	// eg. "/mydir/" or "http://www.mysite.com/mydir/"
 

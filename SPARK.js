@@ -24,8 +24,7 @@ SPARK = (function() {
 		animations = [], // information about properties currently animating
 		readyqueue = [], // just callbacks to execute when ready
 		animationschedule, // next scheduled tick or 0/undefined if stopped
-		undef, // shortcut for undefined
-		ready = 0,
+		ready = 0, // 0 = not ready, 1 = ready
 		gid = 0;
 
 	var getprevioussibling = function(element) {
@@ -287,10 +286,10 @@ SPARK = (function() {
 				retval;
 
 			evt.preventDefault = function() {
-				evt.returnValue = !1;
+				evt.returnValue = false;
 			};
 			evt.stopPropagation = function() {
-				evt.cancelBubble = !0;
+				evt.cancelBubble = true;
 			};
 			evt.which = 
 				evt.button & 1 ? 1 :
@@ -336,22 +335,10 @@ SPARK = (function() {
 		};
 	};
 
-	var transformURL = function(url) {
-		return (/^[^\/?#]+:|^\//).test(url) ? url :
-			""+SPARK.basedir+url;
-	};
-
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using SPARK.methodname() eg SPARK.watch()
 	
-	SPARK.basedir = "";
-	// this not a method, but rather a property.  all methods which take
-	// URLs like load() and getHttp() will use this as a base when given
-	// a relative URL (absolute values can still be used though)
-	// if used, this must have the trailing slash
-	// eg. "/mydir/" or "http://www.mysite.com/mydir/"
-
 	SPARK.select = function(selector) {
 	// main way of selecting elements in SPARK.  accepts a CSS selector
 	// string, or a node or array of nodes.  also accepts the window object
@@ -410,7 +397,7 @@ SPARK = (function() {
 
 			if (this[i].addEventListener) {
 				// other browsers
-				this[i].addEventListener(myeventname, mycallback, !1);
+				this[i].addEventListener(myeventname, mycallback, false);
 			} 
 			else {
 				// IE
@@ -443,7 +430,7 @@ SPARK = (function() {
 				if (this[i].addEventListener) {
 					// other browsers
 					this[i].removeEventListener(myeventname,
-						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi], !1);
+						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi], false);
 				} 
 				else {
 					// IE
@@ -471,31 +458,41 @@ SPARK = (function() {
 		// ready asks for callback so don't chain
 	};
 
-	SPARK.load = function(files, callback) {
-	// dynamically load and execute other javascript files asynchronously,
+	SPARK.loaddir = "";
+	// any relative URLs passed to SPARK.load() will use this as a base.
+	// if specified, this must contain the trailing slash of a directory.
+	// it can be a full url like "http://example.org/dir/" or just the 
+	// path like "/dir/", and so on.
+	// It's suggested to set this to the directory where all your
+	// SPARK modules are located, so that you can have modules that
+	// depend on other modules and can load them dynamically
+
+	SPARK.load = function(urls, callback) {
+	// dynamically load and execute other javascript urls asynchronously,
 	// allowing the rest of the page to continue loading and the user to
-	// interact with it while loading.  files may be a single URL or an
+	// interact with it while loading.  urls may be a single URL or an
 	// array of URLs.  callback is optional, and if supplied the given
 	// callback will be called once the given file is loaded.
 	// There is no guarantee about the order in which different callbacks
 	// are executed, except that a callback will only be called when all
 	// specified files are loaded.
-	// It's safe to call this many times with the same file, and it won't be
-	// loaded again, as long as the filename string is completely the same (not
-	// just resolving to the same URL).
+	// It's safe to call this many times with the same url, and it won't be
+	// loaded again, as long as the url string is completely the same (not
+	// just resolving to the same destination)
 		var
 			i,
-			myfiles = files===""+files ? [files] : files,
+			myurls = urls===""+urls ? [urls] : urls,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
-			registerscript = function(file) {
+			registerscript = function(url) {
 				var
-					myscript = that.build({script:"",$src:transformURL(file)}),
+					myscript = that.build({script:"",
+						$src:(/^[^\/?#]+:|^\//).test(url)?url:""+SPARK.loaddir+url}),
 					gencallback = function() {
-						if (loadstate[file] != 2 &&
+						if (loadstate[url] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
-							loadstate[file] = 2;
+							loadstate[url] = 2;
 							myscript.unwatch("load", gencallback).unwatch("readystatechange",
 								gencallback).remove();
 							if (!(--mycallback["$SPARKl"+loadid])) {
@@ -505,7 +502,7 @@ SPARK = (function() {
 							}
 						}
 					};
-				loadstate[file] = 1;
+				loadstate[url] = 1;
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
 				that.select(document.documentElement.childNodes[0]).append(myscript);
@@ -516,10 +513,10 @@ SPARK = (function() {
 		mycallback["$SPARKl"+loadid] = 0;
 
 		this.ready(function() {
-			for (i = myfiles.length; i--;) {
-				if (!loadstate[myfiles[i]]) {
+			for (i = myurls.length; i--;) {
+				if (!loadstate[myurls[i]]) {
 					mycallback["$SPARKl"+loadid]++;
-					registerscript(myfiles[i]);
+					registerscript(myurls[i]);
 				}
 			}
 			if (!mycallback["$SPARKl"+loadid]) {
@@ -536,17 +533,17 @@ SPARK = (function() {
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
 		var 
-			val = !this[0] ? undef :
+			val = !this[0] ? undefined :
 			document.defaultView && document.defaultView.getComputedStyle ?
 				document.defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
 
-		return val !== undef ? val :
+		return val !== undefined ? val :
 			style == 'opacity' ?
 				((val = /opacity=(\d+)/.exec(this.getStyle('filter'))) ?
-				parseFloat(val[1]) * 100 : undef) :
+				parseFloat(val[1]) * 100 : undefined) :
 			style == 'cssFloat' ?	this.getStyle('styleFloat') :
-			undef;
+			undefined;
 	};
 
 	/*
@@ -555,7 +552,7 @@ SPARK = (function() {
 	// to set the text content of a node, you should just use
 	// .append("text") - preceded by .empty() if replacing existing
 	// contents
-		return !this.length ? undef :
+		return !this.length ? undefined :
 			this[0].textContent || this[0].innerText;
 	};
 	*/
@@ -769,7 +766,7 @@ SPARK = (function() {
 			}
 			for (i = this.length; i--;) {
 				if (this[i].appendChild) {
-					instance = i ? element.cloneNode(!0) : element;
+					instance = i ? element.cloneNode(true) : element;
 					group = instance.nodeType == 11 ? instance.childNodes : [instance];
 					for (j = 0, len = group.length; j < len;) {
 						collected.push(group[j++]);
@@ -800,7 +797,7 @@ SPARK = (function() {
 			}
 			for (i = this.length; i--;) {
 				if (this[i].parentNode) {
-					instance = i ? element.cloneNode(!0) : element;
+					instance = i ? element.cloneNode(true) : element;
 					group = instance.nodeType == 11 ? instance.childNodes : [instance];
 					for (j = 0, len = group.length; j < len;) {
 						collected.push(group[j++]);
@@ -887,7 +884,7 @@ SPARK = (function() {
 				xmlhttprequest.onreadystatechange = null;
 			}
 		};
-		xmlhttprequest.open(method || "GET", transformURL(url), !0);
+		xmlhttprequest.open(method || "GET", url, true);
 		if (body && ""+body!==body &&
 			typeof body.cloneNode != "function" &&
 			typeof body.read != "function") {

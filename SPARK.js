@@ -809,99 +809,6 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
-	SPARK.remove = function() {
-	// removes the selected nodes from the document and all their contents.
-		for (var i = this.length; i--;) {
-			if (this[i].parentNode) {
-				this[i].parentNode.removeChild(this[i]);
-			}
-		}
-		return this;
-	};
-
-	SPARK.empty = function() {
-	// deletes the contents of the selected nodes, but not the nodes
-	// themselves
-		for (var i = this.length, tmp; i--;) {
-			while ((tmp = this[i].lastChild)) {
-				this[i].removeChild(tmp);
-			}
-		}
-		return this;
-	};
-
-	SPARK.jsonDecode = function(json) {
-	// unserialises the JSON string into the equivalent value.  Does a check
-	// on the string that is only thorough enough to prevent arbitrary code
-	// execution.
-	
-		/*
-		var cx = /[\x00\u007f-\uffff]/g;
-		json = json.replace(cx, function(ch) {
-			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-		});
-		*/
-		if (/^[\],:{}\s]+$/.test(
-			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
-			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
-			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
-			return eval("("+json+")");
-		}
-	};
-
-	SPARK.getHttp = function(url, callback, method, body) {
-	// places an HTTP request (using XMLHttpRequest) for the given URL.
-	// method and body are optional.
-	// callback is only called when the load is 100% complete (that is, you
-	// won't be able to implement a progress indicator).
-	// body should be specified for POST method.  It can be an object of
-	// {name:value,...} where it will be encoded like form variables, or
-	// it can be a string, where it will be transmitted bare
-		var
-			i,
-			collected = [],
-			xmlhttprequest = window.XMLHttpRequest ?
-				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-
-		xmlhttprequest.onreadystatechange = function() {
-			if (xmlhttprequest.readyState == 4) {
-
-				// implement JSON parsing
-				// we've disabled setting responseJSON here since setting a value
-				// to it breaks in IE6 - for now user should use SPARK.jsonDecode()
-				// not ideal I know
-				/*
-					if (!xmlhttprequest.responseJSON) {
-						xmlhttprequest.responseJSON =
-							SPARK.jsonDecode(xmlhttprequest.responseText);
-					}
-				*/
-
-				callback.call(xmlhttprequest);
-
-				// this may be desirable to free memory, not sure if it's a
-				// memory leak problem though
-				xmlhttprequest.onreadystatechange = null;
-			}
-		};
-		xmlhttprequest.open(method || "GET", url, true);
-		if (body && ""+body!==body &&
-			typeof body.cloneNode != "function" &&
-			typeof body.read != "function") {
-			for (i in body) {
-				if (Object.hasOwnProperty.call(body, i)) {
-					collected.push(encodeURIComponent(i) + "=" +
-						encodeURIComponent(body[i]));
-				}
-			}
-			body = collected.join("&");
-			xmlhttprequest.setRequestHeader("Content-type",
-				"application/x-www-form-urlencoded");
-		}
-		xmlhttprequest.send(body);
-		// asks for callback so don't chain
-	};
-
 	SPARK.flyout = function(direction) {
 	// turns the selected element(s) into fly-out menus.
 	// direction specifies first which side of the offsetparent the flyout
@@ -952,6 +859,102 @@ SPARK = (function() {
 		}
 
 		return this;
+	};
+
+	SPARK.remove = function() {
+	// removes the selected nodes from the document and all their contents.
+		for (var i = this.length; i--;) {
+			if (this[i].parentNode) {
+				this[i].parentNode.removeChild(this[i]);
+			}
+		}
+		return this;
+	};
+
+	SPARK.empty = function() {
+	// deletes the contents of the selected nodes, but not the nodes
+	// themselves
+		for (var i = this.length, tmp; i--;) {
+			while ((tmp = this[i].lastChild)) {
+				this[i].removeChild(tmp);
+			}
+		}
+		return this;
+	};
+
+	SPARK.jsonDecode = function(json) {
+	// unserialises the JSON string into the equivalent value.  Does a check
+	// on the string that is only thorough enough to prevent arbitrary code
+	// execution.
+	
+		/*
+		var cx = /[\x00\u007f-\uffff]/g;
+		json = json.replace(cx, function(ch) {
+			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
+		});
+		*/
+		if (/^[\],:{}\s]+$/.test(
+			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
+			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
+			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
+			return eval("("+json+")");
+		}
+	};
+
+	SPARK.getHttp = function(url, callback, method, body, contenttype) {
+	// places an HTTP request (using XMLHttpRequest) for the given URL.
+	// method and body are optional.
+	// callback is only called when the load is 100% complete (that is, you
+	// won't be able to implement a progress indicator).
+	// body should be specified for POST method.  It can be an object of
+	// {name:value,...} where it will be encoded like form variables, or
+	// it can be a string, where it will be transmitted bare
+		var
+			i,
+			collected = [],
+			xmlhttprequest = window.XMLHttpRequest ?
+				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+
+		xmlhttprequest.onreadystatechange = function() {
+			if (xmlhttprequest.readyState == 4) {
+
+				// implement JSON parsing
+				// we've disabled setting responseJSON here since setting a value
+				// to it breaks in IE6 - for now user should use SPARK.jsonDecode()
+				// not ideal I know
+				/*
+					if (!xmlhttprequest.responseJSON) {
+						xmlhttprequest.responseJSON =
+							SPARK.jsonDecode(xmlhttprequest.responseText);
+					}
+				*/
+
+				callback.call(xmlhttprequest);
+
+				// this may be desirable to free memory, not sure if it's a
+				// memory leak problem though
+				xmlhttprequest.onreadystatechange = null;
+			}
+		};
+		xmlhttprequest.open(method || "GET", url, true);
+		if (body && ""+body!==body /*&&
+			typeof body.cloneNode != "function" &&
+			typeof body.read != "function"*/) {
+			for (i in body) {
+				if (Object.hasOwnProperty.call(body, i)) {
+					collected.push(encodeURIComponent(i) + "=" +
+						encodeURIComponent(body[i]));
+				}
+			}
+			body = collected.join("&");
+			contenttype = "application/x-www-form-urlencoded";
+		}
+		if (contenttype) {
+			xmlhttprequest.setRequestHeader("Content-type",
+				contenttype);
+		}
+		xmlhttprequest.send(body);
+		// asks for callback so don't chain
 	};
 
 	/*

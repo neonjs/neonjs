@@ -487,8 +487,8 @@ SPARK = (function() {
 			loadid = ++gid,
 			registerscript = function(url) {
 				var
-					myscript = that.build({script:"",
-						$src:(/^[^\/?#]+:|^\//).test(url)?url:""+SPARK.loaddir+url}),
+					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : ""+SPARK.loaddir+url,
+					myscript = that.build({script:"",	$src:myurl}),
 					gencallback = function() {
 						if (loadstate[url] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
@@ -651,7 +651,7 @@ SPARK = (function() {
 		var
 			i = this.length, j,
 			time = +new Date(),
-			myval = parseFloat(value),
+			myval = parseFloat(value), // need to account for prefix
 			mylastval = parseFloat(lastval),
 			animated = myval == myval && mylastval == mylastval, // NaN test
 			suffix = animated && /\D*$/.exec(value)[0],

@@ -213,7 +213,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 		toolbar = editor.insert({div:''})
 			.style('margin', '0 0 1px 0')
 			.style('background', '#f9f6f3');
-		populatetoolbar(SPARK.select(toolbar), canedit);
+		populatetoolbar(toolbar, canedit);
 			/*
 		savebar = container.append({div:'CLICK'})
 			.watch('click', function() {
@@ -243,16 +243,18 @@ SPARK.richText = SPARK.richText || function(opts) {
 			htmlconvert(source, !canedit, 0);
 	};
 
-	var addbutton = function(toolbar, command, alt, title) {
+	var addbutton = function(toolbar, command, num, title) {
 		var button = toolbar.append({button:'',$title:title})
+			.addClass('SPARK-richtext-toolbar-button')
 			.style('border', 'none')
+			.style('padding', '0')
 			.style('background', 'transparent')
-			.style('padding', '6px 5px 5px')
 			.style('overflow', 'visible');
 
 		button.append({span:""})
-			.style('background', 'red')
+			.style('background', 'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*num+1)+'px')
 			.style('display', 'inline-block')
+			.style('margin', '4px 3px')
 			.style('width', '14px')
 			.style('height', '14px');
 	
@@ -260,7 +262,13 @@ SPARK.richText = SPARK.richText || function(opts) {
 			document.execCommand('useCSS', 0, 1);
 			document.execCommand(command, 0, null);
 			updatetoolbar(toolbar);
-			alert('clicked');
+		});
+
+		button.watch('mouseenter', function() {
+			SPARK.select(this).style('background', '#EDD');
+		});
+		button.watch('mouseleave', function() {
+			SPARK.select(this).style('background', 'transparent'); 
 		});
 
 	};
@@ -279,12 +287,12 @@ SPARK.richText = SPARK.richText || function(opts) {
 			return;
 		}
 
-		addbutton(toolbar, 'bold', 'B', 'Bold');
-		addbutton(toolbar, 'italic', 'I', 'Italic');
-		addbutton(toolbar, 'insertunorderedlist', '*', 'Insert bulleted list');
-		addbutton(toolbar, 'insertorderedlist', '1.', 'Insert numbered list');
-		addbutton(toolbar, 'outdent', '<', 'Decrease indent');
-		addbutton(toolbar, 'indent', '>', 'Increase indent');
+		addbutton(toolbar, 'bold', 0, 'Bold');
+		addbutton(toolbar, 'italic', 1, 'Italic');
+		addbutton(toolbar, 'insertunorderedlist', 2, 'Insert bulleted list');
+		addbutton(toolbar, 'insertorderedlist', 3, 'Insert numbered list');
+		addbutton(toolbar, 'outdent', 4, 'Decrease indent');
+		addbutton(toolbar, 'indent', 5, 'Increase indent');
 	};
 	
 	for (i = this.length; i--;) {

@@ -171,6 +171,21 @@ SPARK.richText = SPARK.richText || function(opts) {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
+	var stylebutton = function(button) {
+		button.addClass('SPARK-richtext-toolbar-button')
+			.style('border', 'none')
+			.style('padding', '0')
+			.style('background', 'transparent')
+			.style('overflow', 'visible');
+
+		button.watch('mouseenter', function() {
+			SPARK.select(this).style('background', '#EDD');
+		});
+		button.watch('mouseleave', function() {
+			SPARK.select(this).style('background', 'transparent'); 
+		});
+	};
+
 	var setupeditor = function(el) {
 		var
 			i,
@@ -243,34 +258,44 @@ SPARK.richText = SPARK.richText || function(opts) {
 			htmlconvert(source, !canedit, 0);
 	};
 
-	var addbutton = function(toolbar, command, num, title) {
-		var button = toolbar.append({button:'',$title:title})
-			.addClass('SPARK-richtext-toolbar-button')
-			.style('border', 'none')
-			.style('padding', '0')
-			.style('background', 'transparent')
-			.style('overflow', 'visible');
-
-		button.append({span:""})
-			.style('background', 'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*num+1)+'px')
-			.style('display', 'inline-block')
-			.style('margin', '4px 3px')
+	var stylebuttonicon = function(span) {
+		span.style('display', 'inline-block')
+			.style('verticalAlign', 'middle')
+			.style('margin', '4px 3px 5px')
 			.style('width', '14px')
 			.style('height', '14px');
+	};
+
+	var addbutton = function(toolbar, command, num, title) {
+		var
+			button = toolbar.append({button:'',$title:title}),
+			icon = button.append({span:""})
+				.style('background', 
+					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*num+1)+'px');
+
+		stylebutton(button);
+		stylebuttonicon(icon);
 	
 		button.watch('click', function() {
 			document.execCommand('useCSS', 0, 1);
 			document.execCommand(command, 0, null);
 			updatetoolbar(toolbar);
 		});
+	};
 
-		button.watch('mouseenter', function() {
-			SPARK.select(this).style('background', '#EDD');
-		});
-		button.watch('mouseleave', function() {
-			SPARK.select(this).style('background', 'transparent'); 
-		});
+	var addstylechooser = function(toolbar) {
+		var
+			chooser = toolbar.append({button:'',$title:'Paragraph style'})
+				.style('position', 'relative');
+			sample = chooser.append({span:'Paragraph style'})
+				.style('verticalAlign', 'middle')
+				.style('margin', '4px 3px'),
+			droparrow = chooser.append({span:""})
+				.style('background',
+					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*6+1)+'px');
 
+		stylebutton(chooser);
+		stylebuttonicon(droparrow);
 	};
 
 	var updatetoolbar = function(toolbar) {
@@ -287,6 +312,7 @@ SPARK.richText = SPARK.richText || function(opts) {
 			return;
 		}
 
+		addstylechooser(toolbar);
 		addbutton(toolbar, 'bold', 0, 'Bold');
 		addbutton(toolbar, 'italic', 1, 'Italic');
 		addbutton(toolbar, 'insertunorderedlist', 2, 'Insert bulleted list');

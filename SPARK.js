@@ -681,13 +681,17 @@ SPARK = (function() {
 		var
 			i = this.length, j,
 			time = +new Date(),
-			parts     = /(\D*?)(-?[\d\.]*)([\D\d]*)/.exec(value),
+			parts     = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(value),
 			lastparts = /(\D*?)(-?[\d\.]*)([\D\d]*)/.exec(lastval),
 			myval = parseFloat(parts[2]), // need to account for prefix
 			mylastval = parseFloat(lastparts[2]),
 			animated = myval == myval && mylastval == mylastval, // NaN test
 			prefix = parts[1],
-			suffix = parts[3];
+			suffix = parts[3]; 
+
+		console.log(parts);
+		
+		style = style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
 
 		while (i--) {
 			this[i].style[style] = value;

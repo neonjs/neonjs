@@ -689,8 +689,6 @@ SPARK = (function() {
 			prefix = parts[1],
 			suffix = parts[3]; 
 
-		console.log(parts);
-		
 		style = style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
 
 		while (i--) {

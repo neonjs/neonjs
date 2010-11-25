@@ -641,6 +641,31 @@ SPARK = (function() {
 		return this;
 	};
 
+	SPARK.styleRule = function(selector, rules) {
+	// inserts a rule into the page's stylesheet.  this is distinct
+	// from setting an inline style on an element as it sets a global
+	// style rule to be applied to current and future selector matches.
+	// it's therefore preferable to inline styles in many situations
+	// since they can be overridden by user stylesheets on the page.
+	// however, these rules cannot be un-set (through SPARK) nor can
+	// they be animated.  certain browsers like IE also have a limit
+	// (of a few thousand?) on the number of style rules in a
+	// stylesheet
+		var
+			style = this.select('#SPARK-styleRule-s');
+
+		if (!style.length) {
+			style = this.select('head').append({style:""})
+				.setAttribute('id', 'SPARK-styleRule-s');
+		}
+		if (style[0].styleSheet) { // IE
+			style[0].styleSheet.cssText += selector+"{"+rules+"}";
+		}
+		else {
+			style.append(selector+"{"+rules+"}");
+		}
+	};
+
 	SPARK.style = function(style, value, lastval, easing, msec, parm) {
 	// sets an inline style to the given value on all selected nodes.
 	// if lastval is given, then after the style is initially set to

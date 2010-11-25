@@ -325,5 +325,8 @@ SPARK.richText = SPARK.richText || function(opts) {
 		setupeditor(SPARK.select(this[i]));
 	}
 
+	this.styleRule('body', 'background:black');
+	this.styleRule('body', 'color:red');
+
 	return this;
 };

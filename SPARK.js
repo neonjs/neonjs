@@ -682,7 +682,7 @@ SPARK = (function() {
 			i = this.length, j,
 			time = +new Date(),
 			parts     = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(value),
-			lastparts = /(\D*?)(-?[\d\.]*)([\D\d]*)/.exec(lastval),
+			lastparts = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(lastval),
 			myval = parseFloat(parts[2]), // need to account for prefix
 			mylastval = parseFloat(lastparts[2]),
 			animated = myval == myval && mylastval == mylastval, // NaN test

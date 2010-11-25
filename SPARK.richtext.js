@@ -16,7 +16,8 @@
 SPARK.richText = function(opts) {
 
 	var
-		i;
+		i,
+		canedit = document.body.contentEditable !== undefined;
 
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
@@ -174,43 +175,25 @@ SPARK.richText = function(opts) {
 	var setupeditor = function(el) {
 		var
 			i,
-			container,
-			editor,
-			toolbar,
-			//savebar,
-			source,
-			canedit = document.body.contentEditable !== undefined;
+			container = el.insert({div:''}).addClass('SPARK-richtext-container'),
+			editor = container.append(canedit ? {div:''} : {textarea:''})
+				.addClass('SPARK-richtext-editor'),
+			toolbar = editor.insert({div:''}).addClass('SPARK-richtext-toolbar'),
+			source;
 
-		// set up editor
-		container = el.insert({div:''})
-			.addClass('SPARK-richtext-container');
-
-		editor = container.append(canedit ? {div:''} : {textarea:''})
-			.addClass('SPARK-richtext-editor');
 		if (canedit) {
 			editor.setAttribute('contenteditable', 'true');
 		}
-		toolbar = editor.insert({div:''})
-			.addClass('SPARK-richtext-toolbar');
-
-		populatetoolbar(toolbar, canedit);
-			/*
-		savebar = container.append({div:'CLICK'})
-			.watch('click', function() {
-				editor[0].value = htmlconvert(editor[0].value, 0, 1);
-			});
-			*/
 
 		// transfer to new editor and remove old
 		if (el[0].tagName.toLowerCase() == 'textarea') {
 			source = el[0].value;
-			editor.style('minWidth', el.getStyle('width'))
-				.style('minHeight', el.getStyle('height'));
+			editor.style('minHeight', el.getStyle('height'));
 			el.insert({
 				input:'',
 				$type:'hidden',
 				$name:el[0].name,
-				$value:''
+				$value:el[0].value,
 				});
 			el.remove();
 		}
@@ -221,6 +204,7 @@ SPARK.richText = function(opts) {
 
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
+		populatetoolbar(toolbar, canedit);
 	};
 
 	var addbutton = function(toolbar, command, num, title) {
@@ -234,8 +218,9 @@ SPARK.richText = function(opts) {
 		button.watch('click', function() {
 			document.execCommand('useCSS', 0, 1);
 			document.execCommand(command, 0, null);
-			updatetoolbar(toolbar);
+			updatecontrols(toolbar);
 		});
+
 	};
 
 	var addstylechooser = function(toolbar) {
@@ -248,10 +233,13 @@ SPARK.richText = function(opts) {
 			droparrow = button.append({span:""})
 				.addClass('SPARK-richtext-toolbar-icon')
 				.style('background',
-					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*6+1)+'px');
+					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*9+1)+'px');
 	};
 
-	var updatetoolbar = function(toolbar) {
+	var updatecontrols = function(toolbar) {
+		for (var i = controlcallbacks.length;i--;) {
+			controlcallbacks[i]();
+		}
 	};
 
 	var populatetoolbar = function(toolbar, canedit) {

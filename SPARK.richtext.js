@@ -13,7 +13,7 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
-SPARK.richText = SPARK.richText || function(opts) {
+SPARK.richText = function(opts) {
 
 	var
 		i;

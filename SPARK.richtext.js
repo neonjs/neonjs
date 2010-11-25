@@ -171,21 +171,6 @@ SPARK.richText = SPARK.richText || function(opts) {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
-	var stylebutton = function(button) {
-		button.addClass('SPARK-richtext-toolbar-button')
-			.style('border', 'none')
-			.style('padding', '0')
-			.style('background', 'transparent')
-			.style('overflow', 'visible');
-
-		button.watch('mouseenter', function() {
-			SPARK.select(this).style('background', '#EDD');
-		});
-		button.watch('mouseleave', function() {
-			SPARK.select(this).style('background', 'transparent'); 
-		});
-	};
-
 	var setupeditor = function(el) {
 		var
 			i,
@@ -198,36 +183,16 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 		// set up editor
 		container = el.insert({div:''})
-			.style('border', '1px solid ButtonShadow')
-			.style('width', 'auto')
-			.style('padding', '1px')
-			.style('background', '#fff')
-			.style('color', '#000');
+			.addClass('SPARK-richtext-container');
+
 		editor = container.append(canedit ? {div:''} : {textarea:''})
-			.addClass('SPARK-richtext-editor')
-			.style('maxHeight', '28em');
+			.addClass('SPARK-richtext-editor');
 		if (canedit) {
-			editor.setAttribute('contenteditable', 'true')
-				.style('cursor', 'text')
-				.style('padding', '1px 0 1px 2px')
-				.style('outline', '0') // avoid dotted line while focused in firefox
-				.style('position', 'relative') // in case people paste in absolute positioned things
-				.style('minHeight', '6em')
-				.style('overflow', 'auto'); // crop and scroll
-		}
-		else {
-			editor.style('width', '100%')
-				.style('border', 'none')
-				.style('padding', '0')
-				.style('margin', '0')
-				.style('background', '#fff')
-				.style('color', '#000')
-				.style('font', 'inherit') // so it doesn't get fixed-width font by default
-				.style('minHeight', '14em'); // textareas don't auto-expand so need a height
+			editor.setAttribute('contenteditable', 'true');
 		}
 		toolbar = editor.insert({div:''})
-			.style('margin', '0 0 1px 0')
-			.style('background', '#f9f6f3');
+			.addClass('SPARK-richtext-toolbar');
+
 		populatetoolbar(toolbar, canedit);
 			/*
 		savebar = container.append({div:'CLICK'})
@@ -258,24 +223,14 @@ SPARK.richText = SPARK.richText || function(opts) {
 			htmlconvert(source, !canedit, 0);
 	};
 
-	var stylebuttonicon = function(span) {
-		span.style('display', 'inline-block')
-			.style('verticalAlign', 'middle')
-			.style('margin', '4px 3px 5px')
-			.style('width', '14px')
-			.style('height', '14px');
-	};
-
 	var addbutton = function(toolbar, command, num, title) {
 		var
 			button = toolbar.append({button:'',$title:title}),
 			icon = button.append({span:""})
+				.addClass('SPARK-richtext-toolbar-icon')
 				.style('background', 
 					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*num+1)+'px');
 
-		stylebutton(button);
-		stylebuttonicon(icon);
-	
 		button.watch('click', function() {
 			document.execCommand('useCSS', 0, 1);
 			document.execCommand(command, 0, null);
@@ -285,30 +240,25 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 	var addstylechooser = function(toolbar) {
 		var
-			chooser = toolbar.append({button:'',$title:'Paragraph style'})
-				.style('position', 'relative');
-			sample = chooser.append({span:'Paragraph style'})
-				.style('verticalAlign', 'middle')
-				.style('margin', '4px 3px'),
-			droparrow = chooser.append({span:""})
+			chooser = toolbar.append({span:''})
+				.addClass('SPARK-richtext-toolbar-dropper'),
+			button = chooser.append({button:'',$title:'Paragraph style'}),
+			sample = button.append({span:'Paragraph style'})
+				.addClass('SPARK-richtext-toolbar-label');
+			droparrow = button.append({span:""})
+				.addClass('SPARK-richtext-toolbar-icon')
 				.style('background',
 					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*6+1)+'px');
-
-		stylebutton(chooser);
-		stylebuttonicon(droparrow);
 	};
 
 	var updatetoolbar = function(toolbar) {
 	};
 
 	var populatetoolbar = function(toolbar, canedit) {
-		toolbar.addClass('SPARK-richtext-toolbar')
-			.style('font', '0.75em sans-serif');
 
 		if (!canedit) {
 			toolbar.append({div:"HTML tags allowed"})
-				.style('padding', '5px')
-				.style('textAlign', 'right');
+				.addClass('SPARK-richtext-toolbar-altnotice');
 			return;
 		}
 
@@ -325,8 +275,27 @@ SPARK.richText = SPARK.richText || function(opts) {
 		setupeditor(SPARK.select(this[i]));
 	}
 
-	this.styleRule('body', 'background:black');
-	this.styleRule('body', 'color:red');
-
 	return this;
 };
+
+/************************
+ *        STYLES        *
+ * **********************/
+
+SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
+	.styleRule('.SPARK-richtext-toolbar', 'font:0.8em sans-serif;margin:0 0 1px 0;background:#f9f6f3')
+	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;overflow:visible')
+	.styleRule('.SPARK-richtext-toolbar button:hover', 'background:#edd')
+	.styleRule('.SPARK-richtext-editor', 'maxHeight:28em')
+	
+// outline:0 prevents dotted line in firefox
+// position:relative is in case people paste in absolute positioned elements
+	.styleRule('div.SPARK-richtext-editor', 'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;minHeight:6em;overflow:auto')
+
+// minHeight needed as textareas don't auto-expand
+	.styleRule('textarea.SPARK-richtext-editor', 'width:100%;padding:0;margin:0;background:#fff;color:#000;font:inherit;minHeight:14em')
+
+	.styleRule('.SPARK-richtext-toolbar-altnotice', 'padding:5px;textAlign:right')
+	.styleRule('.SPARK-richtext-toolbar-icon', 'display:inline-block;vertical-align:middle;margin:4px 3px 5px;width:14px;height:14px')
+	.styleRule('.SPARK-richtext-toolbar-label', 'vertical-align:middle;margin: 4px 3px')
+	.styleRule('.SPARK-richtext-toolbar-dropper', 'display:inline-block;position:relative');

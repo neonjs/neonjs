@@ -648,9 +648,11 @@ SPARK = (function() {
 	// it's therefore preferable to inline styles in many situations
 	// since they can be overridden by user stylesheets on the page.
 	// however, these rules cannot be un-set (through SPARK) nor can
-	// they be animated.  certain browsers like IE also have a limit
+	// they be animated.  the same style shouldn't be set multiple
+	// times.  certain browsers like IE also have a limit
 	// (of a few thousand?) on the number of style rules in a
 	// stylesheet
+	// The document must have a head element when calling this.
 		var
 			style = this.select('#SPARK-styleRule-s');
 
@@ -658,12 +660,15 @@ SPARK = (function() {
 			style = this.select('head').append({style:""})
 				.setAttribute('id', 'SPARK-styleRule-s');
 		}
-		if (style[0].styleSheet) { // IE
+		if (style[0].styleSheet) {
+			// IE
 			style[0].styleSheet.cssText += selector+"{"+rules+"}";
 		}
 		else {
 			style.append(selector+"{"+rules+"}");
 		}
+
+		return this;
 	};
 
 	SPARK.style = function(style, value, lastval, easing, msec, parm) {

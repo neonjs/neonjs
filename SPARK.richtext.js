@@ -17,7 +17,8 @@ SPARK.richText = function(opts) {
 
 	var
 		i,
-		canedit = document.body.contentEditable !== undefined;
+		iconsize = opts && opts.iconsize || 14,
+		canedit = 0 && document.body.contentEditable !== undefined;
 
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
@@ -172,6 +173,7 @@ SPARK.richText = function(opts) {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
+
 	var setupeditor = function(el) {
 		var
 			i,
@@ -179,7 +181,68 @@ SPARK.richText = function(opts) {
 			editor = container.append(canedit ? {div:''} : {textarea:''})
 				.addClass('SPARK-richtext-editor'),
 			toolbar = editor.insert({div:''}).addClass('SPARK-richtext-toolbar'),
-			source;
+			source,
+			updators = [],
+			teardowns = [];
+
+		/*******************************************
+		 * HELPER FUNCTIONS FOR THE EDITOR CONTROL *
+		 *******************************************/
+
+		var addbutton = function(command, num, title) {
+			var
+				button = toolbar.append({button:'',$title:title}),
+				icon = button.append({span:""})
+					.addClass('SPARK-richtext-toolbar-icon')
+					.style('width', iconsize+"px")
+					.style('height', iconsize+"px")
+					.style('background', 
+						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*num+1)+'px');
+
+			button.watch('click', function() {
+				document.execCommand('useCSS', 0, 1);
+				document.execCommand(command, 0, null);
+				updatecontrols(toolbar);
+			});
+		};
+
+		var addstylechooser = function() {
+			var
+				chooser = toolbar.append({span:''})
+					.addClass('SPARK-richtext-toolbar-dropper'),
+				button = chooser.append({button:'',$title:'Paragraph style'}),
+				sample = button.append({span:'Paragraph style'})
+					.addClass('SPARK-richtext-toolbar-label');
+				droparrow = button.append({span:""})
+					.addClass('SPARK-richtext-toolbar-icon')
+					.style('width', iconsize+"px")
+					.style('height', iconsize+"px")
+					.style('background',
+						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*9+1)+'px');
+		};
+
+		var updatecontrols = function(toolbar) {
+			for (var i = updators.length;i--;) {
+				updators[i]();
+			}
+		};
+
+		var populatetoolbar = function() {
+
+			if (!canedit) {
+				toolbar.append({div:"HTML tags allowed"})
+					.addClass('SPARK-richtext-toolbar-altnotice');
+				return;
+			}
+
+			addstylechooser();
+			addbutton('bold', 0, 'Bold');
+			addbutton('italic', 1, 'Italic');
+			addbutton('insertunorderedlist', 2, 'Insert bulleted list');
+			addbutton('insertorderedlist', 3, 'Insert numbered list');
+			addbutton('outdent', 4, 'Decrease indent');
+			addbutton('indent', 5, 'Increase indent');
+		};
 
 		if (canedit) {
 			editor.setAttribute('contenteditable', 'true');
@@ -193,7 +256,7 @@ SPARK.richText = function(opts) {
 				input:'',
 				$type:'hidden',
 				$name:el[0].name,
-				$value:el[0].value,
+				$value:el[0].value
 				});
 			el.remove();
 		}
@@ -204,60 +267,10 @@ SPARK.richText = function(opts) {
 
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
-		populatetoolbar(toolbar, canedit);
+
+		populatetoolbar();
 	};
 
-	var addbutton = function(toolbar, command, num, title) {
-		var
-			button = toolbar.append({button:'',$title:title}),
-			icon = button.append({span:""})
-				.addClass('SPARK-richtext-toolbar-icon')
-				.style('background', 
-					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*num+1)+'px');
-
-		button.watch('click', function() {
-			document.execCommand('useCSS', 0, 1);
-			document.execCommand(command, 0, null);
-			updatecontrols(toolbar);
-		});
-
-	};
-
-	var addstylechooser = function(toolbar) {
-		var
-			chooser = toolbar.append({span:''})
-				.addClass('SPARK-richtext-toolbar-dropper'),
-			button = chooser.append({button:'',$title:'Paragraph style'}),
-			sample = button.append({span:'Paragraph style'})
-				.addClass('SPARK-richtext-toolbar-label');
-			droparrow = button.append({span:""})
-				.addClass('SPARK-richtext-toolbar-icon')
-				.style('background',
-					'url(images/SPARK-richtext-toolbar.png) -1px -'+(16*9+1)+'px');
-	};
-
-	var updatecontrols = function(toolbar) {
-		for (var i = controlcallbacks.length;i--;) {
-			controlcallbacks[i]();
-		}
-	};
-
-	var populatetoolbar = function(toolbar, canedit) {
-
-		if (!canedit) {
-			toolbar.append({div:"HTML tags allowed"})
-				.addClass('SPARK-richtext-toolbar-altnotice');
-			return;
-		}
-
-		addstylechooser(toolbar);
-		addbutton(toolbar, 'bold', 0, 'Bold');
-		addbutton(toolbar, 'italic', 1, 'Italic');
-		addbutton(toolbar, 'insertunorderedlist', 2, 'Insert bulleted list');
-		addbutton(toolbar, 'insertorderedlist', 3, 'Insert numbered list');
-		addbutton(toolbar, 'outdent', 4, 'Decrease indent');
-		addbutton(toolbar, 'indent', 5, 'Increase indent');
-	};
 	
 	for (i = this.length; i--;) {
 		setupeditor(SPARK.select(this[i]));
@@ -274,16 +287,16 @@ SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;widt
 	.styleRule('.SPARK-richtext-toolbar', 'font:0.8em sans-serif;margin:0 0 1px 0;background:#f9f6f3')
 	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;overflow:visible')
 	.styleRule('.SPARK-richtext-toolbar button:hover', 'background:#edd')
-	.styleRule('.SPARK-richtext-editor', 'maxHeight:28em')
+	.styleRule('.SPARK-richtext-editor', 'max-height:28em')
 	
 // outline:0 prevents dotted line in firefox
 // position:relative is in case people paste in absolute positioned elements
-	.styleRule('div.SPARK-richtext-editor', 'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;minHeight:6em;overflow:auto')
+	.styleRule('div.SPARK-richtext-editor', 'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:6em;overflow:auto')
 
-// minHeight needed as textareas don't auto-expand
-	.styleRule('textarea.SPARK-richtext-editor', 'width:100%;padding:0;margin:0;background:#fff;color:#000;font:inherit;minHeight:14em')
+// min-height needed as textareas don't auto-expand
+	.styleRule('textarea.SPARK-richtext-editor', 'width:100%;border:0;padding:0;margin:0;background:#fff;color:#000;font:inherit;min-height:14em')
 
-	.styleRule('.SPARK-richtext-toolbar-altnotice', 'padding:5px;textAlign:right')
-	.styleRule('.SPARK-richtext-toolbar-icon', 'display:inline-block;vertical-align:middle;margin:4px 3px 5px;width:14px;height:14px')
+	.styleRule('.SPARK-richtext-toolbar-altnotice', 'padding:5px;text-align:right')
+	.styleRule('.SPARK-richtext-toolbar-icon', 'display:inline-block;vertical-align:middle;margin:4px 3px 5px')
 	.styleRule('.SPARK-richtext-toolbar-label', 'vertical-align:middle;margin: 4px 3px')
 	.styleRule('.SPARK-richtext-toolbar-dropper', 'display:inline-block;position:relative');

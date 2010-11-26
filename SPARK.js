@@ -347,6 +347,7 @@ SPARK = (function() {
 			i,
 			elements,
 			newelement,
+			/** @constructor */
 			Constructor = function() {};
 		
 		Constructor.prototype = this;
@@ -681,6 +682,7 @@ SPARK = (function() {
 		var
 			i = this.length, j,
 			time = +new Date(),
+				// the following redundancy gzips well ;)
 			parts     = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(value),
 			lastparts = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(lastval),
 			myval = parseFloat(parts[2]), // need to account for prefix

@@ -18,7 +18,7 @@ SPARK.richText = function(opts) {
 	var
 		i,
 		iconsize = opts && opts.iconsize || 14,
-		canedit = 0 && document.body.contentEditable !== undefined;
+		canedit = document.body.contentEditable !== undefined;
 
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
@@ -199,10 +199,26 @@ SPARK.richText = function(opts) {
 					.style('background', 
 						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*num+1)+'px');
 
-			button.watch('click', function() {
+			var clickhandler = function() {
 				document.execCommand('useCSS', 0, 1);
 				document.execCommand(command, 0, null);
 				updatecontrols(toolbar);
+			};
+
+			button.watch('click', clickhandler);
+			teardowns.push(function() {
+				button.unwatch('click', clickhandler);
+			});
+			updators.push(function() {
+				try {
+					if (document.queryCommandState(command)) {
+						button.addClass('SPARK-richtext-active');
+					}
+					else {
+						button.removeClass('SPARK-richtext-active');
+					}
+				}
+				catch (e) {}
 			});
 		};
 
@@ -219,12 +235,15 @@ SPARK.richText = function(opts) {
 					.style('height', iconsize+"px")
 					.style('background',
 						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*9+1)+'px');
+
 		};
 
 		var updatecontrols = function(toolbar) {
-			for (var i = updators.length;i--;) {
-				updators[i]();
-			}
+			setTimeout(function() {
+				for (var i = updators.length;i--;) {
+					updators[i]();
+				}
+			}, 0);
 		};
 
 		var populatetoolbar = function() {
@@ -268,7 +287,12 @@ SPARK.richText = function(opts) {
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
 
+		editor.watch('keypress', updatecontrols);
+		editor.watch('mousedown', updatecontrols);
+		editor.watch('click', updatecontrols);
+
 		populatetoolbar();
+		updatecontrols();
 	};
 
 	
@@ -287,6 +311,7 @@ SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;widt
 	.styleRule('.SPARK-richtext-toolbar', 'font:0.8em sans-serif;margin:0 0 1px 0;background:#f9f6f3')
 	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;overflow:visible')
 	.styleRule('.SPARK-richtext-toolbar button:hover', 'background:#edd')
+	.styleRule('.SPARK-richtext-toolbar button.SPARK-richtext-active', 'background:#e8d8d8')
 	.styleRule('.SPARK-richtext-editor', 'max-height:28em')
 	
 // outline:0 prevents dotted line in firefox

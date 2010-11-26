@@ -28,18 +28,6 @@ SPARK.richText = function(opts) {
 		contains paragraphs: blockquote|address|center|div|fieldset
 	*/
 
-	// which should be added to spark core?
-
-	// .watchoutside(callback) - run callback when event happens OUTSIDE OF
-	// this element.  takes care of figuring out if the target element
-	// is outside the given element
-	// need an unwatchoutside?
-	
-	// .contains(el) - determine if selected element contains passed element
-
-	// .flyout() - watches for click/mousein outside of parent element
-	// and closes child if so.  can also help positioning child
-
 	var htmlconvert = function(input, strippara, wstopara) {
 		var
 			matches,
@@ -176,7 +164,6 @@ SPARK.richText = function(opts) {
 
 	var setupeditor = function(el) {
 		var
-			i,
 			container = el.insert({div:''}).addClass('SPARK-richtext-container'),
 			editor = container.append(canedit ? {div:''} : {textarea:''})
 				.addClass('SPARK-richtext-editor'),
@@ -189,21 +176,30 @@ SPARK.richText = function(opts) {
 		 * HELPER FUNCTIONS FOR THE EDITOR CONTROL *
 		 *******************************************/
 
+		var updatecontrols = function(toolbar) {
+			setTimeout(function() {
+				for (var i = updators.length;i--;) {
+					updators[i]();
+				}
+			}, 0);
+		};
+
 		var addbutton = function(command, num, title) {
 			var
-				button = toolbar.append({button:'',$title:title}),
-				icon = button.append({span:""})
-					.addClass('SPARK-richtext-toolbar-icon')
-					.style('width', iconsize+"px")
-					.style('height', iconsize+"px")
-					.style('background', 
-						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*num+1)+'px');
+				button = toolbar.append({button:'',$title:title});
 
 			var clickhandler = function() {
 				document.execCommand('useCSS', 0, 1);
 				document.execCommand(command, 0, null);
 				updatecontrols(toolbar);
 			};
+			
+			button.append({span:""})
+				.addClass('SPARK-richtext-toolbar-icon')
+				.style('width', iconsize+"px")
+				.style('height', iconsize+"px")
+				.style('background', 
+						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*num+1)+'px');
 
 			button.watch('click', clickhandler);
 			teardowns.push(function() {
@@ -222,6 +218,11 @@ SPARK.richText = function(opts) {
 			});
 		};
 
+		var addseparator = function() {
+			toolbar.append({span:''})
+				.addClass('SPARK-richtext-toolbar-separator');
+		};
+
 		var addstylechooser = function() {
 			var
 				chooser = toolbar.append({span:''})
@@ -229,21 +230,13 @@ SPARK.richText = function(opts) {
 				button = chooser.append({button:'',$title:'Paragraph style'}),
 				sample = button.append({span:'Paragraph style'})
 					.addClass('SPARK-richtext-toolbar-label');
-				droparrow = button.append({span:""})
-					.addClass('SPARK-richtext-toolbar-icon')
-					.style('width', iconsize+"px")
-					.style('height', iconsize+"px")
-					.style('background',
-						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*9+1)+'px');
 
-		};
-
-		var updatecontrols = function(toolbar) {
-			setTimeout(function() {
-				for (var i = updators.length;i--;) {
-					updators[i]();
-				}
-			}, 0);
+			button.append({span:""}) // drop arrow icon
+				.addClass('SPARK-richtext-toolbar-icon')
+				.style('width', iconsize+"px")
+				.style('height', iconsize+"px")
+				.style('background',
+					'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*9+1)+'px');
 		};
 
 		var populatetoolbar = function() {
@@ -254,17 +247,29 @@ SPARK.richText = function(opts) {
 				return;
 			}
 
-			addstylechooser();
+			if (!opts || opts.stylechooser === undefined || opts.stylechooser) {
+				addstylechooser();
+				addseparator();
+			}
 			addbutton('bold', 0, 'Bold');
 			addbutton('italic', 1, 'Italic');
-			addbutton('insertunorderedlist', 2, 'Insert bulleted list');
-			addbutton('insertorderedlist', 3, 'Insert numbered list');
-			addbutton('outdent', 4, 'Decrease indent');
-			addbutton('indent', 5, 'Increase indent');
+			if (!opts || opts.listbuttons === undefined || opts.listbuttons) {
+				addseparator();
+				addbutton('insertunorderedlist', 2, 'Insert bulleted list');
+				addbutton('insertorderedlist', 3, 'Insert numbered list');
+			}
+			if (!opts || opts.indentbuttons === undefined || opts.indentbuttons) {
+				addseparator();
+				addbutton('outdent', 4, 'Decrease indent');
+				addbutton('indent', 5, 'Increase indent');
+			}
 		};
 
 		if (canedit) {
 			editor.setAttribute('contenteditable', 'true');
+			editor.watch('keypress', updatecontrols);
+			editor.watch('mousedown', updatecontrols);
+			editor.watch('click', updatecontrols);
 		}
 
 		// transfer to new editor and remove old
@@ -287,10 +292,6 @@ SPARK.richText = function(opts) {
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
 
-		editor.watch('keypress', updatecontrols);
-		editor.watch('mousedown', updatecontrols);
-		editor.watch('click', updatecontrols);
-
 		populatetoolbar();
 		updatecontrols();
 	};
@@ -305,14 +306,15 @@ SPARK.richText = function(opts) {
 
 /************************
  *        STYLES        *
- * **********************/
+ ************************/
 
 SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
 	.styleRule('.SPARK-richtext-toolbar', 'font:0.8em sans-serif;margin:0 0 1px 0;background:#f9f6f3')
 	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;overflow:visible')
 	.styleRule('.SPARK-richtext-toolbar button:hover', 'background:#edd')
 	.styleRule('.SPARK-richtext-toolbar button.SPARK-richtext-active', 'background:#e8d8d8')
-	.styleRule('.SPARK-richtext-editor', 'max-height:28em')
+	.styleRule('.SPARK-richtext-toolbar-separator', 'display:inline-block;width:5px')
+	.styleRule('.SPARK-richtext-editor', 'max-height:27em')
 	
 // outline:0 prevents dotted line in firefox
 // position:relative is in case people paste in absolute positioned elements

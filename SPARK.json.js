@@ -14,7 +14,7 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
-SPARK.jsonEncode = SPARK.jsonEncode || function(obj) {
+SPARK.jsonEncode = function(obj) {
 // serialises the value obj into a JSON string.
 // this JSON encoder guards against infinite recursion, as well as
 // write-only properties (properties which throw an error when you
@@ -42,7 +42,8 @@ SPARK.jsonEncode = SPARK.jsonEncode || function(obj) {
 			for (i = 0, len = obj.length; i < len; i++) {
 				try {
 					collected.push(this.jsonencode(obj[i], exclude) || 'null');
-				} catch (err1) {}
+				}
+				catch (err1) {}
 			}
 			return '[' + collected.join() + ']';
 		}

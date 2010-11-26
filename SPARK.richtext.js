@@ -13,10 +13,12 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
-SPARK.richText = SPARK.richText || function(opts) {
+SPARK.richText = function(opts) {
 
 	var
-		i;
+		i,
+		iconsize = opts && opts.iconsize || 14,
+		canedit = document.body.contentEditable !== undefined;
 
 	/*
 		block level: h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|
@@ -25,18 +27,6 @@ SPARK.richText = SPARK.richText || function(opts) {
 		no end tag (autoclose): hr isindex
 		contains paragraphs: blockquote|address|center|div|fieldset
 	*/
-
-	// which should be added to spark core?
-
-	// .watchoutside(callback) - run callback when event happens OUTSIDE OF
-	// this element.  takes care of figuring out if the target element
-	// is outside the given element
-	// need an unwatchoutside?
-	
-	// .contains(el) - determine if selected element contains passed element
-
-	// .flyout() - watches for click/mousein outside of parent element
-	// and closes child if so.  can also help positioning child
 
 	var htmlconvert = function(input, strippara, wstopara) {
 		var
@@ -171,66 +161,126 @@ SPARK.richText = SPARK.richText || function(opts) {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
+
 	var setupeditor = function(el) {
 		var
-			i,
-			container,
-			editor,
-			toolbar,
-			//savebar,
+			container = el.insert({div:''}).addClass('SPARK-richtext-container'),
+			editor = container.append(canedit ? {div:''} : {textarea:''})
+				.addClass('SPARK-richtext-editor'),
+			toolbar = editor.insert({div:''}).addClass('SPARK-richtext-toolbar'),
 			source,
-			canedit = document.body.contentEditable !== undefined;
+			updators = [],
+			teardowns = [];
 
-		// set up editor
-		container = el.insert({div:''})
-			.style('border', '1px solid ButtonShadow')
-			.style('width', 'auto')
-			.style('padding', '1px')
-			.style('background', '#fff')
-			.style('color', '#000');
-		editor = container.append(canedit ? {div:''} : {textarea:''})
-			.addClass('SPARK-richtext-editor')
-			.style('maxHeight', '28em');
-		if (canedit) {
-			editor.setAttribute('contenteditable', 'true')
-				.style('cursor', 'text')
-				.style('padding', '1px 0 1px 2px')
-				.style('outline', '0') // avoid dotted line while focused in firefox
-				.style('position', 'relative') // in case people paste in absolute positioned things
-				.style('minHeight', '6em')
-				.style('overflow', 'auto'); // crop and scroll
-		}
-		else {
-			editor.style('width', '100%')
-				.style('border', 'none')
-				.style('padding', '0')
-				.style('margin', '0')
-				.style('background', '#fff')
-				.style('color', '#000')
-				.style('font', 'inherit') // so it doesn't get fixed-width font by default
-				.style('minHeight', '14em'); // textareas don't auto-expand so need a height
-		}
-		toolbar = editor.insert({div:''})
-			.style('margin', '0 0 1px 0')
-			.style('background', '#f9f6f3');
-		populatetoolbar(SPARK.select(toolbar), canedit);
-			/*
-		savebar = container.append({div:'CLICK'})
-			.watch('click', function() {
-				editor[0].value = htmlconvert(editor[0].value, 0, 1);
+		/*******************************************
+		 * HELPER FUNCTIONS FOR THE EDITOR CONTROL *
+		 *******************************************/
+
+		var updatecontrols = function(toolbar) {
+			setTimeout(function() {
+				for (var i = updators.length;i--;) {
+					updators[i]();
+				}
+			}, 0);
+		};
+
+		var addbutton = function(command, num, title) {
+			var
+				button = toolbar.append({button:'',$title:title});
+
+			var clickhandler = function() {
+				document.execCommand('useCSS', 0, 1);
+				document.execCommand(command, 0, null);
+				updatecontrols(toolbar);
+			};
+			
+			button.append({span:""})
+				.addClass('SPARK-richtext-toolbar-icon')
+				.style('width', iconsize+"px")
+				.style('height', iconsize+"px")
+				.style('background', 
+						'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*num+1)+'px');
+
+			button.watch('click', clickhandler);
+			teardowns.push(function() {
+				button.unwatch('click', clickhandler);
 			});
-			*/
+			updators.push(function() {
+				try {
+					if (document.queryCommandState(command)) {
+						button.addClass('SPARK-richtext-active');
+					}
+					else {
+						button.removeClass('SPARK-richtext-active');
+					}
+				}
+				catch (e) {}
+			});
+		};
+
+		var addseparator = function() {
+			toolbar.append({span:''})
+				.addClass('SPARK-richtext-toolbar-separator');
+		};
+
+		var addstylechooser = function() {
+			var
+				chooser = toolbar.append({span:''})
+					.addClass('SPARK-richtext-toolbar-dropper'),
+				button = chooser.append({button:'',$title:'Paragraph style'}),
+				sample = button.append({span:'Paragraph style'})
+					.addClass('SPARK-richtext-toolbar-label');
+
+			button.append({span:""}) // drop arrow icon
+				.addClass('SPARK-richtext-toolbar-icon')
+				.style('width', iconsize+"px")
+				.style('height', iconsize+"px")
+				.style('background',
+					'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*9+1)+'px');
+		};
+
+		var populatetoolbar = function() {
+
+			if (!canedit) {
+				toolbar.append({div:"HTML tags allowed"})
+					.addClass('SPARK-richtext-toolbar-altnotice');
+				return;
+			}
+
+			if (!opts || opts.stylechooser === undefined || opts.stylechooser) {
+				addstylechooser();
+				addseparator();
+			}
+			addbutton('bold', 0, 'Bold');
+			addbutton('italic', 1, 'Italic');
+			if (!opts || opts.listbuttons === undefined || opts.listbuttons) {
+				addseparator();
+				addbutton('insertunorderedlist', 2, 'Insert bulleted list');
+				addbutton('insertorderedlist', 3, 'Insert numbered list');
+			}
+			if (!opts || opts.indentbuttons === undefined || opts.indentbuttons) {
+				addseparator();
+				addbutton('outdent', 4, 'Decrease indent');
+				addbutton('indent', 5, 'Increase indent');
+			}
+		};
+
+		if (canedit) {
+			editor.setAttribute('contenteditable', 'true');
+			editor.watch('keypress', updatecontrols);
+			editor.watch('mousedown', updatecontrols);
+			editor.watch('click', updatecontrols);
+		}
 
 		// transfer to new editor and remove old
 		if (el[0].tagName.toLowerCase() == 'textarea') {
 			source = el[0].value;
-			editor.style('minWidth', el.getStyle('width'))
-				.style('minHeight', el.getStyle('height'));
+			editor.style('minHeight', el.getStyle('height'));
 			el.insert({
 				input:'',
 				$type:'hidden',
 				$name:el[0].name,
-				$value:''
+				$value:el[0].value
 				});
 			el.remove();
 		}
@@ -241,51 +291,11 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 		editor[0][canedit ? 'innerHTML' : 'value'] =
 			htmlconvert(source, !canedit, 0);
+
+		populatetoolbar();
+		updatecontrols();
 	};
 
-	var addbutton = function(toolbar, command, alt, title) {
-		var button = toolbar.append({button:'',$title:title})
-			.style('border', 'none')
-			.style('background', 'transparent')
-			.style('padding', '6px 5px 5px')
-			.style('overflow', 'visible');
-
-		button.append({span:""})
-			.style('background', 'red')
-			.style('display', 'inline-block')
-			.style('width', '14px')
-			.style('height', '14px');
-	
-		button.watch('click', function() {
-			document.execCommand('useCSS', 0, 1);
-			document.execCommand(command, 0, null);
-			updatetoolbar(toolbar);
-			alert('clicked');
-		});
-
-	};
-
-	var updatetoolbar = function(toolbar) {
-	};
-
-	var populatetoolbar = function(toolbar, canedit) {
-		toolbar.addClass('SPARK-richtext-toolbar')
-			.style('font', '0.75em sans-serif');
-
-		if (!canedit) {
-			toolbar.append({div:"HTML tags allowed"})
-				.style('padding', '5px')
-				.style('textAlign', 'right');
-			return;
-		}
-
-		addbutton(toolbar, 'bold', 'B', 'Bold');
-		addbutton(toolbar, 'italic', 'I', 'Italic');
-		addbutton(toolbar, 'insertunorderedlist', '*', 'Insert bulleted list');
-		addbutton(toolbar, 'insertorderedlist', '1.', 'Insert numbered list');
-		addbutton(toolbar, 'outdent', '<', 'Decrease indent');
-		addbutton(toolbar, 'indent', '>', 'Increase indent');
-	};
 	
 	for (i = this.length; i--;) {
 		setupeditor(SPARK.select(this[i]));
@@ -293,3 +303,27 @@ SPARK.richText = SPARK.richText || function(opts) {
 
 	return this;
 };
+
+/************************
+ *        STYLES        *
+ ************************/
+
+SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
+	.styleRule('.SPARK-richtext-toolbar', 'font:0.8em sans-serif;margin:0 0 1px 0;background:#f9f6f3')
+	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;overflow:visible')
+	.styleRule('.SPARK-richtext-toolbar button:hover', 'background:#edd')
+	.styleRule('.SPARK-richtext-toolbar button.SPARK-richtext-active', 'background:#e8d8d8')
+	.styleRule('.SPARK-richtext-toolbar-separator', 'display:inline-block;width:5px')
+	.styleRule('.SPARK-richtext-editor', 'max-height:27em')
+	
+// outline:0 prevents dotted line in firefox
+// position:relative is in case people paste in absolute positioned elements
+	.styleRule('div.SPARK-richtext-editor', 'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:6em;overflow:auto')
+
+// min-height needed as textareas don't auto-expand
+	.styleRule('textarea.SPARK-richtext-editor', 'width:100%;border:0;padding:0;margin:0;background:#fff;color:#000;font:inherit;min-height:14em')
+
+	.styleRule('.SPARK-richtext-toolbar-altnotice', 'padding:5px;text-align:right')
+	.styleRule('.SPARK-richtext-toolbar-icon', 'display:inline-block;vertical-align:middle;margin:4px 3px 5px')
+	.styleRule('.SPARK-richtext-toolbar-label', 'vertical-align:middle;margin: 4px 3px')
+	.styleRule('.SPARK-richtext-toolbar-dropper', 'display:inline-block;position:relative');

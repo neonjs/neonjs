@@ -347,6 +347,7 @@ SPARK = (function() {
 			i,
 			elements,
 			newelement,
+			/** @constructor */
 			Constructor = function() {};
 		
 		Constructor.prototype = this;
@@ -487,8 +488,8 @@ SPARK = (function() {
 			loadid = ++gid,
 			registerscript = function(url) {
 				var
-					myscript = that.build({script:"",
-						$src:(/^[^\/?#]+:|^\//).test(url)?url:""+SPARK.loaddir+url}),
+					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : ""+SPARK.loaddir+url,
+					myscript = that.build({script:"",	$src:myurl}),
 					gencallback = function() {
 						if (loadstate[url] != 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
@@ -641,6 +642,36 @@ SPARK = (function() {
 		return this;
 	};
 
+	SPARK.styleRule = function(selector, rules) {
+	// inserts a rule into the page's stylesheet.  this is distinct
+	// from setting an inline style on an element as it sets a global
+	// style rule to be applied to current and future selector matches.
+	// it's therefore preferable to inline styles in many situations
+	// since they can be overridden by user stylesheets on the page.
+	// however, these rules cannot be un-set (through SPARK) nor can
+	// they be animated.  the same style shouldn't be set multiple
+	// times.  certain browsers like IE also have a limit
+	// (of a few thousand?) on the number of style rules in a
+	// stylesheet
+	// The document must have a head element when calling this.
+		var
+			style = this.select('#SPARK-styleRule-s');
+
+		if (!style.length) {
+			style = this.select('head').append({style:""})
+				.setAttribute('id', 'SPARK-styleRule-s');
+		}
+		if (style[0].styleSheet) {
+			// IE
+			style[0].styleSheet.cssText += selector+"{"+rules+"}";
+		}
+		else {
+			style.append(selector+"{"+rules+"}");
+		}
+
+		return this;
+	};
+
 	SPARK.style = function(style, value, lastval, easing, msec, parm) {
 	// sets an inline style to the given value on all selected nodes.
 	// if lastval is given, then after the style is initially set to
@@ -651,11 +682,16 @@ SPARK = (function() {
 		var
 			i = this.length, j,
 			time = +new Date(),
-			myval = parseFloat(value),
-			mylastval = parseFloat(lastval),
+				// the following redundancy gzips well ;)
+			parts     = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(value),
+			lastparts = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(lastval),
+			myval = parseFloat(parts[2]), // need to account for prefix
+			mylastval = parseFloat(lastparts[2]),
 			animated = myval == myval && mylastval == mylastval, // NaN test
-			suffix = animated && /\D*$/.exec(value)[0],
-			prefix = animated && /^[^\d\.\-]*/.exec(value)[0];
+			prefix = parts[1],
+			suffix = parts[3]; 
+
+		style = style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
 
 		while (i--) {
 			this[i].style[style] = value;
@@ -809,99 +845,6 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
-	SPARK.remove = function() {
-	// removes the selected nodes from the document and all their contents.
-		for (var i = this.length; i--;) {
-			if (this[i].parentNode) {
-				this[i].parentNode.removeChild(this[i]);
-			}
-		}
-		return this;
-	};
-
-	SPARK.empty = function() {
-	// deletes the contents of the selected nodes, but not the nodes
-	// themselves
-		for (var i = this.length, tmp; i--;) {
-			while ((tmp = this[i].lastChild)) {
-				this[i].removeChild(tmp);
-			}
-		}
-		return this;
-	};
-
-	SPARK.jsonDecode = function(json) {
-	// unserialises the JSON string into the equivalent value.  Does a check
-	// on the string that is only thorough enough to prevent arbitrary code
-	// execution.
-	
-		/*
-		var cx = /[\x00\u007f-\uffff]/g;
-		json = json.replace(cx, function(ch) {
-			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-		});
-		*/
-		if (/^[\],:{}\s]+$/.test(
-			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
-			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
-			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
-			return eval("("+json+")");
-		}
-	};
-
-	SPARK.getHttp = function(url, callback, method, body) {
-	// places an HTTP request (using XMLHttpRequest) for the given URL.
-	// method and body are optional.
-	// callback is only called when the load is 100% complete (that is, you
-	// won't be able to implement a progress indicator).
-	// body should be specified for POST method.  It can be an object of
-	// {name:value,...} where it will be encoded like form variables, or
-	// it can be a string, where it will be transmitted bare
-		var
-			i,
-			collected = [],
-			xmlhttprequest = window.XMLHttpRequest ?
-				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-
-		xmlhttprequest.onreadystatechange = function() {
-			if (xmlhttprequest.readyState == 4) {
-
-				// implement JSON parsing
-				// we've disabled setting responseJSON here since setting a value
-				// to it breaks in IE6 - for now user should use SPARK.jsonDecode()
-				// not ideal I know
-				/*
-					if (!xmlhttprequest.responseJSON) {
-						xmlhttprequest.responseJSON =
-							SPARK.jsonDecode(xmlhttprequest.responseText);
-					}
-				*/
-
-				callback.call(xmlhttprequest);
-
-				// this may be desirable to free memory, not sure if it's a
-				// memory leak problem though
-				xmlhttprequest.onreadystatechange = null;
-			}
-		};
-		xmlhttprequest.open(method || "GET", url, true);
-		if (body && ""+body!==body &&
-			typeof body.cloneNode != "function" &&
-			typeof body.read != "function") {
-			for (i in body) {
-				if (Object.hasOwnProperty.call(body, i)) {
-					collected.push(encodeURIComponent(i) + "=" +
-						encodeURIComponent(body[i]));
-				}
-			}
-			body = collected.join("&");
-			xmlhttprequest.setRequestHeader("Content-type",
-				"application/x-www-form-urlencoded");
-		}
-		xmlhttprequest.send(body);
-		// asks for callback so don't chain
-	};
-
 	SPARK.flyout = function(direction) {
 	// turns the selected element(s) into fly-out menus.
 	// direction specifies first which side of the offsetparent the flyout
@@ -952,6 +895,102 @@ SPARK = (function() {
 		}
 
 		return this;
+	};
+
+	SPARK.remove = function() {
+	// removes the selected nodes from the document and all their contents.
+		for (var i = this.length; i--;) {
+			if (this[i].parentNode) {
+				this[i].parentNode.removeChild(this[i]);
+			}
+		}
+		return this;
+	};
+
+	SPARK.empty = function() {
+	// deletes the contents of the selected nodes, but not the nodes
+	// themselves
+		for (var i = this.length, tmp; i--;) {
+			while ((tmp = this[i].lastChild)) {
+				this[i].removeChild(tmp);
+			}
+		}
+		return this;
+	};
+
+	SPARK.jsonDecode = function(json) {
+	// unserialises the JSON string into the equivalent value.  Does a check
+	// on the string that is only thorough enough to prevent arbitrary code
+	// execution.
+	
+		/*
+		var cx = /[\x00\u007f-\uffff]/g;
+		json = json.replace(cx, function(ch) {
+			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
+		});
+		*/
+		if (/^[\],:{}\s]+$/.test(
+			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
+			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
+			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
+			return eval("("+json+")");
+		}
+	};
+
+	SPARK.getHttp = function(url, callback, method, body, contenttype) {
+	// places an HTTP request (using XMLHttpRequest) for the given URL.
+	// method and body are optional.
+	// callback is only called when the load is 100% complete (that is, you
+	// won't be able to implement a progress indicator).
+	// body should be specified for POST method.  It can be an object of
+	// {name:value,...} where it will be encoded like form variables, or
+	// it can be a string, where it will be transmitted bare
+		var
+			i,
+			collected = [],
+			xmlhttprequest = window.XMLHttpRequest ?
+				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+
+		xmlhttprequest.onreadystatechange = function() {
+			if (xmlhttprequest.readyState == 4) {
+
+				// implement JSON parsing
+				// we've disabled setting responseJSON here since setting a value
+				// to it breaks in IE6 - for now user should use SPARK.jsonDecode()
+				// not ideal I know
+				/*
+					if (!xmlhttprequest.responseJSON) {
+						xmlhttprequest.responseJSON =
+							SPARK.jsonDecode(xmlhttprequest.responseText);
+					}
+				*/
+
+				callback.call(xmlhttprequest);
+
+				// this may be desirable to free memory, not sure if it's a
+				// memory leak problem though
+				xmlhttprequest.onreadystatechange = null;
+			}
+		};
+		xmlhttprequest.open(method || "GET", url, true);
+		if (body && ""+body!==body /*&&
+			typeof body.cloneNode != "function" &&
+			typeof body.read != "function"*/) {
+			for (i in body) {
+				if (Object.hasOwnProperty.call(body, i)) {
+					collected.push(encodeURIComponent(i) + "=" +
+						encodeURIComponent(body[i]));
+				}
+			}
+			body = collected.join("&");
+			contenttype = "application/x-www-form-urlencoded";
+		}
+		if (contenttype) {
+			xmlhttprequest.setRequestHeader("Content-type",
+				contenttype);
+		}
+		xmlhttprequest.send(body);
+		// asks for callback so don't chain
 	};
 
 	/*

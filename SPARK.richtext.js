@@ -230,6 +230,17 @@ SPARK.richText = function(opts) {
 				.addClass('SPARK-richtext-toolbar-separator');
 		};
 
+		var stylechooseroption = function(label, container) {
+			var
+				option = SPARK.build({div:""}),
+				spec = {};
+
+			spec[container] = {a:label};
+			option.append(spec);
+
+			return option;
+		};
+
 		var addstylechooser = function() {
 			var
 				chooser = toolbar.append({span:''})
@@ -241,9 +252,16 @@ SPARK.richText = function(opts) {
 				dropdown;
 
 			var onfocus = function() {
-				dropdown = chooser.append({div:"Test"})
-					.addClass('SPARK-richtext-toolbar-dropdown')
-					.flyout('br');
+				dropdown = chooser.append({div:""})
+					.addClass('SPARK-richtext-toolbar-dropdown');
+
+				dropdown.append(stylechooseroption('Normal text', 'p'))
+				dropdown.append(stylechooseroption('Heading 1', 'h1'))
+				dropdown.append(stylechooseroption('Heading 2', 'h2'))
+				dropdown.append(stylechooseroption('Heading 3', 'h3'))
+				dropdown.append(stylechooseroption('Heading 4', 'h4'))
+				dropdown.append(stylechooseroption('Formatted code', 'pre'))
+				dropdown.flyout('br');
 			};
 			
 			var onblur = function() {
@@ -371,4 +389,5 @@ SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;widt
 	.styleRule('.SPARK-richtext-toolbar-altnotice', 'padding:5px;text-align:right')
 	.styleRule('.SPARK-richtext-toolbar-icon', 'display:inline-block;vertical-align:middle;margin:4px 3px 5px')
 	.styleRule('.SPARK-richtext-toolbar-label', 'vertical-align:middle;margin: 4px 3px')
-	.styleRule('.SPARK-richtext-toolbar-dropper', 'display:inline-block;position:relative');
+	.styleRule('.SPARK-richtext-toolbar-dropper', 'display:inline-block;position:relative')
+	.styleRule('.SPARK-richtext-toolbar-dropdown', 'overflow:hidden;background:#fff;border:1px solid ButtonShadow');

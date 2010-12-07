@@ -186,7 +186,8 @@ SPARK.richText = function(opts) {
 
 		var addbutton = function(command, num, title) {
 			var
-				button = toolbar.append({button:'',$title:title});
+				button = toolbar.append({button:'',$title:title}),
+				state;
 
 			var clickhandler = function() {
 				document.execCommand('useCSS', 0, 1);
@@ -206,12 +207,18 @@ SPARK.richText = function(opts) {
 				button.unwatch('click', clickhandler);
 			});
 			updators.push(function() {
+				var
+					value;
 				try {
-					if (document.queryCommandState(command)) {
-						button.addClass('SPARK-richtext-active');
-					}
-					else {
-						button.removeClass('SPARK-richtext-active');
+					value = document.queryCommandState(command);
+					if (value != state) {
+						if (value) {
+							button.addClass('SPARK-richtext-active');
+						}
+						else {
+							button.removeClass('SPARK-richtext-active');
+						}
+						state = value;
 					}
 				}
 				catch (e) {}
@@ -228,8 +235,23 @@ SPARK.richText = function(opts) {
 				chooser = toolbar.append({span:''})
 					.addClass('SPARK-richtext-toolbar-dropper'),
 				button = chooser.append({button:'',$title:'Paragraph style'}),
-				sample = button.append({span:'Paragraph style'})
-					.addClass('SPARK-richtext-toolbar-label');
+				text = button.append({span:'Paragraph style'})
+					.addClass('SPARK-richtext-toolbar-label'),
+				currentformat,
+				dropdown;
+
+			var onfocus = function() {
+				dropdown = chooser.append({div:"Test"})
+					.addClass('SPARK-richtext-toolbar-dropdown')
+					.flyout('br');
+			};
+			
+			var onblur = function() {
+				if (dropdown) {
+					dropdown.remove();
+					dropdown = null;
+				}
+			};
 
 			button.append({span:""}) // drop arrow icon
 				.addClass('SPARK-richtext-toolbar-icon')
@@ -237,6 +259,31 @@ SPARK.richText = function(opts) {
 				.style('height', iconsize+"px")
 				.style('background',
 					'url(images/SPARK-richtext-toolbar.png) -1px -'+((iconsize+2)*9+1)+'px');
+
+			button.watch('focus', onfocus);
+			button.watch('blur', onblur);
+			teardowns.push(function() {
+				button.unwatch('focus', onfocus)
+					.unwatch('blur', onblur);
+			});
+
+
+			updators.push(function () {
+				var
+					value, part;
+				try {
+					value = document.queryCommandValue('formatblock');
+					if (value != currentformat) {
+						text.empty().append(
+							(part = /^(?:h|Heading )(\d)$/.exec(value)) ? 'Heading '+part[1] :
+							value == 'pre' || value == 'Formatted' ? 'Formatted code' :
+							'Normal text'
+						);
+						currentformat = value;
+					}
+				}
+				catch (e) {}
+			});
 		};
 
 		var populatetoolbar = function() {
@@ -309,20 +356,18 @@ SPARK.richText = function(opts) {
  ************************/
 
 SPARK.styleRule('.SPARK-richtext-container', 'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
-	.styleRule('.SPARK-richtext-toolbar', 'font:0.8em sans-serif;margin:0 0 1px 0;background:#f9f6f3')
-	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;overflow:visible')
+	.styleRule('.SPARK-richtext-toolbar', 'font:12px sans-serif;margin:0 0 1px 0;background:#f9f6f3')
+	// button text needs to be re-set in FF (at least)
+	.styleRule('.SPARK-richtext-toolbar button', 'border:none;padding:0;background:transparent;font:inherit;overflow:visible')
 	.styleRule('.SPARK-richtext-toolbar button:hover', 'background:#edd')
 	.styleRule('.SPARK-richtext-toolbar button.SPARK-richtext-active', 'background:#e8d8d8')
 	.styleRule('.SPARK-richtext-toolbar-separator', 'display:inline-block;width:5px')
 	.styleRule('.SPARK-richtext-editor', 'max-height:27em')
-	
 // outline:0 prevents dotted line in firefox
 // position:relative is in case people paste in absolute positioned elements
 	.styleRule('div.SPARK-richtext-editor', 'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:6em;overflow:auto')
-
 // min-height needed as textareas don't auto-expand
 	.styleRule('textarea.SPARK-richtext-editor', 'width:100%;border:0;padding:0;margin:0;background:#fff;color:#000;font:inherit;min-height:14em')
-
 	.styleRule('.SPARK-richtext-toolbar-altnotice', 'padding:5px;text-align:right')
 	.styleRule('.SPARK-richtext-toolbar-icon', 'display:inline-block;vertical-align:middle;margin:4px 3px 5px')
 	.styleRule('.SPARK-richtext-toolbar-label', 'vertical-align:middle;margin: 4px 3px')

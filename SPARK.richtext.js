@@ -233,10 +233,15 @@ SPARK.richText = function(opts) {
 		var stylechooseroption = function(label, container) {
 			var
 				option = SPARK.build({div:""}),
+				link,
 				spec = {};
 
-			spec[container] = {a:label};
-			option.append(spec);
+			spec[container] = '';
+			link = option.append(spec).append({a:label,$href:'#'});
+
+			link.watch('click', function() {
+				document.execCommand('formatblock', false, '<h1>');
+			});
 
 			return option;
 		};

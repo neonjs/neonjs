@@ -862,6 +862,7 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
+	/*
 	SPARK.flyout = function(direction) {
 	// turns the selected element(s) into fly-out menus.
 	// direction specifies first which side of the offsetparent the flyout
@@ -913,6 +914,7 @@ SPARK = (function() {
 
 		return this;
 	};
+	*/
 
 	SPARK.remove = function() {
 	// removes the selected nodes from the document and all their contents.

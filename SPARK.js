@@ -5,7 +5,7 @@
 // Copyright (c) 2010 Thomas Rutter
 
 /*jslint browser: true, evil: true, newcap: true, immed: true */
-/*global SPARK:true,attachEvent,window,self,opera,ActiveXObject */
+/*global SPARK:true,attachEvent,window,self,top,opera,ActiveXObject */
 
 /**
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
@@ -29,8 +29,9 @@ SPARK = (function() {
 
 	var getprevioussibling = function(element) {
 	// find the previous sibling of this element which is an element node
-		while ((element = element.previousSibling)) {
-			if (element.nodeType == 1) {
+		for (element = element.previousSibling; element;
+			element = element.previousSibling) {
+			if (element.nodeType === 1) {
 				return element;
 			}
 		}
@@ -38,7 +39,8 @@ SPARK = (function() {
 
 	var checkinarray = {
 		" " : function(elements, newelement) {
-			for (var i = elements.length;i--;) {
+			var i;
+			for (i = elements.length;i--;) {
 				if (elements[i].compareDocumentPosition ?
 						elements[i].compareDocumentPosition(newelement) & 16 :
 					elements[i].contains ?
@@ -49,21 +51,24 @@ SPARK = (function() {
 			}
 		},
 		">" : function(elements, newelement) {
-			for (var i = elements.length;i--;) {
+			var i;
+			for (i = elements.length;i--;) {
 				if (elements[i] === newelement.parentNode) {
 					return 1;
 				}
 			}
 		},
 		"+" : function(elements, newelement) {
-			for (var i = elements.length;i--;) {
+			var i;
+			for (i = elements.length;i--;) {
 				if (elements[i] === getprevioussibling(newelement)) {
 					return 1;
 				}
 			}
 		},
 		"&" : function(elements, newelement) {
-			for (var i = elements.length;i--;) {
+			var i;
+			for (i = elements.length;i--;) {
 				if (elements[i] === newelement) {
 					return 1;
 				}
@@ -76,7 +81,7 @@ SPARK = (function() {
 	// and sets ready to 1
 		var
 			callback;
-		while ((callback = readyqueue.shift())) {
+		for (callback = readyqueue.shift(); callback; callback = readyqueue.shift()) {
 			// shift callback from array, and execute it at same time
 			callback();
 		}
@@ -97,6 +102,14 @@ SPARK = (function() {
 				setTimeout(checkscroll, 16);
 			}
 		}
+	};
+
+	var compareattrib = function(element, name, attrcompare, attrvalue) {
+		var
+			tmp = name === "class" ? element.className : element.getAttribute(name);
+		return attrcompare === "=" ? tmp === attrvalue :
+			attrcompare === "~=" ? (" "+tmp+" ").indexOf(" "+attrvalue+" ") >= 0 :
+			(tmp+"-").indexOf(attrvalue) === 0;
 	};
 
 	var myqueryselector = function(selector) {
@@ -122,7 +135,7 @@ SPARK = (function() {
 
 		// grab the parts of the selector one by one, and process it as we go.
 		// whether there is whitespace before the part is significant
-		while	((parts = regex.exec(selector))) {
+		for (parts = regex.exec(selector); parts; parts = regex.exec(selector)) {
 
 			if (parts[4]) {
 				// we have at least a name; this is part of a selector and not a comma or the end
@@ -133,7 +146,7 @@ SPARK = (function() {
 					type = parts[3],
 					name = parts[4],
 					attrcompare = parts[6],
-					attrvalue = (""+parts[8]).replace(/\\(.)/g, "$1"), // strip slashes
+					attrvalue = (parts[8]||"").replace(/\\(.)/g, "$1"), // strip slashes
 					skipcascade = !cascade,
 					skipfilter = 0,
 					newelements = [];
@@ -146,7 +159,7 @@ SPARK = (function() {
 					parts[1] && cascade ? " " :
 					cascade;
 
-				singleparent = elements.length==1 && (cascade === ">" || cascade === " ");
+				singleparent = elements.length===1 && (cascade === ">" || cascade === " ");
 				searchwithin = singleparent ? elements[0] : document;
 
 				// if we have no starting elements and this isn't the first run,
@@ -161,17 +174,18 @@ SPARK = (function() {
 					else {
 						// see if we can narrow down.  in some cases if there's a single
 						// parent we can still skip the cascade
-						if (type == "#") {
+						if (type === "#") {
 							skipfilter = 1;
 							// get element by ID (quick - there's only one!)
-							if ((tmp = document.getElementById(name))) {
+							tmp = document.getElementById(name);
+							if (tmp) {
 								newelements.push(tmp);
 							}
 						}
 						else {
 							// get element by tag name or get all elements (worst case, when comparing
 							// attributes and there's no '&' cascade)
-							if (type == "." && searchwithin.getElementsByClassName) {
+							if (type === "." && searchwithin.getElementsByClassName) {
 								skipfilter = 1;
 								tmp = searchwithin.getElementsByClassName(name);
 							}
@@ -193,21 +207,16 @@ SPARK = (function() {
 						// phase one, filtering of existing nodes to narrow down
 						// selection
 						pass = skipfilter ? 1 : 
-							!type ? name == "*" || newelements[i].nodeName.toLowerCase() ==
+							!type ? name === "*" || newelements[i].nodeName.toLowerCase() ===
 								name.toLowerCase() :
-							type == "#" ? newelements[i].id == name :
-							type == "." ?
+							type === "#" ? newelements[i].id === name :
+							type === "." ?
 								(" "+newelements[i].className+" ").replace(/\s/g, " ")
 								.indexOf(" "+name+" ") >= 0 :
-							type == "[" ? (
+							type === "[" ? (
 								!attrcompare || !attrvalue ? newelements[i].hasAttribute(name) :
-								(tmp = name == "class" ? newelements[i].className :
-									newelements[i].getAttribute(name)) &&
-								attrcompare == "=" ? tmp == attrvalue :
-								attrcompare == "~=" ? (" "+tmp+" ")
-									.indexOf(" "+attrvalue+" ") >= 0 :
-								(tmp+"-").indexOf(attrvalue) === 0) :
-							name.toLowerCase() == "first-child" ? 
+								compareattrib(newelements[i], name, attrcompare, attrvalue)) :
+							name.toLowerCase() === "first-child" ? 
 								!getprevioussibling(newelements[i]) :
 							0;
 
@@ -224,7 +233,7 @@ SPARK = (function() {
 			}
 			else {
 				// if we have reached either a comma or the end of the selector
-				while ((tmp = elements.shift())) {
+				for (tmp = elements.shift(); tmp; tmp = elements.shift()) {
 
 					if (!checkinarray["&"](collected, tmp)) {
 						// if elements[p] DOESN'T exist in newelement
@@ -264,12 +273,12 @@ SPARK = (function() {
 			}
 
 			anim[0][anim[1]] = anim[6] + ((
-				anim[7] == "lin"   ? x :
-				anim[7] == "in"    ? x*x :
-				anim[7] == "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
-				anim[7] == "el"    ? ((2-x)*x-1) *
+				anim[7] === "lin"   ? x :
+				anim[7] === "in"    ? x*x :
+				anim[7] === "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
+				anim[7] === "el"    ? ((2-x)*x-1) *
 					Math.cos(Math.PI*x*2*(anim[8]||400)/(anim[9]||300)) + 1 :
-				anim[7] == "fn"    ? anim[9](x) :
+				anim[7] === "fn"    ? anim[9](x) :
 				(2-x)*x // 'out' (default)
 				) * anim[3] + anim[2]) + anim[5];
 
@@ -353,7 +362,7 @@ SPARK = (function() {
 		Constructor.prototype = this;
 		newelement = new Constructor();
 
-		if (selector !== ""+selector) {
+		if (typeof selector !== "string") {
 		// handle the case where no selector is given, or a node, window,
 		// or array of nodes
 			elements = !selector ? [] :
@@ -382,8 +391,8 @@ SPARK = (function() {
 		var
 			i,
 			myeventname =
-				eventname == 'mouseenter' ? 'mouseover' :
-				eventname == 'mouseleave' ? 'mouseout' :
+				eventname === 'mouseenter' ? 'mouseover' :
+				eventname === 'mouseleave' ? 'mouseout' :
 				eventname,
 			mycallback;
 
@@ -392,8 +401,8 @@ SPARK = (function() {
 		for (i = this.length; i--;) {
 
 			mycallback =
-				eventname == 'mouseenter' ||
-				eventname == 'mouseleave' ? eventwrapfocus(callback) :
+				eventname === 'mouseenter' ||
+				eventname === 'mouseleave' ? eventwrapfocus(callback) :
 				callback;
 
 			if (this[i].addEventListener) {
@@ -419,8 +428,8 @@ SPARK = (function() {
 		var
 			i,
 			myeventname =
-				eventname == 'mouseenter' ? 'mouseover' :
-				eventname == 'mouseleave' ? 'mouseout' :
+				eventname === 'mouseenter' ? 'mouseover' :
+				eventname === 'mouseleave' ? 'mouseout' :
 				eventname;
 
 		for (i = this.length; i--;) {
@@ -482,16 +491,16 @@ SPARK = (function() {
 	// just resolving to the same destination)
 		var
 			i,
-			myurls = urls===""+urls ? [urls] : urls,
+			myurls = typeof urls === "string" ? [urls] : urls,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
 			registerscript = function(url) {
 				var
-					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : ""+SPARK.loaddir+url,
+					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : (SPARK.loaddir||"")+url,
 					myscript = that.build({script:"",	$src:myurl}),
 					gencallback = function() {
-						if (loadstate[url] != 2 &&
+						if (loadstate[url] !== 2 &&
 							(!this.readyState || /loade|co/.test(this.readyState))) {
 							loadstate[url] = 2;
 							myscript.unwatch("load", gencallback).unwatch("readystatechange",
@@ -539,11 +548,14 @@ SPARK = (function() {
 				document.defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
 
-		return val !== undefined ? val :
-			style == 'opacity' ?
-				((val = /opacity=(\d+)/.exec(this.getStyle('filter'))) ?
-				parseFloat(val[1]) * 100 : undefined) :
-			style == 'cssFloat' ?	this.getStyle('styleFloat') :
+		if (val !== undefined) {
+			return val;
+		}
+		if (style === "opacity") {
+			val = /opacity=(\d+)/.exec(this.getStyle('filter'));
+			return val ? parseFloat(val[1]) * 100 : undefined;
+		}
+		return style === "cssFloat" ? this.getStyle("styleFloat") :
 			undefined;
 	};
 
@@ -585,18 +597,21 @@ SPARK = (function() {
 	// note that in this function, setting the value to "" (empty
 	// string) removes that attribute.  handy for boolean attributes
 	// like 'selected'
-		for (var i = this.length, lower = attr.toLowerCase(); i--;) {
+		var
+			i = this.length,
+			lower = attr.toLowerCase();
+		for (;i--;) {
 
-			if (lower == "style") {
+			if (lower === "style") {
 				this[i].style.cssText = value;
 			}
-			else if (lower == "for") {
+			else if (lower === "for") {
 				this[i].htmlFor = value;
 			}
-			else if (lower == "class") {
+			else if (lower === "class") {
 				this[i].className = value;
 			}
-			else if (lower == "tabindex") {
+			else if (lower === "tabindex") {
 				this[i].tabIndex = value;
 			}
 			// i'm not sure if the following is necessary (src):
@@ -622,7 +637,8 @@ SPARK = (function() {
 	SPARK.removeClass = function(myclass) {
 	// removes the given class from all selected nodes.
 	// it's assumed that classes are always separated by spaces
-		for (var i = this.length; i--;) {
+		var i = this.length;
+		for (; i--;) {
 			this[i].className =
 				(" "+this[i].className+" ").replace(/\s/g, " ")
 				.replace(" "+myclass+" ", " ").slice(1,-1);
@@ -634,7 +650,8 @@ SPARK = (function() {
 	// adds the given class to all selected nodes.
 	// removes the class first if it's already there, to prevent
 	// duplication
-		for (var i = this.length; i--;) {
+		var i = this.length;
+		for (; i--;) {
 			this[i].className =
 				(" "+this[i].className+" ").replace(/\s/g, " ")
 				.replace(" "+myclass+" ", " ").slice(1) + myclass;
@@ -687,7 +704,7 @@ SPARK = (function() {
 			lastparts = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(lastval),
 			myval = parseFloat(parts[2]), // need to account for prefix
 			mylastval = parseFloat(lastparts[2]),
-			animated = myval == myval && mylastval == mylastval, // NaN test
+			animated = !isNaN(myval) && !isNaN(mylastval), // NaN test
 			prefix = parts[1],
 			suffix = parts[3]; 
 
@@ -699,7 +716,7 @@ SPARK = (function() {
 			// remove existing animations on same property
 			for (j = animations.length; j--;) {
 				if (animations[j][0] === this[i].style &&
-					animations[j][1] == style) {
+					animations[j][1] === style) {
 					animations.splice(j, 1);
 				}
 			}
@@ -713,11 +730,11 @@ SPARK = (function() {
 			}
 		}
 
-		if (style == 'cssFloat') {
+		if (style === 'cssFloat') {
 			this.style('styleFloat', value);
 		}
 
-		if (style == 'opacity') {
+		if (style === 'opacity') {
 			this.style('filter', 'alpha(opacity='+(100*myval)+')',
 				animated && 100*mylastval, easing, msec, parm);
 		}
@@ -754,19 +771,19 @@ SPARK = (function() {
 		if (spec.cloneNode && spec.nodeType) { // is a node
 			return this.select(spec);
 		}
-		if (spec.length && spec[0] && spec !== ""+spec) { //arraylike
+		if (spec.length && spec[0] && typeof spec !== "string") { //arraylike
 			element = document.createDocumentFragment();
 			for (tmp = 0, len = spec.length; tmp < len;) {
 				element.appendChild(this.build(spec[tmp++])[0]);
 			}
 			return this.select(element.childNodes);
 		}
-		if (typeof spec != "object") {
+		if (typeof spec !== "object") {
 			return this.select(document.createTextNode(spec));
 		}
 		for (tmp in spec) {
 			if (Object.hasOwnProperty.call(spec, tmp)) {
-				if (tmp.slice(0,1) == "$") {
+				if (tmp.slice(0,1) === "$") {
 					attributes.push([tmp.slice(1),spec[tmp]]);
 				}
 				else {
@@ -797,13 +814,13 @@ SPARK = (function() {
 			collected = [];
 		
 		if (element) {
-			if (element.parentNode && element.parentNode.nodeType == 11) {
+			if (element.parentNode && element.parentNode.nodeType === 11) {
 				element = element.parentNode;
 			}
 			for (i = this.length; i--;) {
 				if (this[i].appendChild) {
 					instance = i ? element.cloneNode(true) : element;
-					group = instance.nodeType == 11 ? instance.childNodes : [instance];
+					group = instance.nodeType === 11 ? instance.childNodes : [instance];
 					for (j = 0, len = group.length; j < len;) {
 						collected.push(group[j++]);
 					}
@@ -828,13 +845,13 @@ SPARK = (function() {
 			collected = [];
 		
 		if (element) {
-			if (element.parentNode && element.parentNode.nodeType == 11) {
+			if (element.parentNode && element.parentNode.nodeType === 11) {
 				element = element.parentNode;
 			}
 			for (i = this.length; i--;) {
 				if (this[i].parentNode) {
 					instance = i ? element.cloneNode(true) : element;
-					group = instance.nodeType == 11 ? instance.childNodes : [instance];
+					group = instance.nodeType === 11 ? instance.childNodes : [instance];
 					for (j = 0, len = group.length; j < len;) {
 						collected.push(group[j++]);
 					}
@@ -899,7 +916,8 @@ SPARK = (function() {
 
 	SPARK.remove = function() {
 	// removes the selected nodes from the document and all their contents.
-		for (var i = this.length; i--;) {
+		var i = this.length;
+		for (; i--;) {
 			if (this[i].parentNode) {
 				this[i].parentNode.removeChild(this[i]);
 			}
@@ -910,8 +928,10 @@ SPARK = (function() {
 	SPARK.empty = function() {
 	// deletes the contents of the selected nodes, but not the nodes
 	// themselves
-		for (var i = this.length, tmp; i--;) {
-			while ((tmp = this[i].lastChild)) {
+		var i = this.length,
+			tmp;
+		for (; i--;) {
+			for (tmp = this[i].lastChild; tmp; tmp = this[i].lastChild) {
 				this[i].removeChild(tmp);
 			}
 		}
@@ -952,7 +972,7 @@ SPARK = (function() {
 				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
 
 		xmlhttprequest.onreadystatechange = function() {
-			if (xmlhttprequest.readyState == 4) {
+			if (xmlhttprequest.readyState === 4) {
 
 				// implement JSON parsing
 				// we've disabled setting responseJSON here since setting a value
@@ -973,7 +993,7 @@ SPARK = (function() {
 			}
 		};
 		xmlhttprequest.open(method || "GET", url, true);
-		if (body && ""+body!==body /*&&
+		if (body && typeof body !== "string" /*&&
 			typeof body.cloneNode != "function" &&
 			typeof body.read != "function"*/) {
 			for (i in body) {

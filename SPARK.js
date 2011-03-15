@@ -76,7 +76,8 @@ SPARK = (function() {
 		}
 	};
 
-	var processreadyqueue = function() {
+	var processreadyqueue;
+	processreadyqueue = function() {
 	// fairly straightforward.  runs every callback in the ready queue
 	// and sets ready to 1
 		var
@@ -91,7 +92,8 @@ SPARK = (function() {
 		ready = 1;
 	};
 
-	var checkscroll = function() {
+	var checkscroll;
+	checkscroll = function() {
 	// hack, intended only for IE, for checking when the DOM content is
 	// loaded
 		try {
@@ -246,7 +248,8 @@ SPARK = (function() {
 		return collected;
 	};
 
-	var animationtick = function() {
+	var animationtick;
+	animationtick = function() {
 	// process a single frame for all registered animations.  Any
 	// animation callback that returns false is deregistered, and when
 	// there are no registered animations left this function stops
@@ -267,21 +270,24 @@ SPARK = (function() {
 
 		while (i--) {
 			anim = animations[i];
-			x = (time - anim[4]) / (anim[8]||400);
+			x = (time - anim[4]) / (anim[7]||400);
 			if (x >= 1) {
 				animations.splice(i, x = 1);
 			}
 
 			anim[0][anim[1]] = anim[6] + ((
-				anim[7] === "lin"   ? x :
-				anim[7] === "in"    ? x*x :
-				anim[7] === "inout" ? (1-Math.cos(Math.PI*x)) / 2 :
-				anim[7] === "el"    ? ((2-x)*x-1) *
-					Math.cos(Math.PI*x*2*(anim[8]||400)/(anim[9]||300)) + 1 :
-				anim[7] === "fn"    ? anim[9](x) :
+				anim[8] === "lin"             ? x :
+				anim[8] === "in"              ? x*x :
+				anim[8] === "inout"           ? (1-Math.cos(Math.PI*x)) / 2 :
+				anim[8] === "el"              ? ((2-x)*x-1) *
+					Math.cos(Math.PI*x*3.5) + 1 :
+				typeof anim[8] === "function" ? anim[8](x) :
 				(2-x)*x // 'out' (default)
 				) * anim[3] + anim[2]) + anim[5];
 
+			if (x === 1 && anim[9]) {
+				anim[9]();
+			}
 		}
 	};
 
@@ -499,19 +505,20 @@ SPARK = (function() {
 				var
 					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : (SPARK.loaddir||"")+url,
 					myscript = that.build({script:"",	$src:myurl}),
-					gencallback = function() {
-						if (loadstate[url] !== 2 &&
-							(!this.readyState || /loade|co/.test(this.readyState))) {
-							loadstate[url] = 2;
-							myscript.unwatch("load", gencallback).unwatch("readystatechange",
-								gencallback).remove();
-							if (!(--mycallback["$SPARKl"+loadid])) {
-								// this callback is no longer waiting on any files, so call it
-								mycallback();
-								//delete mycallback["$SPARKl"+loadid];
-							}
+					gencallback;
+				gencallback = function() {
+					if (loadstate[url] !== 2 &&
+						(!this.readyState || /loade|co/.test(this.readyState))) {
+						loadstate[url] = 2;
+						myscript.unwatch("load", gencallback).unwatch("readystatechange",
+							gencallback).remove();
+						if (!(--mycallback["$SPARKl"+loadid])) {
+							// this callback is no longer waiting on any files, so call it
+							mycallback();
+							//delete mycallback["$SPARKl"+loadid];
 						}
-					};
+					}
+				};
 				loadstate[url] = 1;
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
@@ -689,7 +696,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.style = function(style, value, lastval, easing, msec, parm) {
+	SPARK.style = function(style, value, lastval, duration, easing, endfunc) {
 	// sets an inline style to the given value on all selected nodes.
 	// if lastval is given, then after the style is initially set to
 	// the first value, it is animated towards the last value.  easing,
@@ -706,7 +713,11 @@ SPARK = (function() {
 			mylastval = parseFloat(lastparts[2]),
 			animated = !isNaN(myval) && !isNaN(mylastval), // NaN test
 			prefix = parts[1],
-			suffix = parts[3]; 
+			suffix = parts[3];
+
+		endfunc = function() {
+			endfunc.call(this);
+		};
 
 		style = style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
 
@@ -725,8 +736,8 @@ SPARK = (function() {
 			if (animated) {
 				animations.push([
 					this[i].style, style, myval, mylastval - myval,
-					time, suffix, prefix, easing, msec, parm
-					]);
+					time, suffix, prefix, duration, easing, i ? null : endfunc
+				]);
 			}
 		}
 
@@ -736,7 +747,7 @@ SPARK = (function() {
 
 		if (style === 'opacity') {
 			this.style('filter', 'alpha(opacity='+(100*myval)+')',
-				animated && 100*mylastval, easing, msec, parm);
+				animated && 100*mylastval, duration, easing, endfunc);
 		}
 
 		if (animated && !animationschedule) {
@@ -782,7 +793,7 @@ SPARK = (function() {
 			return this.select(document.createTextNode(spec));
 		}
 		for (tmp in spec) {
-			if (Object.hasOwnProperty.call(spec, tmp)) {
+			if (spec.hasOwnProperty(tmp)) {
 				if (tmp.slice(0,1) === "$") {
 					attributes.push([tmp.slice(1),spec[tmp]]);
 				}
@@ -999,7 +1010,7 @@ SPARK = (function() {
 			typeof body.cloneNode != "function" &&
 			typeof body.read != "function"*/) {
 			for (i in body) {
-				if (Object.hasOwnProperty.call(body, i)) {
+				if (body.hasOwnProperty(i)) {
 					collected.push(encodeURIComponent(i) + "=" +
 						encodeURIComponent(body[i]));
 				}

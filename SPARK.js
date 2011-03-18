@@ -485,7 +485,7 @@ SPARK = (function() {
 	// if specified, this must contain the trailing slash of a directory.
 	// it can be a full url like "http://example.org/dir/" or just the 
 	// path like "/dir/", and so on.
-	// It's suggested to set this to the directory where all your
+	// It's suggested to set this to the base directory where all your
 	// SPARK modules are located, so that you can have modules that
 	// depend on other modules and can load them dynamically
 

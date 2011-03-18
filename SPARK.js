@@ -256,9 +256,9 @@ SPARK = (function() {
 	// calling itself.
 		var
 			i = animations.length,
+			anim, x,
 			time = +new Date(),
-			anim,
-			x;
+			collect = [];
 
 		animationschedule = !i ? 0 :
 			time < animationschedule + 10 ? animationschedule + (50/3) :
@@ -275,7 +275,7 @@ SPARK = (function() {
 				animations.splice(i, x = 1);
 			}
 
-			anim[0][anim[1]] = anim[6] + ((
+			anim[0].style[anim[1]] = anim[6] + ((
 				anim[8] === "lin"             ? x :
 				anim[8] === "in"              ? x*x :
 				anim[8] === "inout"           ? (1-Math.cos(Math.PI*x)) / 2 :
@@ -285,9 +285,15 @@ SPARK = (function() {
 				(2-x)*x // 'out' (default)
 				) * anim[3] + anim[2]) + anim[5];
 
+			// execute function after animation finishes?
 			if (x === 1 && anim[9]) {
-				anim[9]();
+				collect.push(anim[0]);
+				if (!i || animations[i-1][10] !== anim[10]) {
+					anim[9].call(SPARK.select(collect));
+					collect = [];
+				}
 			}
+
 		}
 	};
 
@@ -713,7 +719,8 @@ SPARK = (function() {
 			mylastval = parseFloat(lastparts[2]),
 			animated = !isNaN(myval) && !isNaN(mylastval), // NaN test
 			prefix = parts[1],
-			suffix = parts[3];
+			suffix = parts[3],
+			endfuncid = endfunc && ++gid;
 
 		endfunc = function() {
 			endfunc.call(this);
@@ -735,8 +742,9 @@ SPARK = (function() {
 			// add this animation into the animation queue
 			if (animated) {
 				animations.push([
-					this[i].style, style, myval, mylastval - myval,
-					time, suffix, prefix, duration, easing, i ? null : endfunc
+					this[i], style, myval, mylastval - myval,
+					time, suffix, prefix, duration, easing,
+					endfunc, endfuncid
 				]);
 			}
 		}

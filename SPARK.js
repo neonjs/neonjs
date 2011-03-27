@@ -611,7 +611,11 @@ SPARK = (function() {
 	// Or, if relative is given, the position is given relative to
 	// the provided argument, which can be the document element,
 	// a DOM element, or a selection using the same format as
-	// SPARK.select() (if so, it uses the first match only)
+	// SPARK.select() (if so, it uses the first match only).
+	// The dimensions given include the element's padding, border
+	// but not its margin.  For inline content it includes the
+	// overall rectangle surrounding all lines.  This is equivalent
+	// to your browser's getBoundingClientRect()
 		var
 			rel = SPARK.select(relative),
 			pos = !this[0] ? undefined :

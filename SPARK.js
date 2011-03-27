@@ -604,6 +604,42 @@ SPARK = (function() {
 			undefined;
 	};
 
+	SPARK.getPosition = function(relative) {
+	// fetches the position of the first selected element and returns
+	// it as an array with members left, top, right and bottom which
+	// are relative to the client viewport
+	// Or, if relative is given, the position is given relative to
+	// the provided argument, which can be the document element,
+	// a DOM element, or a selection using the same format as
+	// SPARK.select() (if so, it uses the first match only)
+		var
+			rel = SPARK.select(relative),
+			pos = !this[0] ? undefined :
+				this[0].getBoundingClientRect(),
+			relpos;
+
+		if (!rel.length || !pos || relative === window) {
+			return pos;
+		} 
+		pos.left +=
+			document.documentElement.scrollLeft || document.body.scrollLeft;
+		pos.right +=
+			document.documentElement.scrollLeft || document.body.scrollLeft;
+		pos.top += 
+			document.documentElement.scrollTop || document.body.scrollTop;
+		pos.bottom += 
+			document.documentElement.scrollTop || document.body.scrollTop;
+
+		if (rel[0] !== document.documentElement) {
+			relpos = rel.getPosition(document.documentElement);
+			pos.left -= relpos.left;
+			pos.right -= relpos.right;
+			pos.top -= relpos.top;
+			pos.bottom -= relpos.bottom;
+		}
+		return pos;
+	};
+
 	SPARK.setAttribute = function(attr, value) {
 	// shortcut, for setting attribute on all selected elements
 	// note that in this function, setting the value to "" (empty

@@ -617,12 +617,12 @@ SPARK = (function() {
 	// overall rectangle surrounding all lines.  This is equivalent
 	// to your browser's getBoundingClientRect()
 		var
-			rel = SPARK.select(relative),
+			rel = this.select(relative),
 			pos = !this[0] ? undefined :
 				this[0].getBoundingClientRect(),
 			relpos;
 
-		if (!rel.length || !pos || relative === window) {
+		if (!rel.length || !pos || rel[0] === window) {
 			return pos;
 		} 
 		pos.left +=

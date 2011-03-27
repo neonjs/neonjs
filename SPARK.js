@@ -619,12 +619,17 @@ SPARK = (function() {
 		var
 			rel = this.select(relative),
 			pos = !this[0] ? undefined :
+				this[0] === window ? {left:0, top:0, 
+					right: window.innerWidth || document.documentElement.clientWidth,
+					bottom: window.innerHeight || document.documentElement.clientHeight
+				} :
 				this[0].getBoundingClientRect(),
 			relpos;
 
 		if (!rel.length || !pos || rel[0] === window) {
 			return pos;
 		} 
+		// todo check if the fallback to document.body is really needed
 		pos.left +=
 			document.documentElement.scrollLeft || document.body.scrollLeft;
 		pos.right +=

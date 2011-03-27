@@ -629,7 +629,9 @@ SPARK = (function() {
 		if (!rel.length || !pos || rel[0] === window) {
 			return pos;
 		} 
-		// todo check if the fallback to document.body is really needed
+
+		// document.body fallback should be necessary cos some browser modes
+		// ie quirks mode scroll the 'body' rather than the document
 		pos.left +=
 			document.documentElement.scrollLeft || document.body.scrollLeft;
 		pos.right +=

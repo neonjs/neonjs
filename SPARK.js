@@ -608,14 +608,17 @@ SPARK = (function() {
 	// fetches the position of the first selected element and returns
 	// it as an array with members left, top, right and bottom which
 	// are relative to the client viewport
-	// Or, if relative is given, the position is given relative to
+	// This is an extension of the browser's getBoundingClientRect()
+	// and thus on inline elements it gives the rectangle that would
+	// bound all lines, and the dimension includes element borders
+	// but not margin.
+	// If relative is given, the position is given relative to
 	// the provided argument, which can be the document element,
 	// a DOM element, or a selection using the same format as
 	// SPARK.select() (if so, it uses the first match only).
-	// The dimensions given include the element's padding, border
-	// but not its margin.  For inline content it includes the
-	// overall rectangle surrounding all lines.  This is equivalent
-	// to your browser's getBoundingClientRect()
+	// To just get the height and width of the client viewport,
+	// you could use SPARK.select(window).getPosition() and just
+	// read the bottom and right properties.
 		var
 			rel = this.select(relative),
 			pos = !this[0] ? undefined :

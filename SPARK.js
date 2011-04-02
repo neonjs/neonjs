@@ -1,6 +1,7 @@
 /*
 
 The SPARK Javascript Library: core 
+SPARK core library
 
 Part of the SPARK Javascript Library
 Copyright (c) 2011, Thomas Rutter
@@ -41,6 +42,7 @@ See http://SPARKlib.com for documentation and examples of use.
 @preserve The SPARK Javascript Library
 Copyright (c) Thomas Rutter 2011
 http://SPARKlib.com
+http://SPARKlib.com/license
 */
 
 // overwrites any existing SPARK object

@@ -39,13 +39,13 @@ See http://SPARKlib.com for documentation and examples of use.
 /*global SPARK:true */
 
 /**
-@preserve The SPARK Javascript Library
+@preserve The SPARK Javascript Library: widget
 Copyright (c) Thomas Rutter 2011
 http://SPARKlib.com
 http://SPARKlib.com/license
 */
 
-(function() {
+SPARK.widget = (function() {
 	
 	// helper function for normalising HTML
 	// can strip paragraph tags or generate paragraph tags
@@ -67,7 +67,7 @@ http://SPARKlib.com/license
 			blockreg = /^(?:h[1-6]|ul|ol|dl|menu|dir|pre|hr|blockquote|address|center|div|isindex|fieldset|table)$/,
 			blockseparator = /^(?:li|tr|div|dd|dt|the|tbo|tfo)/;
 
-		while ((matches = parsereg.exec(input))) {
+		for (matches = parsereg.exec(input); matches; matches = parsereg.exec(input)) {
 
 			lastdelta = delta;
 			last = tagname;
@@ -77,19 +77,19 @@ http://SPARKlib.com/license
 			topstack = stack[stack.length-1];
 			popen = pinitially =
 				lastdelta ? 0 :
-				last != 'p' ? popen :
+				last !== 'p' ? popen :
 				lastclose ? 0 : 1;
 			if (matches[4]) {
 				tagname = matches[4].toLowerCase();
 				closetag = matches[3];
 				if (blockreg.test(tagname)) {
 					if (!closetag) {
-						if (tagname != 'hr' && tagname != 'isindex') {
+						if (tagname !== 'hr' && tagname !== 'isindex') {
 							delta = 1;
 							stack.push(tagname);
 						}
 					}
-					else if (tagname == topstack) {
+					else if (tagname === topstack) {
 						delta = -1;
 						stack.pop();
 					}
@@ -98,19 +98,19 @@ http://SPARKlib.com/license
 			text = matches[1];
 			tagcode = matches[2];
 
-			if (topstack != 'pre') {
+			if (topstack !== 'pre') {
 				// process paragraphs
-				if (!topstack || topstack == 'blockquote' || topstack == 'center' || popen) {
+				if (!topstack || topstack === 'blockquote' || topstack === 'center' || popen) {
 					// add missing <p> at start
 					if (!popen && (/\S/.test(text) ||
-						(tagname && !delta && tagname != '!' && tagname != 'p'))) {
+						(tagname && !delta && tagname !== '!' && tagname !== 'p'))) {
 						popen = 1;
 						text = '<p>' + text.replace(/^\s*/, '');
 					}
 					if (popen) {
 						// add missing </p> at end
 						if (delta ||
-							(!closetag && tagname == 'p') ||
+							(!closetag && tagname === 'p') ||
 							!tagname ||
 							(wstopara && /\n\r?\n\s*$/.test(text))
 							) {
@@ -119,7 +119,7 @@ http://SPARKlib.com/license
 						}
 						// add paragraph breaks within based on whitespace
 						if (wstopara) {
-							if (last == 'br') {
+							if (last === 'br') {
 								text = text.replace(/^\s+/, '');
 							}
 							text = text.replace(/\s*\n\r?\n\s*(?=\S)/g, '</p><p>')
@@ -129,12 +129,12 @@ http://SPARKlib.com/license
 				}
 				// remove leading spaces
 				if (lastdelta || !last || !pinitially || 
-					last == 'p' || last == 'br' || blockseparator.test(last)) {
+					last === 'p' || last === 'br' || blockseparator.test(last)) {
 					text = text.replace(/^\s+/, '');
 				}
 				// remove trailing spaces
 				if (delta || !tagname || !popen ||
-					tagname == 'p' || tagname == 'br' || blockseparator.test(tagname)) {
+					tagname === 'p' || tagname === 'br' || blockseparator.test(tagname)) {
 					text = text.replace(/\s+$/, '');
 				}
 				// normalise remaining whitespace
@@ -150,25 +150,25 @@ http://SPARKlib.com/license
 					.replace(/<br>/g, "<br>\n");
 				// add newline at end (before tag)
 				if (
-					delta == 1 || (!popen && tagname == '!') || 
-					(!closetag && (tagname == 'p' || blockseparator.test(tagname))) || 
-					(closetag && (tagname == 'table' || tagname == 'ul'))
+					delta === 1 || (!popen && tagname === '!') || 
+					(!closetag && (tagname === 'p' || blockseparator.test(tagname))) || 
+					(closetag && (tagname === 'table' || tagname === 'ul'))
 					) {
 					text += "\n";
 				}
 				// add newline at start (after last tag)
 				if (
-					lastdelta == -1 || (!pinitially && last == '!') ||
-					(lastclose && last == 'p') ||
-					last == 'br') {
+					lastdelta === -1 || (!pinitially && last === '!') ||
+					(lastclose && last === 'p') ||
+					last === 'br') {
 					text = "\n" + text;
 				}
 			}
 
 			// process the actual tag
 			if (strippara &&
-				(tagname == 'p' || (tagname == 'br' && (!topstack ||
-					topstack == 'blockquote' || topstack == 'center'))) &&
+				(tagname === 'p' || (tagname === 'br' && (!topstack ||
+					topstack === 'blockquote' || topstack === 'center'))) &&
 				!/\S/.test(matches[5])) {
 				tagcode = '';
 			}
@@ -176,7 +176,7 @@ http://SPARKlib.com/license
 			output += text + tagcode;
 		}
 		// close last p tag
-		if (popen && !strippara && !delta && (tagname != 'p' || !closetag)) {
+		if (popen && !strippara && !delta && (tagname !== 'p' || !closetag)) {
 			 output += '</p>';
 		}
 

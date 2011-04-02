@@ -1,30 +1,64 @@
+/*
 
-// SPARK tester - a basic javascript testing framework
-// Part of the SPARK Javascript library
-// Copyright (c) 2010 Thomas Rutter
+The SPARK Javascript Library: tester 
+A unit testing library for SPARK
 
-/*jslint browser: true, newcap: true, immed: true */
-/*global SPARK:true,attachEvent,window,opera,ActiveXObject */
+Part of the SPARK Javascript Library
+Copyright (c) 2011, Thomas Rutter
+All rights reserved.
 
-/**
-@preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+	* Redistributions of source code must retain the above copyright
+		notice, this list of conditions and the following disclaimer.
+	* Redistributions in binary form must reproduce the above copyright
+		notice, this list of conditions and the following disclaimer in the
+		documentation and/or other materials provided with the distribution.
+	* Neither the name of the author nor the names of contributors may be used
+		to endorse or promote products derived from this software without
+		specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--
+
+See http://SPARKlib.com for documentation and examples of use.
+
 */
 
-(function() {
+/*jslint browser:true,newcap:true,undef:true */
+/*global SPARK:true */
+
+/**
+@preserve The SPARK Javascript Library: tester
+Copyright (c) Thomas Rutter 2011
+http://SPARKlib.com
+http://SPARKlib.com/license
+*/
+
+SPARK.tester = (function() {
 	var
-		SPARK = window.SPARK,
 		testtbody,
 		gid = 0;
 
 	var setuptable = function() {
-		return SPARK.select('body').append({table:""}).append({tbody:""});
+		return (testtbody = SPARK.select('body').append({table:""}).append({tbody:""}));
 	};
 
-	SPARK.tester = function(testname, testfunction) {
+	var tester = function(testname, testfunction) {
 	// registers a test case.  the testfunction may call this.assert one or
 	// more times
 		var
-			mytesttbody = testtbody || (testtbody = setuptable()),
+			mytesttbody = testtbody || setuptable(),
 			testrow = mytesttbody.append({tr:""}),
 			resultcell = testrow.append({td:"TESTING ..."}).
 				style('background', 'gray').
@@ -43,7 +77,7 @@
 			if (!failures) {
 				resultcell.empty().style('background', 'brown').append("TIMEOUT");
 			}
-		}; 
+		};
 
 		testobj.assert = function(assertval, shortdesc) {
 		// test cases should call this.assert() as many times as they have something
@@ -91,5 +125,7 @@
 			testfunction.call(testobj);
 		}, 0);
 	};
+
+	return tester;
 
 }());

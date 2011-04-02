@@ -10,18 +10,17 @@
 @preserve SPARK js lib (c) Thomas Rutter SPARKlib.com
 */
 
-SPARK.tester = SPARK.tester || (function() {
+(function() {
 	var
 		SPARK = window.SPARK,
 		testtbody,
-		gid = 0,
-		tester = {};
+		gid = 0;
 
 	var setuptable = function() {
 		return SPARK.select('body').append({table:""}).append({tbody:""});
 	};
 
-	tester.test = function(testname, testfunction) {
+	SPARK.tester = function(testname, testfunction) {
 	// registers a test case.  the testfunction may call this.assert one or
 	// more times
 		var
@@ -93,5 +92,4 @@ SPARK.tester = SPARK.tester || (function() {
 		}, 0);
 	};
 
-	return tester;
 }());

@@ -6,7 +6,7 @@ if (!document.createDocumentFragment) {
 
 SPARK.load("SPARK.tester.js", function() {
 
-	SPARK.tester.test("Document ready state", function() {
+	SPARK.tester("Document ready state", function() {
 		var
 			called = 0,
 			that = this;
@@ -21,7 +21,7 @@ SPARK.load("SPARK.tester.js", function() {
 
 	SPARK.ready(function() {
 
-		SPARK.tester.test("Selectors", function() {
+		SPARK.tester("Selectors", function() {
 
 			this.testdiv.append([
 				{div:"",$id:"myid"},
@@ -72,12 +72,12 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("Event handling", function() {
+		SPARK.tester("Event handling", function() {
 
 			var
 				that = this,
 				p = this.testdiv.append({p:"Testing user input: "}),
-				button = p.append({button:"Please mouse click"}),
+				button = p.append({button:"Please click"}),
 				otherclicked = 0,
 				wrongclicked = 0,
 				mouseentered = 0,
@@ -112,7 +112,7 @@ SPARK.load("SPARK.tester.js", function() {
 			});
 		});
 
-		SPARK.tester.test("Extending SPARK", function() {
+		SPARK.tester("Extending SPARK", function() {
 			var
 				myobj = {name: "thisisatest"},
 				myobj2 = {name: "2nd"};
@@ -124,7 +124,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("Loading external Javascript", function() {
+		SPARK.tester("Loading external Javascript", function() {
 			var
 				that = this;
 			this.assert(1, "Must have worked for these tests to function");
@@ -135,7 +135,7 @@ SPARK.load("SPARK.tester.js", function() {
 		});
 
 		/*
-		SPARK.tester.test("Getting/setting element properties", function() {
+		SPARK.tester("Getting/setting element properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
 			this.assert(newdiv.get("id") == "SPARKtestertestget", "Testing get() on id");
@@ -146,7 +146,7 @@ SPARK.load("SPARK.tester.js", function() {
 		});
 		*/
 
-		SPARK.tester.test("Getting/setting style properties", function() {
+		SPARK.tester("Getting/setting style properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$style:"width:66px"});
 			this.assert(newdiv.getStyle('width') == "66px", "Read inline style");
@@ -155,7 +155,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("Building elements", function() {
+		SPARK.tester("Building elements", function() {
 			var
 				elements = SPARK.build({p:"Contents",$title:"Mytitle"}),
 				pandtext = SPARK.build([{p:""},"Mycontents"]),
@@ -170,7 +170,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("Document manipulation", function() {
+		SPARK.tester("Document manipulation", function() {
 			var
 				testelement = this.testdiv.append({div:{p:""}}),
 				appended2 = this.testdiv.append({p:"TestAppend"}),
@@ -191,7 +191,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester.test("JSON decoding", function() {
+		SPARK.tester("JSON decoding", function() {
 			var
 				obj = SPARK.jsonDecode('{"a":5.3e2,"b":false,"c":null}'),
 				obj2 = SPARK.jsonDecode('{"a":"my\\"string\\n","b":[1,2]}'),
@@ -238,7 +238,7 @@ SPARK.load("SPARK.tester.js", function() {
 			*/
 		});
 
-		SPARK.tester.test("AJAX requests", function() {
+		SPARK.tester("AJAX requests", function() {
 			var
 				that = this,
 				finished = false,

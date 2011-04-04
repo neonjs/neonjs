@@ -212,11 +212,14 @@ SPARK.widget = (function() {
 				host = SPARK.select(evt.currentTarget),
 				flyout = SPARK.select(evt.currentTarget.firstChild)
 					.removeClass("SPARK-widget-flyout-hidden")
-					.style('left', 'auto').style('right', 'auto')
+					.style('left', '100%').style('right', 'auto')
 					.style('top', 'auto').style('bottom', 'auto');
 				
 			hostpos = host.getPosition();
 			flyoutpos = flyout.getPosition();
+
+			flyout.style('left', 'auto'); // try work around
+			// issue where no width or height set yet
 
 			addrect = horiz ? 0 : hostpos.right - hostpos.left;
 			dim = flyoutpos.right - flyoutpos.left || 1e4;

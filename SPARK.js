@@ -443,6 +443,10 @@ SPARK = (function() {
 				eventname === 'mouseenter' ? 'mouseover' :
 				eventname === 'mouseleave' ? 'mouseout' :
 				eventname,
+			captureevent =
+				eventname === 'focusin' ? 'focus' :
+				eventname === 'focusout' ? 'blur' :
+				null,
 			mycallback;
 
 		callback.$SPARKi = callback.$SPARKi || ++gid;
@@ -456,7 +460,8 @@ SPARK = (function() {
 
 			if (this[i].addEventListener) {
 				// other browsers
-				this[i].addEventListener(myeventname, mycallback, false);
+				this[i].addEventListener(captureevent || myeventname,
+					mycallback, !!captureevent);
 			} 
 			else {
 				// IE
@@ -479,7 +484,11 @@ SPARK = (function() {
 			myeventname =
 				eventname === 'mouseenter' ? 'mouseover' :
 				eventname === 'mouseleave' ? 'mouseout' :
-				eventname;
+				eventname,
+			captureevent =
+				eventname === 'focusin' ? 'focus' :
+				eventname === 'focusout' ? 'blur' :
+				null;
 
 		for (i = this.length; i--;) {
 
@@ -488,8 +497,10 @@ SPARK = (function() {
 
 				if (this[i].addEventListener) {
 					// other browsers
-					this[i].removeEventListener(myeventname,
-						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi], false);
+					this[i].removeEventListener(
+						captureevent || myeventname,
+						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi],
+						!!captureevent);
 				} 
 				else {
 					// IE

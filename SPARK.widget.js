@@ -47,10 +47,14 @@ http://SPARKlib.com/license
 
 SPARK.widget = (function() {
 	
+	var
+		canedit = document.body.contentEditable !== undefined,
+		widgets = {};
+	
+	var htmlconvert = function(input, strippara, wstopara) {
 	// helper function for normalising HTML
 	// can strip paragraph tags or generate paragraph tags
 	// from whitespace
-	var htmlconvert = function(input, strippara, wstopara) {
 		var
 			matches,
 			tagname, last,
@@ -181,6 +185,353 @@ SPARK.widget = (function() {
 		}
 
 		return output.replace(/^\s+|\s+$/g, '');
+	};
+
+	widgets.flyout = function(elements, opts) {
+	// flyout widget
+	// turns the selected element into a hot zone which when clicked
+	// or hovered will cause a fly-out (such as a fly-out menu) to appear
+	// opts.direction specifies first which side of the hot zone the flyout
+	// should appear on out of 'l', 'r', 't', 'b', then optionally another
+	// letter specifying the alignment, eg if the first is bottom, whether
+	// to fly towards the right from the left ('r') or vice versa.  default
+	// is 'br'.
+		var
+			i,
+			direction = opts && opts.direction || 'tr',
+			horiz = /^[lr]/.test(direction),
+			contents = opts && opts.contents || {div:"This is a biiiiiiiiiiiiig test"},
+			windowpos = SPARK.select(window).getPosition(),
+			hosts = elements.insert({span:""})
+				.addClass("SPARK-widget-flyout-host");
+		
+		var doactivate = function(evt) {
+			var
+				hostpos, flyoutpos,
+				addrect, dim,
+				host = SPARK.select(evt.currentTarget),
+				flyout = SPARK.select(evt.currentTarget.firstChild)
+					.removeClass("SPARK-widget-flyout-hidden")
+					.style('left', '100%').style('right', 'auto')
+					.style('top', 'auto').style('bottom', 'auto');
+				
+			hostpos = host.getPosition();
+			flyoutpos = flyout.getPosition();
+
+			flyout.style('left', 'auto'); // try work around
+			// issue where no width or height set yet
+
+			addrect = horiz ? 0 : hostpos.right - hostpos.left;
+			dim = flyoutpos.right - flyoutpos.left || 1e4;
+			flyout.style(hostpos.left+addrect < dim ? 'left' :
+				windowpos.right+addrect-hostpos.right < dim ? 'right' :
+				/l/.test(direction) ? 'right' : 'left',
+				horiz ? '100%' : '0');
+
+			addrect = !horiz ? 0 : hostpos.bottom - hostpos.top;
+			dim = flyoutpos.bottom - flyoutpos.top || 1e3;
+			flyout.style(hostpos.top+addrect < dim ? 'top' :
+				windowpos.bottom+addrect-hostpos.bottom < dim ? 'bottom' :
+				/t/.test(direction) ? 'bottom' : 'top',
+				!horiz ? '100%' : '0');
+		};
+
+		var deactivate = function(evt) {
+			SPARK.select(evt.currentTarget.firstChild)
+				.addClass("SPARK-widget-flyout-hidden");
+		};
+
+		hosts.append({div:""}).addClass("SPARK-widget-flyout")
+			.addClass("SPARK-widget-flyout-hidden")
+			.append(contents);
+
+		for (i = elements.length; i--;) {
+			SPARK.select(elements[i].previousSibling)
+				.append(elements[i]);
+		}
+
+
+		// add events
+		hosts.setAttribute("tabindex", "-1")
+			.watch("mouseenter", doactivate)
+		hosts.watch("mouseleave", deactivate);
+
+		return {};
+
+/*
+		var
+			myparent = SPARK.select(el[0].parentNode)
+				.setAttribute('tabindex', '0')
+				.addClass('SPARK-widget-flyout-parent'),
+			parentpos = myparent.getPosition(),
+			windowpos = SPARK.select(window).getPosition(),
+			mypos = el.addClass('SPARK-widget-flyout').getPosition(),
+			w = mypos.right-mypos.left,
+			h = mypos.bottom-mypos.top;
+
+		myparent.watch('focus', function(evt) {
+			el.style('display', 'block');
+		});
+		myparent.watch('blur', function(evt) {
+			el.style('display', 'none');
+		});
+
+		el.style(windowpos.right - parentpos.left < w && 
+			parentpos.right >= w ? 'right' : 'left', '0');
+
+		el.style(windowpos.bottom - parentpos.bottom < h &&
+			parentpos.top >= h ? 'bottom' : 'top', '100%');
+			*/
+	};
+
+	widgets.richtext = function(el, opts) {
+		var
+			container = el.insert({div:''}).addClass('SPARK-widget-richtext-container'),
+			editor = container.append(canedit ? {div:''} : {textarea:''})
+				.addClass('SPARK-widget-richtext-editor'),
+			toolbar = editor.insert({div:''}).addClass('SPARK-widget-richtext-toolbar'),
+			source,
+			iconsize = (opts && opts.iconsize) || 14,
+			updators = [],
+			teardowns = [];
+
+		/*******************************************
+		 * HELPER FUNCTIONS FOR THE EDITOR CONTROL *
+		 *******************************************/
+
+		var updatecontrols = function(toolbar) {
+			setTimeout(function() {
+				var
+					i;
+				for (i = updators.length;i--;) {
+					updators[i]();
+				}
+			}, 0);
+		};
+
+		var addbutton = function(command, num, title) {
+			var
+				button = toolbar.append({button:'',$title:title})
+					.addClass('SPARK-widget-richtext-toolbar-selectable'),
+				state;
+
+			var clickhandler = function() {
+				document.execCommand('useCSS', 0, 1);
+				document.execCommand(command, 0, null);
+				updatecontrols(toolbar);
+			};
+			
+			button.append({span:""})
+				.addClass('SPARK-widget-richtext-toolbar-icon')
+				.style('width', iconsize+"px")
+				.style('height', iconsize+"px")
+				.style('background', 
+						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*num+1)+'px');
+
+			button.watch('click', clickhandler);
+			teardowns.push(function() {
+				button.unwatch('click', clickhandler);
+			});
+			updators.push(function() {
+				var
+					value;
+				try {
+					value = document.queryCommandState(command);
+					if (value !== state) {
+						if (value) {
+							button.addClass('SPARK-widget-richtext-active');
+						}
+						else {
+							button.removeClass('SPARK-widget-richtext-active');
+						}
+						state = value;
+					}
+				}
+				catch (e) {
+					button.removeClass('SPARK-widget-richtext-active');
+				}
+			});
+		};
+
+		var addseparator = function() {
+			toolbar.append({span:''})
+				.addClass('SPARK-widget-richtext-toolbar-separator');
+		};
+
+		var stylechooseroption = function(label, container) {
+			var
+				option = SPARK.build({div:""}),
+				link,
+				spec = {};
+
+			spec[container] = '';
+			link = option.append(spec).append({a:label,$href:'#'});
+
+			link.watch('click', function() {
+				document.execCommand('formatblock', false, '<h1>');
+			});
+
+			return option;
+		};
+
+		var addstylechooser = function() {
+			var
+				chooser = toolbar.append({span:'',$title:'Paragraph style'})
+					.addClass('SPARK-widget-richtext-toolbar-dropper'),
+				text = chooser.append({button:'Paragraph style'})
+					.addClass('SPARK-widget-richtext-toolbar-label'),
+				currentformat,
+				dropdown = chooser.append({div:""})
+					.style('display', 'none')
+					.addClass('SPARK-widget-richtext-toolbar-dropdown');
+
+			
+			chooser.append({span:""}) // drop arrow icon
+				.addClass('SPARK-widget-richtext-toolbar-icon')
+				.style('width', iconsize+"px")
+				.style('height', iconsize+"px")
+				.style('background',
+					'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
+
+			dropdown.append(stylechooseroption('Normal text', 'p'));
+			dropdown.append(stylechooseroption('Page heading', 'h1'));
+			dropdown.append(stylechooseroption('Section heading', 'h2'));
+			dropdown.append(stylechooseroption('Section subheading', 'h3'));
+			dropdown.append(stylechooseroption('Formatted code', 'pre'));
+			widgets.flyout(chooser);
+
+			teardowns.push(function() {
+				dropdown.remove();
+			});
+
+			updators.push(function () {
+				var
+					value, part;
+				try {
+					value = document.queryCommandValue('formatblock');
+					if (value !== currentformat) {
+						part = /^(?:h|Heading )(\d)$/.exec(value);
+						text.empty().append(
+							part ? 'Heading '+part[1] :
+							value === 'pre' || value === 'Formatted' ? 'Formatted code' :
+							'Normal text'
+						);
+						currentformat = value;
+					}
+				}
+				catch (e) {}
+			});
+		};
+
+		var populatetoolbar = function() {
+
+			if (!canedit) {
+				toolbar.append({div:"HTML tags allowed"})
+					.addClass('SPARK-widget-richtext-toolbar-altnotice');
+				return;
+			}
+
+			if (!opts || opts.stylechooser === undefined || opts.stylechooser) {
+				addstylechooser();
+				addseparator();
+			}
+			addbutton('bold', 0, 'Bold');
+			addbutton('italic', 1, 'Italic');
+			if (!opts || opts.listbuttons === undefined || opts.listbuttons) {
+				addseparator();
+				addbutton('insertunorderedlist', 2, 'Insert bulleted list');
+				addbutton('insertorderedlist', 3, 'Insert numbered list');
+			}
+			if (!opts || opts.indentbuttons === undefined || opts.indentbuttons) {
+				addseparator();
+				addbutton('outdent', 4, 'Decrease indent');
+				addbutton('indent', 5, 'Increase indent');
+			}
+		};
+
+		if (canedit) {
+			editor.setAttribute('contenteditable', 'true');
+			editor.watch('keypress', updatecontrols);
+			editor.watch('mousedown', updatecontrols);
+			editor.watch('click', updatecontrols);
+		}
+
+		// transfer to new editor and remove old
+		if (el[0].tagName.toLowerCase() === 'textarea') {
+			source = el[0].value;
+			editor.style('minHeight', el.getStyle('height'));
+			el.insert({
+				input:'',
+				$type:'hidden',
+				$name:el[0].name,
+				$value:el[0].value
+				});
+			el.remove();
+		}
+		else {
+			source = el[0].innerHTML;
+			el.style('display', 'none');
+		}
+
+		editor[0][canedit ? 'innerHTML' : 'value'] =
+			htmlconvert(source, !canedit, 0);
+
+		populatetoolbar();
+		updatecontrols();
+	};
+
+	/************************
+	 *        STYLES        *
+	 ************************/
+
+	// flyout
+	
+	SPARK.styleRule('.SPARK-widget-flyout',
+		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff')
+		.styleRule('.SPARK-widget-flyout-hidden',
+			'display:none')
+		.styleRule('.SPARK-widget-flyout-host',
+			'position:relative;display:inline-block;outline:none');
+
+	// richtext
+
+	SPARK.styleRule('.SPARK-widget-richtext-container',
+		'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
+		.styleRule('.SPARK-widget-richtext-toolbar',
+			'font:12px sans-serif;margin:0 0 1px 0;background:#f9f6f3')
+		// button text needs to be re-set in FF (at least)
+		.styleRule('.SPARK-widget-richtext-toolbar-selectable',
+			'border:none;padding:0;background:transparent;font:inherit;overflow:visible')
+		.styleRule('.SPARK-widget-richtext-toolbar-selectable:hover',
+			'background:#edd')
+		.styleRule('.SPARK-widget-richtext-toolbar-selectable .SPARK-widget-richtext-active',
+			'background:#e8d8d8')
+		.styleRule('.SPARK-widget-richtext-toolbar-separator',
+			'display:inline-block;width:5px')
+		.styleRule('.SPARK-widget-richtext-editor',
+			'max-height:27em')
+	// outline:0 prevents dotted line in firefox
+	// position:relative is in case people paste in absolute positioned elements
+		.styleRule('div.SPARK-widget-richtext-editor',
+			'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:6em;overflow:auto')
+	// min-height needed as textareas don't auto-expand
+		.styleRule('textarea.SPARK-widget-richtext-editor',
+			'width:100%;border:0;padding:0;margin:0;background:#fff;color:#000;font:inherit;min-height:14em')
+		.styleRule('.SPARK-widget-richtext-toolbar-altnotice',
+			'padding:5px;text-align:right')
+		.styleRule('.SPARK-widget-richtext-toolbar-icon',
+			'display:inline-block;vertical-align:middle;margin:4px 3px 5px')
+		.styleRule('.SPARK-widget-richtext-toolbar-label',
+			'vertical-align:middle;margin: 4px 3px')
+		.styleRule('.SPARK-widget-richtext-toolbar-dropper',
+			'display:inline-block;position:relative')
+		.styleRule('.SPARK-widget-richtext-toolbar-dropdown',
+			'overflow:hidden;background:#fff;border:1px solid ButtonShadow');
+
+	return function(func, opts) {
+		if (widgets.hasOwnProperty(func)) {
+			return widgets[func](this, opts);
+		}
 	};
 
 }());

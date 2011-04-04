@@ -415,6 +415,9 @@ SPARK = (function() {
 				selector.nodeType || selector.setTimeout ? [selector] :
 				selector;
 
+			for (i = newelement.length; --i >= elements.length;) {
+				delete newelement[i];
+			}
 			for (newelement.length = i = elements.length; i--;) {
 				newelement[i] = elements[i];
 			}
@@ -590,7 +593,7 @@ SPARK = (function() {
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// spark doesn't normalise them
 		var 
-			val = !this[0] ? undefined :
+			val = !this.length ? undefined :
 			document.defaultView && document.defaultView.getComputedStyle ?
 				document.defaultView.getComputedStyle(this[0], null)[style] :
 			this[0].currentStyle[style];
@@ -623,7 +626,7 @@ SPARK = (function() {
 	// read the bottom and right properties.
 		var
 			rel = this.select(relative),
-			pos = !this[0] ? undefined :
+			pos = !this.length ? undefined :
 				this[0] === window ? {left:0, top:0, 
 					right: window.innerWidth || document.documentElement.clientWidth,
 					bottom: window.innerHeight || document.documentElement.clientHeight
@@ -878,7 +881,8 @@ SPARK = (function() {
 	// selected node.
 		var
 			i, j, len,
-			element = this.build(spec)[0],
+			elements = this.build(spec),
+			element = elements.length && elements[0],
 			instance,
 			group,
 			collected = [];
@@ -909,7 +913,8 @@ SPARK = (function() {
 	// selected node.
 		var
 			i, j, len,
-			element = this.build(spec)[0],
+			elements = this.build(spec),
+			element = elements.length && elements[0],
 			instance,
 			group,
 			collected = [];

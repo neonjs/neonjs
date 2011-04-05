@@ -76,17 +76,22 @@ SPARK.load("SPARK.tester.js", function() {
 
 			var
 				that = this,
-				p = this.testdiv.append({p:"Testing user input: "}),
+				p = this.testdiv.append({p:"Testing user input: "})
+					.setAttribute('tabindex', '-1'),
 				button = p.append({button:"Please click"}),
 				otherclicked = 0,
 				wrongclicked = 0,
 				mouseentered = 0,
-				mouseup = 1,
+				focused = 0,
+				mouseup = 0,
 				wrongclickfunc = function() { wrongclicked = 1; };
 
 			this.wait(30000);
 			button.watch('mouseenter', function(evt) {
 				mouseentered = 1;
+			});
+			p.watch('focusin', function(evt) {
+				focused = 1;
 			});
 			button.watch('click', function(evt) {
 				that.assert(!!evt, "Event object was passed");
@@ -100,6 +105,7 @@ SPARK.load("SPARK.tester.js", function() {
 					that.assert(wrongclicked == 0, "Unwatched successfully");
 					that.assert(mouseup == 1, "Mouseup event fired");
 					that.assert(mouseentered == 1, "Mouseenter event fired");
+					that.assert(focused, "Focusin event fired on container");
 					that.finish();
 				}, 20);
 			});
@@ -152,6 +158,57 @@ SPARK.load("SPARK.tester.js", function() {
 			this.assert(newdiv.getStyle('width') == "66px", "Read inline style");
 			newdiv.style('width', '555px');
 			this.assert(newdiv.getStyle('width') == '555px', "Set and read element style");
+			this.finish();
+		});
+
+		SPARK.tester("Getting element position", function() {
+			var
+				newdiv = this.testdiv.append({div:""})
+					.style('width', '50px').style('height', '55px'),
+				divpos = newdiv.getPosition(),
+				windowpos = SPARK.select(window).getPosition(),
+				divtodoc = newdiv.getPosition(document.documentElement);
+
+			this.assert(divpos, "Get a position object");
+			this.assert(divpos.left && divpos.top, "Get top left of element");
+			this.assert(divpos.bottom - divpos.top === 55, "Measure height correctly");
+			this.assert(divpos.right - divpos.left === 50, "Measure width correctly");
+			this.assert(windowpos.bottom && windowpos.right, "Get dimensions of viewport");
+			this.assert(divtodoc.left && divtodoc.top && divtodoc.right && divtodoc.bottom,
+				"Get position relative to document");
+
+			this.finish();
+		});
+
+		SPARK.tester("Setting/clearing attributes", function() {
+			var
+				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
+
+			newdiv.setAttribute("title", "title1")
+				.setAttribute("class", "myclass")
+				.setAttribute("tabindex", "-1");
+
+			this.assert(newdiv[0].getAttribute("title") === "title1", "Set title attribute");
+			this.assert(newdiv[0].className === "myclass", "Set class attribute");
+			this.assert(newdiv[0].tabIndex === -1, "Set tabindex attribute");
+
+			newdiv.removeAttribute("title");
+			this.assert(!newdiv[0].getAttribute("title"), "Clear title attribute");
+
+			this.finish();
+		});
+
+		SPARK.tester("Adding and removing classes", function() {
+			var
+				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
+
+			newdiv.addClass("class1").addClass("class2").addClass("class3")
+				.removeClass("class1");
+
+			this.assert(!/\bclass1\b/.test(newdiv[0].className), "Added and removed a class");
+			this.assert(/\bclass2\b/.test(newdiv[0].className), "Added a second class");
+			this.assert(/\bclass3\b/.test(newdiv[0].className), "Added another class");
+
 			this.finish();
 		});
 
@@ -244,7 +301,8 @@ SPARK.load("SPARK.tester.js", function() {
 				finished = false,
 				callback = function() {
 					if (!finished) {
-						that.assert(this.responseText, "Fetch text");
+						that.assert(this.responseText && this.responseText.length > 100,
+							"Fetched text via AJAX");
 						that.finish();
 						finished = true;
 					}
@@ -252,8 +310,9 @@ SPARK.load("SPARK.tester.js", function() {
 
 			this.wait(10000);
 
-			SPARK.getHttp('http://example.org/', callback);
-			SPARK.getHttp('http://localhost/', callback);
+			SPARK.getHttp('./tests.html', callback);
+			//SPARK.getHttp('http://example.org/', callback);
+			//SPARK.getHttp('http://localhost/', callback);
 
 		});
 

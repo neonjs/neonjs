@@ -303,6 +303,27 @@ SPARK.widget = (function() {
 		.styleRule('.SPARK-widget-flyout-host',
 			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 	
+	widgets.flyoutMenu = function(el, opts) {
+		var
+			i,
+			obj = widgets.flyout(el, opts);
+
+		var setupchooser = function(host) {
+			var
+				options = SPARK.select(host[0].firstChild.nextSibling.children),
+				selected = null;
+
+			SPARK.select(host[0].firstChild.nextSibling)
+				.addClass('SPARK-widget-flyoutMenu');
+			options.addClass('SPARK-widget-flyoutMenu-option');
+		};
+
+		for (i = el.length; i--;) {
+			setupchooser(SPARK.select(el[i].parentNode));
+		}
+
+	};
+
 	widgets.richtext = function(el, opts) {
 		var
 			container = el.insert({div:''}).addClass('SPARK-widget-richtext-container'),

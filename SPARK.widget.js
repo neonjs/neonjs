@@ -198,11 +198,13 @@ SPARK.widget = (function() {
 	// is 'br'.
 		var
 			i,
-			direction = (opts && opts.direction) || 'br',
+			direction = opts && opts.direction,
+			hover = opts && opts.hover,
 			horiz = /^[lr]/.test(direction),
-			contents = (opts && opts.contents) || {div:"This is a biiiiiiiiiiiiig test"},
+			contents = opts && opts.contents || [];
 			hosts = elements.insert({span:""})
-				.addClass("SPARK-widget-flyout-host");
+				.addClass("SPARK-widget-flyout-host"),
+			obj = {};
 		
 		var doactivate = function(evt) {
 			var
@@ -214,7 +216,7 @@ SPARK.widget = (function() {
 					.removeClass("SPARK-widget-flyout-hidden")
 					.style('right', 'auto')
 					.style('bottom', 'auto');
-				
+
 			hostpos = host.getPosition();
 			flyoutpos = flyout.style('left', horiz ? '100%' : '0')
 				.style('top', horiz ? '0' : '100%')
@@ -234,11 +236,45 @@ SPARK.widget = (function() {
 				windowpos.bottom+addrect-hostpos.bottom < dim ? 'bottom' :
 				/t/.test(direction) ? 'bottom' : 'top',
 				!horiz ? '100%' : '0');
+
+			if (opts && opts.onfocus) {
+				opts.onfocus.call(this, evt);
+			}
 		};
 
 		var deactivate = function(evt) {
 			SPARK.select(evt.currentTarget.firstChild.nextSibling)
 				.addClass("SPARK-widget-flyout-hidden");
+			if (opts && opts.onblur) {
+				opts.onblur.call(this, evt);
+			}
+		};
+
+		// closes the flyout (unless it's in hover mode)
+		// this works by removing focus from the flyout and its contents
+		obj.blur = function() {
+			var i, j, tmp;
+			for (i = hosts.length; i--;) {
+				hosts[i].blur();
+				tmp = hosts[i].getElementsByTagName("*");
+				for (j = tmp.length; j--;) {
+					if (tmp[j].blur) {
+						tmp[j].blur();
+					}
+				}
+			}
+		};
+
+		// dismantles the flyout, restoring the elements to
+		// how they were before the flyout was added
+		obj.teardown = function() {
+			var i;
+			hosts.unwatch(hover ? "mouseenter" : "focusin", doactivate)
+				.unwatch(hover ? "mouseleave" : "focusout", deactivate);
+			for (var i = hosts.length; i--;) {
+				SPARK.select(hosts[i]).insert(hosts[i].firstChild).remove();
+			}
+			obj = null;
 		};
 
 		hosts.append({div:""}).addClass("SPARK-widget-flyout")
@@ -252,22 +288,21 @@ SPARK.widget = (function() {
 
 		// add events
 		hosts.setAttribute("tabindex", "-1")
-			.watch("mouseenter", doactivate);
-		hosts.watch("mouseleave", deactivate);
+			.watch(hover ? "mouseenter" : "focusin", doactivate);
+		hosts.watch(hover ? "mouseleave" : "focusout", deactivate);
 
-		return {};
-
+		return obj;
 	};
 
 	// default styles for flyout
 	SPARK.styleRule('.SPARK-widget-flyout',
-		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff')
+		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px')
 		.styleRule('.SPARK-widget-flyout-hidden',
 			'display:none')
 		// some ugly-ish hacks for ie6/ie7:
 		.styleRule('.SPARK-widget-flyout-host',
 			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
-
+	
 	widgets.richtext = function(el, opts) {
 		var
 			container = el.insert({div:''}).addClass('SPARK-widget-richtext-container'),

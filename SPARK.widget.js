@@ -201,7 +201,7 @@ SPARK.widget = (function() {
 			direction = opts && opts.direction,
 			hover = opts && opts.hover,
 			horiz = /^[lr]/.test(direction),
-			contents = opts && opts.contents || [];
+			contents = (opts && opts.contents) || [],
 			hosts = elements.insert({span:""})
 				.addClass("SPARK-widget-flyout-host"),
 			obj = {};
@@ -271,7 +271,7 @@ SPARK.widget = (function() {
 			var i;
 			hosts.unwatch(hover ? "mouseenter" : "focusin", doactivate)
 				.unwatch(hover ? "mouseleave" : "focusout", deactivate);
-			for (var i = hosts.length; i--;) {
+			for (i = hosts.length; i--;) {
 				SPARK.select(hosts[i]).insert(hosts[i].firstChild).remove();
 			}
 			obj = null;

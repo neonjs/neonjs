@@ -198,16 +198,16 @@ SPARK.widget = (function() {
 	// is 'br'.
 		var
 			i,
-			direction = opts && opts.direction || 'br',
+			direction = (opts && opts.direction) || 'br',
 			horiz = /^[lr]/.test(direction),
-			contents = opts && opts.contents || {div:"This is a biiiiiiiiiiiiig test"},
-			windowpos = SPARK.select(window).getPosition(),
+			contents = (opts && opts.contents) || {div:"This is a biiiiiiiiiiiiig test"},
 			hosts = elements.insert({span:""})
 				.addClass("SPARK-widget-flyout-host");
 		
 		var doactivate = function(evt) {
 			var
 				hostpos, flyoutpos,
+				windowpos = SPARK.select(window).getPosition(),
 				addrect, dim,
 				host = SPARK.select(evt.currentTarget),
 				flyout = SPARK.select(evt.currentTarget.firstChild.nextSibling)
@@ -250,39 +250,23 @@ SPARK.widget = (function() {
 				.insert(elements[i]);
 		}
 
-
 		// add events
 		hosts.setAttribute("tabindex", "-1")
-			.watch("mouseenter", doactivate)
+			.watch("mouseenter", doactivate);
 		hosts.watch("mouseleave", deactivate);
 
 		return {};
 
-/*
-		var
-			myparent = SPARK.select(el[0].parentNode)
-				.setAttribute('tabindex', '0')
-				.addClass('SPARK-widget-flyout-parent'),
-			parentpos = myparent.getPosition(),
-			windowpos = SPARK.select(window).getPosition(),
-			mypos = el.addClass('SPARK-widget-flyout').getPosition(),
-			w = mypos.right-mypos.left,
-			h = mypos.bottom-mypos.top;
-
-		myparent.watch('focus', function(evt) {
-			el.style('display', 'block');
-		});
-		myparent.watch('blur', function(evt) {
-			el.style('display', 'none');
-		});
-
-		el.style(windowpos.right - parentpos.left < w && 
-			parentpos.right >= w ? 'right' : 'left', '0');
-
-		el.style(windowpos.bottom - parentpos.bottom < h &&
-			parentpos.top >= h ? 'bottom' : 'top', '100%');
-			*/
 	};
+
+	// default styles for flyout
+	SPARK.styleRule('.SPARK-widget-flyout',
+		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff')
+		.styleRule('.SPARK-widget-flyout-hidden',
+			'display:none')
+		// some ugly-ish hacks for ie6/ie7:
+		.styleRule('.SPARK-widget-flyout-host',
+			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 
 	widgets.richtext = function(el, opts) {
 		var
@@ -486,13 +470,6 @@ SPARK.widget = (function() {
 
 	// flyout
 	
-	SPARK.styleRule('.SPARK-widget-flyout',
-		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff')
-		.styleRule('.SPARK-widget-flyout-hidden',
-			'display:none')
-		// some ugly-ish hacks for ie6/ie7:
-		.styleRule('.SPARK-widget-flyout-host',
-			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 
 	// richtext
 

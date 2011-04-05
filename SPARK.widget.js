@@ -198,7 +198,7 @@ SPARK.widget = (function() {
 	// is 'br'.
 		var
 			i,
-			direction = opts && opts.direction || 'tr',
+			direction = opts && opts.direction || 'br',
 			horiz = /^[lr]/.test(direction),
 			contents = opts && opts.contents || {div:"This is a biiiiiiiiiiiiig test"},
 			windowpos = SPARK.select(window).getPosition(),
@@ -212,14 +212,14 @@ SPARK.widget = (function() {
 				host = SPARK.select(evt.currentTarget),
 				flyout = SPARK.select(evt.currentTarget.firstChild.nextSibling)
 					.removeClass("SPARK-widget-flyout-hidden")
-					.style('left', '100%').style('right', 'auto')
-					.style('top', 'auto').style('bottom', 'auto');
+					.style('right', 'auto')
+					.style('bottom', 'auto');
 				
 			hostpos = host.getPosition();
-			flyoutpos = flyout.getPosition();
-
-			flyout.style('left', 'auto'); // try work around
-			// issue where no width or height set yet
+			flyoutpos = flyout.style('left', horiz ? '100%' : '0')
+				.style('top', horiz ? '0' : '100%')
+				.getPosition();
+			flyout.style('top', 'auto').style('left', 'auto');
 
 			addrect = horiz ? 0 : hostpos.right - hostpos.left;
 			dim = flyoutpos.right - flyoutpos.left || 1e4;

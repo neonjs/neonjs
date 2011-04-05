@@ -644,7 +644,11 @@ SPARK = (function() {
 
 		if (!rel.length || !pos || rel[0] === window) {
 			return pos;
-		} 
+		}
+
+		// some browsers (tested in FF3.5/linux) cannot write to these
+		// so we clone them
+		pos = {left:pos.left,right:pos.right,top:pos.top,bottom:pos.bottom};
 
 		// document.body fallback should be necessary cos some browser modes
 		// ie quirks mode scroll the 'body' rather than the document

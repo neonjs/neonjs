@@ -439,10 +439,10 @@ SPARK = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			myeventname =
+			hoverevent =
 				eventname === 'mouseenter' ? 'mouseover' :
 				eventname === 'mouseleave' ? 'mouseout' :
-				eventname,
+				null,
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
@@ -453,19 +453,17 @@ SPARK = (function() {
 
 		for (i = this.length; i--;) {
 
-			mycallback =
-				eventname === 'mouseenter' ||
-				eventname === 'mouseleave' ? eventwrapfocus(callback) :
-				callback;
+			mycallback = callback;
 
 			if (this[i].addEventListener) {
 				// other browsers
-				this[i].addEventListener(captureevent || myeventname,
-					mycallback, !!captureevent);
+				this[i].addEventListener(hoverevent || captureevent || eventname,
+					hoverevent ? (mycallback = eventwrapfocus(mycallback)) : mycallback, !!captureevent);
 			} 
 			else {
 				// IE
-				this[i].attachEvent("on"+myeventname, (mycallback = eventwrapIE(mycallback, this[i])));
+				this[i].attachEvent("on"+eventname,
+					(mycallback = eventwrapIE(mycallback, this[i])));
 			}
 
 			this[i].$SPARKi = this[i].$SPARKi || ++gid;
@@ -481,10 +479,10 @@ SPARK = (function() {
 	// as the event was registered with.
 		var
 			i,
-			myeventname =
+			hoverevent =
 				eventname === 'mouseenter' ? 'mouseover' :
 				eventname === 'mouseleave' ? 'mouseout' :
-				eventname,
+				null,
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
@@ -497,14 +495,13 @@ SPARK = (function() {
 
 				if (this[i].addEventListener) {
 					// other browsers
-					this[i].removeEventListener(
-						captureevent || myeventname,
+					this[i].removeEventListener(hoverevent || captureevent || eventname,
 						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi],
 						!!captureevent);
 				} 
 				else {
 					// IE
-					this[i].detachEvent("on"+myeventname,
+					this[i].detachEvent("on"+eventname,
 						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi]);
 				}
 
@@ -1023,7 +1020,8 @@ SPARK = (function() {
 
 				// this may be desirable to free memory, not sure if it's a
 				// memory leak problem though
-				xmlhttprequest.onreadystatechange = null;
+				// fixme: this was causing an error in my IE6 tester
+				// xmlhttprequest.onreadystatechange = null;
 			}
 		};
 		xmlhttprequest.open(method || "GET", url, true);

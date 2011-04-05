@@ -210,7 +210,7 @@ SPARK.widget = (function() {
 				hostpos, flyoutpos,
 				addrect, dim,
 				host = SPARK.select(evt.currentTarget),
-				flyout = SPARK.select(evt.currentTarget.firstChild)
+				flyout = SPARK.select(evt.currentTarget.firstChild.nextSibling)
 					.removeClass("SPARK-widget-flyout-hidden")
 					.style('left', '100%').style('right', 'auto')
 					.style('top', 'auto').style('bottom', 'auto');
@@ -237,7 +237,7 @@ SPARK.widget = (function() {
 		};
 
 		var deactivate = function(evt) {
-			SPARK.select(evt.currentTarget.firstChild)
+			SPARK.select(evt.currentTarget.firstChild.nextSibling)
 				.addClass("SPARK-widget-flyout-hidden");
 		};
 
@@ -246,8 +246,8 @@ SPARK.widget = (function() {
 			.append(contents);
 
 		for (i = elements.length; i--;) {
-			SPARK.select(elements[i].previousSibling)
-				.append(elements[i]);
+			SPARK.select(elements[i].previousSibling.firstChild)
+				.insert(elements[i]);
 		}
 
 
@@ -490,8 +490,9 @@ SPARK.widget = (function() {
 		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff')
 		.styleRule('.SPARK-widget-flyout-hidden',
 			'display:none')
+		// some ugly-ish hacks for ie6/ie7:
 		.styleRule('.SPARK-widget-flyout-host',
-			'position:relative;display:inline-block;outline:none');
+			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 
 	// richtext
 

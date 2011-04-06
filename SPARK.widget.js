@@ -328,7 +328,7 @@ SPARK.widget = (function() {
 	};
 
 	SPARK.styleRule('.SPARK-widget-flyoutMenu',
-		'background:Menu;color:MenuText;min-width:10em;max-height:400px;overflow:auto')
+		'background:Menu;color:MenuText;min-width:7em;max-height:400px;overflow:auto')
 		.styleRule('.SPARK-widget-flyoutMenu a',
 			'display:block;text-decoration:none;color:inherit;padding:2px 4px')
 		.styleRule('.SPARK-widget-flyoutMenu a:hover',

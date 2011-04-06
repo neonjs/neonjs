@@ -204,9 +204,11 @@ SPARK.widget = (function() {
 			contents = (opts && opts.contents) || [],
 			hosts = elements.insert({span:""})
 				.addClass("SPARK-widget-flyout-host"),
+			flyouts = hosts.append({div:""}).addClass("SPARK-widget-flyout")
+				.addClass("SPARK-widget-flyout-hidden");
 			obj = {};
 		
-		var doactivate = function(evt) {
+		var onfocusin = function(evt) {
 			var
 				hostpos, flyoutpos,
 				windowpos = SPARK.select(window).getPosition(),
@@ -242,11 +244,18 @@ SPARK.widget = (function() {
 			}
 		};
 
-		var deactivate = function(evt) {
+		var onfocusout = function(evt) {
 			SPARK.select(evt.currentTarget.firstChild.nextSibling)
 				.addClass("SPARK-widget-flyout-hidden");
 			if (opts && opts.onblur) {
 				opts.onblur.call(this, evt);
+			}
+		};
+
+		var onkeydown = function(evt) {
+			if (evt.which === 27) {
+				obj.blur();
+				evt.stopPropagation();
 			}
 		};
 
@@ -269,17 +278,22 @@ SPARK.widget = (function() {
 		// how they were before the flyout was added
 		obj.teardown = function() {
 			var i;
-			hosts.unwatch(hover ? "mouseenter" : "focusin", doactivate)
-				.unwatch(hover ? "mouseleave" : "focusout", deactivate);
+			hosts.unwatch(hover ? "mouseenter" : "focusin", onfocusin)
+				.unwatch(hover ? "mouseleave" : "focusout", onfocusout)
+				.unwatch("keydown", onkeydown);
 			for (i = hosts.length; i--;) {
 				SPARK.select(hosts[i]).insert(hosts[i].firstChild).remove();
 			}
 			obj = null;
 		};
 
-		hosts.append({div:""}).addClass("SPARK-widget-flyout")
-			.addClass("SPARK-widget-flyout-hidden")
-			.append(contents);
+		// returns the flyout(s) itself (a div containing your contents)
+		// in a fresh SPARK object
+		obj.getFlyout = function() {
+			return SPARK.select(flyouts);
+		};
+
+		flyouts.append(contents);
 
 		for (i = elements.length; i--;) {
 			SPARK.select(elements[i].previousSibling.firstChild)
@@ -288,13 +302,13 @@ SPARK.widget = (function() {
 
 		// add events
 		hosts.setAttribute("tabindex", "-1")
-			.watch(hover ? "mouseenter" : "focusin", doactivate);
-		hosts.watch(hover ? "mouseleave" : "focusout", deactivate);
+			.watch(hover ? "mouseenter" : "focusin", onfocusin);
+		hosts.watch(hover ? "mouseleave" : "focusout", onfocusout);
+		hosts.watch("keydown", onkeydown);
 
 		return obj;
 	};
 
-	// default styles for flyout
 	SPARK.styleRule('.SPARK-widget-flyout',
 		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px')
 		.styleRule('.SPARK-widget-flyout-hidden',
@@ -306,23 +320,21 @@ SPARK.widget = (function() {
 	widgets.flyoutMenu = function(el, opts) {
 		var
 			i,
-			obj = widgets.flyout(el, opts);
-
-		var setupchooser = function(host) {
-			var
-				options = SPARK.select(host[0].firstChild.nextSibling.children),
-				selected = null;
-
-			SPARK.select(host[0].firstChild.nextSibling)
+			obj = widgets.flyout(el, opts),
+			flyouts = obj.getFlyout()
 				.addClass('SPARK-widget-flyoutMenu');
-			options.addClass('SPARK-widget-flyoutMenu-option');
-		};
 
-		for (i = el.length; i--;) {
-			setupchooser(SPARK.select(el[i].parentNode));
-		}
-
+		return obj;
 	};
+
+	SPARK.styleRule('.SPARK-widget-flyoutMenu',
+		'background:Menu;color:MenuText;min-width:10em;max-height:400px;overflow:auto')
+		.styleRule('.SPARK-widget-flyoutMenu a',
+			'display:block;text-decoration:none;color:inherit;padding:2px 4px')
+		.styleRule('.SPARK-widget-flyoutMenu a:hover',
+			'background:Highlight;color:HighlightText')
+		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
+			'list-style:none;padding:none;margin:none');
 
 	widgets.richtext = function(el, opts) {
 		var
@@ -438,7 +450,7 @@ SPARK.widget = (function() {
 			dropdown.append(stylechooseroption('Section heading', 'h2'));
 			dropdown.append(stylechooseroption('Section subheading', 'h3'));
 			dropdown.append(stylechooseroption('Formatted code', 'pre'));
-			widgets.flyout(chooser);
+			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1",$href:"#"},{a:"Link 2",$href:"#"}]});
 
 			teardowns.push(function() {
 				dropdown.remove();

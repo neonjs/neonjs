@@ -205,7 +205,7 @@ SPARK.widget = (function() {
 			hosts = elements.insert({span:""})
 				.addClass("SPARK-widget-flyout-host"),
 			flyouts = hosts.append({div:""}).addClass("SPARK-widget-flyout")
-				.addClass("SPARK-widget-flyout-hidden");
+				.addClass("SPARK-widget-flyout-hidden"),
 			obj = {};
 		
 		var onfocusin = function(evt) {

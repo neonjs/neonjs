@@ -313,10 +313,10 @@ SPARK.widget = (function() {
 	};
 
 	SPARK.styleRule('.SPARK-widget-flyout',
-		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px;box-shadow:2px 2px 2px rgba(0,0,0,0.5)')
+		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px;box-shadow:0 4px 10px rgba(0,0,0,0.16)')
 		.styleRule('.SPARK-widget-flyout-hidden',
 			'display:none')
-		// some ugly-ish hacks for ie6/ie7:
+		// some ugly-ish hacks for ie6/ie7.  the broken background-image makes transparent areas part of the focus:
 		.styleRule('.SPARK-widget-flyout-host',
 			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 	
@@ -331,7 +331,7 @@ SPARK.widget = (function() {
 	};
 
 	SPARK.styleRule('.SPARK-widget-flyoutMenu',
-		'background:Menu;color:MenuText;min-width:7em;max-height:400px;overflow:auto')
+		'background:#fff;color:#000;min-width:8em;max-height:400px;overflow:auto')
 		.styleRule('.SPARK-widget-flyoutMenu a',
 			'display:block;text-decoration:none;color:MenuText;padding:2px 4px')
 		.styleRule('.SPARK-widget-flyoutMenu a:hover',

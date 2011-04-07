@@ -208,7 +208,7 @@ SPARK.widget = (function() {
 				.addClass("SPARK-widget-flyout-hidden"),
 			obj = {};
 		
-		var onfocusin = function(evt) {
+		var show = function(evt) {
 			var
 				hostpos, flyoutpos,
 				windowpos = SPARK.select(window).getPosition(),
@@ -244,7 +244,7 @@ SPARK.widget = (function() {
 			}
 		};
 
-		var onfocusout = function(evt) {
+		var hide = function(evt) {
 			SPARK.select(evt.currentTarget.firstChild.nextSibling)
 				.addClass("SPARK-widget-flyout-hidden");
 			if (opts && opts.onblur) {
@@ -278,8 +278,8 @@ SPARK.widget = (function() {
 		// how they were before the flyout was added
 		obj.teardown = function() {
 			var i;
-			hosts.unwatch(hover ? "mouseenter" : "focusin", onfocusin)
-				.unwatch(hover ? "mouseleave" : "focusout", onfocusout)
+			hosts.unwatch(hover ? "mouseenter" : "focusin", show)
+				.unwatch(hover ? "mouseleave" : "focusout", hide)
 				.unwatch("keydown", onkeydown)
 				.unwatch("keypress", onkeydown);
 			for (i = hosts.length; i--;) {
@@ -303,8 +303,8 @@ SPARK.widget = (function() {
 
 		// add events
 		hosts.setAttribute("tabindex", "-1")
-			.watch(hover ? "mouseenter" : "focusin", onfocusin);
-		hosts.watch(hover ? "mouseleave" : "focusout", onfocusout);
+			.watch(hover ? "mouseenter" : "focusin", show);
+		hosts.watch(hover ? "mouseleave" : "focusout", hide);
 		hosts.watch("keydown", onkeydown);
 		// ie in ietester does not fire keydown events??
 		hosts.watch("keypress", onkeydown);
@@ -322,10 +322,26 @@ SPARK.widget = (function() {
 	
 	widgets.flyoutMenu = function(el, opts) {
 		var
-			i,
+			i, j, tmp, len,
+			collect = [],
+			links,
 			obj = widgets.flyout(el, opts),
 			flyouts = obj.getFlyout()
 				.addClass('SPARK-widget-flyoutMenu');
+
+		for (i = flyouts.length; i--;) {
+			tmp = flyouts[i].getElementsByTagName("a");
+			for (j = 0, len = tmp.length; j < len; j++) {
+				collect.push(tmp[j]);
+			}
+		}
+
+		links = SPARK.select(collect)
+			.setAttribute('tabindex', '-1');
+
+		links.watch('click', function(evt) {
+			evt.preventDefault();
+		});
 
 		return obj;
 	};
@@ -333,7 +349,7 @@ SPARK.widget = (function() {
 	SPARK.styleRule('.SPARK-widget-flyoutMenu',
 		'background:#fff;color:#000;min-width:8em;max-height:400px;overflow:auto')
 		.styleRule('.SPARK-widget-flyoutMenu a',
-			'display:block;text-decoration:none;color:MenuText;padding:2px 4px')
+			'display:block;text-decoration:none;color:MenuText;padding:2px 4px;cursor:default')
 		.styleRule('.SPARK-widget-flyoutMenu a:hover',
 			'background:Highlight;color:HighlightText')
 		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
@@ -453,7 +469,7 @@ SPARK.widget = (function() {
 			dropdown.append(stylechooseroption('Section heading', 'h2'));
 			dropdown.append(stylechooseroption('Section subheading', 'h3'));
 			dropdown.append(stylechooseroption('Formatted code', 'pre'));
-			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1",$href:"#"},{a:"Link 2",$href:"http://example.com"}]});
+			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
 
 			teardowns.push(function() {
 				dropdown.remove();

@@ -280,7 +280,8 @@ SPARK.widget = (function() {
 			var i;
 			hosts.unwatch(hover ? "mouseenter" : "focusin", onfocusin)
 				.unwatch(hover ? "mouseleave" : "focusout", onfocusout)
-				.unwatch("keydown", onkeydown);
+				.unwatch("keydown", onkeydown)
+				.unwatch("keypress", onkeydown);
 			for (i = hosts.length; i--;) {
 				SPARK.select(hosts[i]).insert(hosts[i].firstChild).remove();
 			}
@@ -305,12 +306,14 @@ SPARK.widget = (function() {
 			.watch(hover ? "mouseenter" : "focusin", onfocusin);
 		hosts.watch(hover ? "mouseleave" : "focusout", onfocusout);
 		hosts.watch("keydown", onkeydown);
+		// ie in ietester does not fire keydown events??
+		hosts.watch("keypress", onkeydown);
 
 		return obj;
 	};
 
 	SPARK.styleRule('.SPARK-widget-flyout',
-		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px')
+		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px;box-shadow:2px 2px 2px rgba(0,0,0,0.5)')
 		.styleRule('.SPARK-widget-flyout-hidden',
 			'display:none')
 		// some ugly-ish hacks for ie6/ie7:
@@ -330,7 +333,7 @@ SPARK.widget = (function() {
 	SPARK.styleRule('.SPARK-widget-flyoutMenu',
 		'background:Menu;color:MenuText;min-width:7em;max-height:400px;overflow:auto')
 		.styleRule('.SPARK-widget-flyoutMenu a',
-			'display:block;text-decoration:none;color:inherit;padding:2px 4px')
+			'display:block;text-decoration:none;color:MenuText;padding:2px 4px')
 		.styleRule('.SPARK-widget-flyoutMenu a:hover',
 			'background:Highlight;color:HighlightText')
 		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
@@ -450,7 +453,7 @@ SPARK.widget = (function() {
 			dropdown.append(stylechooseroption('Section heading', 'h2'));
 			dropdown.append(stylechooseroption('Section subheading', 'h3'));
 			dropdown.append(stylechooseroption('Formatted code', 'pre'));
-			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1",$href:"#"},{a:"Link 2",$href:"#"}]});
+			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1",$href:"#"},{a:"Link 2",$href:"http://example.com"}]});
 
 			teardowns.push(function() {
 				dropdown.remove();

@@ -198,58 +198,82 @@ SPARK.widget = (function() {
 	// is 'br'.
 		var
 			i,
-			direction = opts && opts.direction,
-			hover = opts && opts.hover,
+			myopts = opts || {},
+			direction = myopts.direction,
 			horiz = /^[lr]/.test(direction),
-			contents = (opts && opts.contents) || [],
+			fuzz = null,
 			hosts = elements.insert({span:""})
 				.addClass("SPARK-widget-flyout-host"),
 			flyouts = hosts.append({div:""}).addClass("SPARK-widget-flyout")
 				.addClass("SPARK-widget-flyout-hidden"),
 			obj = {};
 		
-		var show = function(evt) {
+		var onfocusin = function(evt) {
 			var
 				hostpos, flyoutpos,
-				windowpos = SPARK.select(window).getPosition(),
+				windowpos,
 				addrect, dim,
 				host = SPARK.select(evt.currentTarget),
-				flyout = SPARK.select(evt.currentTarget.firstChild.nextSibling)
+				flyout = SPARK.select(evt.currentTarget.firstChild.nextSibling);
+
+			if (fuzz === evt.currentTarget) {
+				fuzz = null;
+			}
+			else {
+				windowpos = SPARK.select(window).getPosition();
+				hostpos = host.getPosition();
+				flyoutpos = flyout.style('left', horiz ? '100%' : '0')
+					.style('top', horiz ? '0' : '100%')
+					.style('right', 'auto', 'bottom', 'auto')
 					.removeClass("SPARK-widget-flyout-hidden")
-					.style('right', 'auto')
-					.style('bottom', 'auto');
+					.style('opacity', '1')
+					.getPosition();
+				flyout.style('top', 'auto').style('left', 'auto');
 
-			hostpos = host.getPosition();
-			flyoutpos = flyout.style('left', horiz ? '100%' : '0')
-				.style('top', horiz ? '0' : '100%')
-				.getPosition();
-			flyout.style('top', 'auto').style('left', 'auto');
+				addrect = horiz ? 0 : hostpos.right - hostpos.left;
+				dim = flyoutpos.right - flyoutpos.left || 1e4;
+				flyout.style(hostpos.left+addrect < dim ? 'left' :
+					windowpos.right+addrect-hostpos.right < dim ? 'right' :
+					/l/.test(direction) ? 'right' : 'left',
+					horiz ? '100%' : '0');
 
-			addrect = horiz ? 0 : hostpos.right - hostpos.left;
-			dim = flyoutpos.right - flyoutpos.left || 1e4;
-			flyout.style(hostpos.left+addrect < dim ? 'left' :
-				windowpos.right+addrect-hostpos.right < dim ? 'right' :
-				/l/.test(direction) ? 'right' : 'left',
-				horiz ? '100%' : '0');
+				addrect = !horiz ? 0 : hostpos.bottom - hostpos.top;
+				dim = flyoutpos.bottom - flyoutpos.top || 1e3;
+				flyout.style(hostpos.top+addrect < dim ? 'top' :
+					windowpos.bottom+addrect-hostpos.bottom < dim ? 'bottom' :
+					/t/.test(direction) ? 'bottom' : 'top',
+					!horiz ? '100%' : '0');
 
-			addrect = !horiz ? 0 : hostpos.bottom - hostpos.top;
-			dim = flyoutpos.bottom - flyoutpos.top || 1e3;
-			flyout.style(hostpos.top+addrect < dim ? 'top' :
-				windowpos.bottom+addrect-hostpos.bottom < dim ? 'bottom' :
-				/t/.test(direction) ? 'bottom' : 'top',
-				!horiz ? '100%' : '0');
-
-			if (opts && opts.onfocus) {
-				opts.onfocus.call(this, evt);
+				if (myopts.onfocus) {
+					myopts.onfocus.call(this, evt);
+				}
 			}
 		};
 
-		var hide = function(evt) {
-			SPARK.select(evt.currentTarget.firstChild.nextSibling)
-				.addClass("SPARK-widget-flyout-hidden");
-			if (opts && opts.onblur) {
-				opts.onblur.call(this, evt);
-			}
+		var onfocusout = function(evt) {
+			var
+				element = this;
+			fuzz = element;
+			setTimeout(function() {
+				var
+					flyout;
+				if (fuzz === element) {
+					flyout = SPARK.select(element.firstChild.nextSibling);
+					if (myopts.fade) {
+						flyout.style('opacity', '1', '0',
+							myopts.fade > 1 ? myopts.fade : null, null, function() {
+							flyout.addClass("SPARK-widget-flyout-hidden");
+						});
+					}
+					else {
+						flyout.addClass("SPARK-widget-flyout-hidden");
+					}
+					if (myopts.onblur) {
+						myopts.onblur.call(element);
+					}
+					fuzz = null;
+				}
+			}, 0);
 		};
 
 		var onkeydown = function(evt) {
@@ -278,8 +302,8 @@ SPARK.widget = (function() {
 		// how they were before the flyout was added
 		obj.teardown = function() {
 			var i;
-			hosts.unwatch(hover ? "mouseenter" : "focusin", show)
-				.unwatch(hover ? "mouseleave" : "focusout", hide)
+			hosts.unwatch(myopts.hover ? "mouseenter" : "focusin", onfocusin)
+				.unwatch(myopts.hover ? "mouseleave" : "focusout", onfocusout)
 				.unwatch("keydown", onkeydown)
 				.unwatch("keypress", onkeydown);
 			for (i = hosts.length; i--;) {
@@ -294,7 +318,7 @@ SPARK.widget = (function() {
 			return SPARK.select(flyouts);
 		};
 
-		flyouts.append(contents);
+		flyouts.append(myopts.contents || []);
 
 		for (i = elements.length; i--;) {
 			SPARK.select(elements[i].previousSibling.firstChild)
@@ -303,8 +327,8 @@ SPARK.widget = (function() {
 
 		// add events
 		hosts.setAttribute("tabindex", "-1")
-			.watch(hover ? "mouseenter" : "focusin", show);
-		hosts.watch(hover ? "mouseleave" : "focusout", hide);
+			.watch(myopts.hover ? "mouseenter" : "focusin", onfocusin);
+		hosts.watch(myopts.hover ? "mouseleave" : "focusout", onfocusout);
 		hosts.watch("keydown", onkeydown);
 		// ie in ietester does not fire keydown events??
 		hosts.watch("keypress", onkeydown);
@@ -324,13 +348,14 @@ SPARK.widget = (function() {
 		var
 			i, j, tmp, len,
 			collect = [],
+			myopts = opts || {},
 			links,
-			obj = widgets.flyout(el, opts),
+			obj = widgets.flyout(el, myopts),
 			flyouts = obj.getFlyout()
 				.addClass('SPARK-widget-flyoutMenu');
 
 		for (i = flyouts.length; i--;) {
-			tmp = flyouts[i].getElementsByTagName("a");
+			tmp = flyouts[i].getElementsByTagName(myopts.entrytag || "a");
 			for (j = 0, len = tmp.length; j < len; j++) {
 				collect.push(tmp[j]);
 			}
@@ -340,7 +365,13 @@ SPARK.widget = (function() {
 			.setAttribute('tabindex', '-1');
 
 		links.watch('click', function(evt) {
-			evt.preventDefault();
+			if (myopts.onmenuselect) {
+				myopts.onmenuselect.call(this, evt);
+				evt.preventDefault();
+			}
+			if (!myopts.remainafterselect) {
+				obj.blur();
+			}
 		});
 
 		return obj;
@@ -382,7 +413,7 @@ SPARK.widget = (function() {
 
 		var addbutton = function(command, num, title) {
 			var
-				button = toolbar.append({button:'',$title:title})
+				button = toolbar.append({a:'',$title:title})
 					.addClass('SPARK-widget-richtext-toolbar-selectable'),
 				state;
 
@@ -448,8 +479,9 @@ SPARK.widget = (function() {
 		var addstylechooser = function() {
 			var
 				chooser = toolbar.append({span:'',$title:'Paragraph style'})
-					.addClass('SPARK-widget-richtext-toolbar-dropper'),
-				text = chooser.append({button:'Paragraph style'})
+					.addClass('SPARK-widget-richtext-toolbar-dropper')
+					.addClass('SPARK-widget-richtext-toolbar-selectable'),
+				text = chooser.append({a:'Paragraph style'})
 					.addClass('SPARK-widget-richtext-toolbar-label'),
 				currentformat,
 				dropdown = chooser.append({div:""})
@@ -566,7 +598,7 @@ SPARK.widget = (function() {
 			'font:12px sans-serif;margin:0 0 1px 0;background:#f9f6f3')
 		// button text needs to be re-set in FF (at least)
 		.styleRule('.SPARK-widget-richtext-toolbar-selectable',
-			'border:none;padding:0;background:transparent;font:inherit;overflow:visible')
+			'border:none;padding:0;background:transparent;font:inherit;overflow:visible;display:inline-block;padding:5px;cursor:default')
 		.styleRule('.SPARK-widget-richtext-toolbar-selectable:hover',
 			'background:#edd')
 		.styleRule('.SPARK-widget-richtext-toolbar-selectable .SPARK-widget-richtext-active',
@@ -585,7 +617,7 @@ SPARK.widget = (function() {
 		.styleRule('.SPARK-widget-richtext-toolbar-altnotice',
 			'padding:5px;text-align:right')
 		.styleRule('.SPARK-widget-richtext-toolbar-icon',
-			'display:inline-block;vertical-align:middle;margin:4px 3px 5px')
+			'display:inline-block;vertical-align:middle')
 		.styleRule('.SPARK-widget-richtext-toolbar-label',
 			'vertical-align:middle;margin: 4px 3px')
 		.styleRule('.SPARK-widget-richtext-toolbar-dropper',

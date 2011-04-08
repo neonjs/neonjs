@@ -799,7 +799,7 @@ SPARK = (function() {
 
 			// remove existing animations on same property
 			for (j = animations.length; j--;) {
-				if (animations[j][0] === this[i].style &&
+				if (animations[j][0] === this[i] &&
 					animations[j][1] === style) {
 					animations.splice(j, 1);
 				}

@@ -197,7 +197,7 @@ SPARK.widget = (function() {
 	// to fly towards the right from the left ('r') or vice versa.  default
 	// is 'br'.
 		var
-			i,
+			i, el,
 			myopts = opts || {},
 			direction = myopts.direction,
 			horiz = /^[lr]/.test(direction),
@@ -208,46 +208,47 @@ SPARK.widget = (function() {
 				.addClass("SPARK-widget-flyout-hidden"),
 			obj = {};
 		
-		var onfocusin = function(evt) {
+		var show = function(host) {
 			var
 				hostpos, flyoutpos,
 				windowpos,
 				addrect, dim,
-				host = SPARK.select(evt.currentTarget),
-				flyout = SPARK.select(evt.currentTarget.firstChild.nextSibling);
+				flyout = SPARK.select(host[0].firstChild.nextSibling);
 
-			if (fuzz === evt.currentTarget) {
-				fuzz = null;
+			windowpos = SPARK.select(window).getPosition();
+			hostpos = host.getPosition();
+			flyoutpos = flyout.style('left', horiz ? '100%' : '0')
+				.style('top', horiz ? '0' : '100%')
+				.style('right', 'auto', 'bottom', 'auto')
+				.removeClass("SPARK-widget-flyout-hidden")
+				.style('opacity', '1')
+				.getPosition();
+			flyout.style('top', 'auto').style('left', 'auto');
+
+			addrect = horiz ? 0 : hostpos.right - hostpos.left;
+			dim = flyoutpos.right - flyoutpos.left || 1e4;
+			flyout.style(hostpos.left+addrect < dim ? 'left' :
+				windowpos.right+addrect-hostpos.right < dim ? 'right' :
+				/l/.test(direction) ? 'right' : 'left',
+				horiz ? '100%' : '0');
+
+			addrect = !horiz ? 0 : hostpos.bottom - hostpos.top;
+			dim = flyoutpos.bottom - flyoutpos.top || 1e3;
+			flyout.style(hostpos.top+addrect < dim ? 'top' :
+				windowpos.bottom+addrect-hostpos.bottom < dim ? 'bottom' :
+				/t/.test(direction) ? 'bottom' : 'top',
+				!horiz ? '100%' : '0');
+
+			if (myopts.onfocus) {
+				myopts.onfocus.call(this, evt);
 			}
-			else {
-				windowpos = SPARK.select(window).getPosition();
-				hostpos = host.getPosition();
-				flyoutpos = flyout.style('left', horiz ? '100%' : '0')
-					.style('top', horiz ? '0' : '100%')
-					.style('right', 'auto', 'bottom', 'auto')
-					.removeClass("SPARK-widget-flyout-hidden")
-					.style('opacity', '1')
-					.getPosition();
-				flyout.style('top', 'auto').style('left', 'auto');
+		}
 
-				addrect = horiz ? 0 : hostpos.right - hostpos.left;
-				dim = flyoutpos.right - flyoutpos.left || 1e4;
-				flyout.style(hostpos.left+addrect < dim ? 'left' :
-					windowpos.right+addrect-hostpos.right < dim ? 'right' :
-					/l/.test(direction) ? 'right' : 'left',
-					horiz ? '100%' : '0');
-
-				addrect = !horiz ? 0 : hostpos.bottom - hostpos.top;
-				dim = flyoutpos.bottom - flyoutpos.top || 1e3;
-				flyout.style(hostpos.top+addrect < dim ? 'top' :
-					windowpos.bottom+addrect-hostpos.bottom < dim ? 'bottom' :
-					/t/.test(direction) ? 'bottom' : 'top',
-					!horiz ? '100%' : '0');
-
-				if (myopts.onfocus) {
-					myopts.onfocus.call(this, evt);
-				}
+		var onfocusin = function(evt) {
+			if (fuzz !== evt.currentTarget) {
+				return show(SPARK.select(evt.currentTarget));
 			}
+			fuzz = null;
 		};
 
 		var onfocusout = function(evt) {
@@ -320,11 +321,6 @@ SPARK.widget = (function() {
 
 		flyouts.append(myopts.contents || []);
 
-		for (i = elements.length; i--;) {
-			SPARK.select(elements[i].previousSibling.firstChild)
-				.insert(elements[i]);
-		}
-
 		// add events
 		hosts.setAttribute("tabindex", "-1")
 			.watch(myopts.hover ? "mouseenter" : "focusin", onfocusin);
@@ -332,6 +328,16 @@ SPARK.widget = (function() {
 		hosts.watch("keydown", onkeydown);
 		// ie in ietester does not fire keydown events??
 		hosts.watch("keypress", onkeydown);
+
+		for (i = elements.length; i--;) {
+			SPARK.select(elements[i].previousSibling.firstChild)
+				.insert(elements[i]);
+			try {
+				for (;el;
+			}
+			catch (e) {};
+			
+		}
 
 		return obj;
 	};

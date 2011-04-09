@@ -202,12 +202,13 @@ SPARK.widget = (function() {
 			direction = myopts.direction,
 			horiz = /^[lr]/.test(direction),
 			fuzz = null,
+			wasfocused,
 			hosts = elements.insert({span:""})
 				.addClass("SPARK-widget-flyout-host"),
 			flyouts = hosts.append({div:""}).addClass("SPARK-widget-flyout")
 				.addClass("SPARK-widget-flyout-hidden"),
 			obj = {};
-		
+
 		var show = function(host) {
 			var
 				hostpos, flyoutpos,
@@ -322,6 +323,7 @@ SPARK.widget = (function() {
 		flyouts.append(myopts.contents || []);
 
 		// add events
+		
 		hosts.setAttribute("tabindex", "-1")
 			.watch(myopts.hover ? "mouseenter" : "focusin", onfocusin);
 		hosts.watch(myopts.hover ? "mouseleave" : "focusout", onfocusout);
@@ -330,13 +332,23 @@ SPARK.widget = (function() {
 		hosts.watch("keypress", onkeydown);
 
 		for (i = elements.length; i--;) {
-			SPARK.select(elements[i].previousSibling.firstChild)
-				.insert(elements[i]);
+			wasfocused = null;
 			try {
-				for (;el;
+				for (el = document.activeElement;el;el = el.parentNode) {
+					if (el === elements[i]) {
+						wasfocused = el;
+					}
+				}
 			}
 			catch (e) {};
-			
+			SPARK.select(elements[i].previousSibling.firstChild)
+				.insert(elements[i]);
+			if (wasfocused) {
+				// at least in FF3.5, the previous movement using insert()
+				// seems to mess up keyboard focus - we focus() to workaround
+				wasfocused.focus();
+				show(SPARK.select(elements[i].parentNode));
+			}
 		}
 
 		return obj;
@@ -420,6 +432,7 @@ SPARK.widget = (function() {
 		var addbutton = function(command, num, title) {
 			var
 				button = toolbar.append({a:'',$title:title})
+					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable'),
 				state;
 
@@ -484,7 +497,8 @@ SPARK.widget = (function() {
 
 		var addstylechooser = function() {
 			var
-				chooser = toolbar.append({span:'',$title:'Paragraph style'})
+				chooser = toolbar.append({a:'',$title:'Paragraph style'})
+					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable'),
 				text = chooser.append({a:'Paragraph style'})
 					.addClass('SPARK-widget-richtext-toolbar-label'),
@@ -506,6 +520,7 @@ SPARK.widget = (function() {
 			dropdown.append(stylechooseroption('Section heading', 'h2'));
 			dropdown.append(stylechooseroption('Section subheading', 'h3'));
 			dropdown.append(stylechooseroption('Formatted code', 'pre'));
+			chooser[0].focus();
 			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
 
 			teardowns.push(function() {

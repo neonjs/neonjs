@@ -187,6 +187,10 @@ SPARK.widget = (function() {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
+	/*******************************************
+	 *      FLYOUT - A POP-UP BOX/FLYOUT       *
+	 *******************************************/
+
 	widgets.flyout = function(elements, opts) {
 	// flyout widget
 	// turns the selected element into a hot zone which when clicked
@@ -241,9 +245,9 @@ SPARK.widget = (function() {
 				!horiz ? '100%' : '0');
 
 			if (myopts.onfocus) {
-				myopts.onfocus.call(this, evt);
+				myopts.onfocus.call(host[0]);
 			}
-		}
+		};
 
 		var onfocusin = function(evt) {
 			if (fuzz !== evt.currentTarget) {
@@ -340,7 +344,7 @@ SPARK.widget = (function() {
 					}
 				}
 			}
-			catch (e) {};
+			catch (e) {}
 			SPARK.select(elements[i].previousSibling.firstChild)
 				.insert(elements[i]);
 			if (wasfocused) {
@@ -362,7 +366,16 @@ SPARK.widget = (function() {
 		.styleRule('.SPARK-widget-flyout-host',
 			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 	
+	/*******************************************
+	 *       FLYOUTMENU - DROP-DOWN MENU       *
+	 *******************************************/
+
 	widgets.flyoutMenu = function(el, opts) {
+	// creates a fly-out window with a selectable menu in it.
+	// It takes the same options as flyout() with some extras.
+	// opt.contents is the contents, and any "a" element in
+	// that will turn into a menu option.
+	// You can change that with myopts.optiontag (default "a").
 		var
 			i, j, tmp, len,
 			collect = [],
@@ -373,7 +386,7 @@ SPARK.widget = (function() {
 				.addClass('SPARK-widget-flyoutMenu');
 
 		for (i = flyouts.length; i--;) {
-			tmp = flyouts[i].getElementsByTagName(myopts.entrytag || "a");
+			tmp = flyouts[i].getElementsByTagName(myopts.optiontag || "a");
 			for (j = 0, len = tmp.length; j < len; j++) {
 				collect.push(tmp[j]);
 			}
@@ -404,20 +417,27 @@ SPARK.widget = (function() {
 		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
 			'list-style:none;padding:none;margin:none');
 
+	/*******************************************
+	 *       RICHTEXT - RICH TEXT EDITOR       *
+	 *******************************************/
+
 	widgets.richtext = function(el, opts) {
 		var
-			container = el.insert({div:''}).addClass('SPARK-widget-richtext-container'),
+			i,
+			myopts = opts || {},
+			container = el.insert({div:''})
+				.addClass('SPARK-widget-richtext-container'),
 			editor = container.append(canedit ? {div:''} : {textarea:''})
 				.addClass('SPARK-widget-richtext-editor'),
 			toolbar = editor.insert({div:''}).addClass('SPARK-widget-richtext-toolbar'),
-			source,
-			iconsize = (opts && opts.iconsize) || 14,
+			source, thisel,
+			iconsize = myopts.iconsize || 14,
 			updators = [],
 			teardowns = [];
 
-		/*******************************************
-		 * HELPER FUNCTIONS FOR THE EDITOR CONTROL *
-		 *******************************************/
+		var preventdefault = function(evt) {
+			evt.preventDefault();
+		};
 
 		var updatecontrols = function() {
 			setTimeout(function() {
@@ -431,14 +451,14 @@ SPARK.widget = (function() {
 
 		var addbutton = function(command, num, title) {
 			var
-				button = toolbar.append({a:'',$title:title})
+				button = toolbar.append({div:'',$title:title})
+					//.setAttribute('unselectable', 'on') 
 					.setAttribute('tabindex', '0')
-					.addClass('SPARK-widget-richtext-toolbar-selectable'),
-				state;
+					.addClass('SPARK-widget-richtext-toolbar-selectable');
 
-			var clickhandler = function() {
-				document.execCommand('useCSS', 0, 1);
-				document.execCommand(command, 0, null);
+			var clickhandler = function(evt) {
+				document.execCommand('useCSS', false, 1);
+				document.execCommand(command, false, null);
 				updatecontrols();
 			};
 			
@@ -458,19 +478,14 @@ SPARK.widget = (function() {
 					value;
 				try {
 					value = document.queryCommandState(command);
-					if (value !== state) {
-						if (value) {
-							button.addClass('SPARK-widget-richtext-active');
-						}
-						else {
-							button.removeClass('SPARK-widget-richtext-active');
-						}
-						state = value;
+					if (value) {
+						button.addClass('SPARK-widget-richtext-active');
+					}
+					else {
+						button.removeClass('SPARK-widget-richtext-active');
 					}
 				}
-				catch (e) {
-					button.removeClass('SPARK-widget-richtext-active');
-				}
+				catch (e) {}
 			});
 		};
 
@@ -479,35 +494,14 @@ SPARK.widget = (function() {
 				.addClass('SPARK-widget-richtext-toolbar-separator');
 		};
 
-		var stylechooseroption = function(label, container) {
-			var
-				option = SPARK.build({div:""}),
-				link,
-				spec = {};
-
-			spec[container] = '';
-			link = option.append(spec).append({a:label,$href:'#'});
-
-			link.watch('click', function() {
-				document.execCommand('formatblock', false, '<h1>');
-			});
-
-			return option;
-		};
-
 		var addstylechooser = function() {
 			var
 				chooser = toolbar.append({a:'',$title:'Paragraph style'})
 					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable'),
 				text = chooser.append({a:'Paragraph style'})
-					.addClass('SPARK-widget-richtext-toolbar-label'),
-				currentformat,
-				dropdown = chooser.append({div:""})
-					.style('display', 'none')
-					.addClass('SPARK-widget-richtext-toolbar-dropdown');
+					.addClass('SPARK-widget-richtext-toolbar-label');
 
-			
 			chooser.append({span:""}) // drop arrow icon
 				.addClass('SPARK-widget-richtext-toolbar-icon')
 				.style('width', iconsize+"px")
@@ -515,16 +509,10 @@ SPARK.widget = (function() {
 				.style('background',
 					'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
 
-			dropdown.append(stylechooseroption('Normal text', 'p'));
-			dropdown.append(stylechooseroption('Page heading', 'h1'));
-			dropdown.append(stylechooseroption('Section heading', 'h2'));
-			dropdown.append(stylechooseroption('Section subheading', 'h3'));
-			dropdown.append(stylechooseroption('Formatted code', 'pre'));
-			chooser[0].focus();
-			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
+			//widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
 
 			teardowns.push(function() {
-				dropdown.remove();
+				//dropdown.remove();
 			});
 
 			updators.push(function () {
@@ -532,15 +520,12 @@ SPARK.widget = (function() {
 					value, part;
 				try {
 					value = document.queryCommandValue('formatblock');
-					if (value !== currentformat) {
-						part = /^(?:h|Heading )(\d)$/.exec(value);
-						text.empty().append(
-							part ? 'Heading '+part[1] :
-							value === 'pre' || value === 'Formatted' ? 'Formatted code' :
-							'Normal text'
-						);
-						currentformat = value;
-					}
+					part = /^(?:h|Heading )(\d)$/.exec(value);
+					text.empty().append(
+						part ? 'Heading '+part[1] :
+						value === 'pre' || value === 'Formatted' ? 'Formatted code' :
+						'Normal text'
+					);
 				}
 				catch (e) {}
 			});
@@ -548,28 +533,34 @@ SPARK.widget = (function() {
 
 		var populatetoolbar = function() {
 
+			toolbar.watch('mousedown', preventdefault);
+
 			if (!canedit) {
 				toolbar.append({div:"HTML tags allowed"})
 					.addClass('SPARK-widget-richtext-toolbar-altnotice');
 				return;
 			}
 
-			if (!opts || opts.stylechooser === undefined || opts.stylechooser) {
+			if (myopts.stylechooser === undefined || myopts.stylechooser) {
 				addstylechooser();
 				addseparator();
 			}
 			addbutton('bold', 0, 'Bold');
 			addbutton('italic', 1, 'Italic');
-			if (!opts || opts.listbuttons === undefined || opts.listbuttons) {
+			if (myopts.listbuttons === undefined || myopts.listbuttons) {
 				addseparator();
 				addbutton('insertunorderedlist', 2, 'Insert bulleted list');
 				addbutton('insertorderedlist', 3, 'Insert numbered list');
 			}
-			if (!opts || opts.indentbuttons === undefined || opts.indentbuttons) {
+			if (myopts.indentbuttons === undefined || myopts.indentbuttons) {
 				addseparator();
 				addbutton('outdent', 4, 'Decrease indent');
 				addbutton('indent', 5, 'Increase indent');
 			}
+
+			teardowns.push(function() {
+				toolbar.unwatch('mousedown', preventdefault);
+			});
 		};
 
 		if (canedit) {
@@ -579,25 +570,27 @@ SPARK.widget = (function() {
 			editor.watch('click', updatecontrols);
 		}
 
-		// transfer to new editor and remove old
-		if (el[0].tagName.toLowerCase() === 'textarea') {
-			source = el[0].value;
-			editor.style('minHeight', el.getStyle('height'));
-			el.insert({
-				input:'',
-				$type:'hidden',
-				$name:el[0].name,
-				$value:el[0].value
-				});
-			el.remove();
+		for (i = el.length; i--;) {
+			// transfer to new editor and remove old
+			if (el[i].tagName.toLowerCase() === 'textarea') {
+				source = el[i].value;
+				thisel = SPARK.select(el[i]);
+				//editor.style('minHeight', el.getStyle('height'));
+				thisel.insert({
+					input:'',
+					$type:'hidden',
+					$name:el[i].name,
+					$value:el[i].value
+					});
+				thisel.remove();
+			}
+			else {
+				source = el[i].innerHTML;
+				SPARK.select(el[i]).style('display', 'none');
+			}
+			editor[i][canedit ? 'innerHTML' : 'value'] =
+				htmlconvert(source, !canedit, 0);
 		}
-		else {
-			source = el[0].innerHTML;
-			el.style('display', 'none');
-		}
-
-		editor[0][canedit ? 'innerHTML' : 'value'] =
-			htmlconvert(source, !canedit, 0);
 
 		populatetoolbar();
 		updatecontrols();
@@ -637,9 +630,7 @@ SPARK.widget = (function() {
 		.styleRule('.SPARK-widget-richtext-toolbar-icon',
 			'display:inline-block;vertical-align:middle')
 		.styleRule('.SPARK-widget-richtext-toolbar-label',
-			'vertical-align:middle;margin: 4px 3px')
-		.styleRule('.SPARK-widget-richtext-toolbar-dropdown',
-			'overflow:hidden;background:#fff;border:1px solid ButtonShadow');
+			'vertical-align:middle;margin: 4px 3px');
 
 	return function(func, opts) {
 		if (widgets.hasOwnProperty(func)) {

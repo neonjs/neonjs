@@ -464,16 +464,19 @@ SPARK.widget = (function() {
 
 		var addbutton = function(command, num, title) {
 			var
-				button = toolbar.append({a:'',$title:title,$href:"#"})
+				button = toolbar.append({span:'',$title:title})
 					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable');
 
 			var clickhandler = function(evt) {
-				try {
-					document.execCommand('useCSS', false, 1);
-				} catch (e) {}
-				document.execCommand(command, false, null);
-				updatecontrols();
+				if (evt.which === 1 || evt.which === 13 || evt.which === 32) {
+					try {
+						document.execCommand('useCSS', false, 1);
+					} catch (e) {}
+					document.execCommand(command, false, null);
+					updatecontrols();
+					if (evt.which !== 1) evt.preventDefault();
+				}
 			};
 			
 			button.append({span:""})
@@ -484,8 +487,10 @@ SPARK.widget = (function() {
 						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*num+1)+'px');
 
 			button.watch('click', clickhandler);
+			button.watch('keypress', clickhandler);
 			teardowns.push(function() {
-				button.unwatch('click', clickhandler);
+				button.unwatch('click', clickhandler)
+					.unwatch('keypress', clickhandler);
 			});
 			updators.push(function() {
 				var
@@ -510,7 +515,7 @@ SPARK.widget = (function() {
 
 		var addstylechooser = function() {
 			var
-				chooser = toolbar.append({a:'',$title:'Paragraph style',$href:"#"})
+				chooser = toolbar.append({span:'',$title:'Paragraph style'})
 					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable'),
 				text = chooser.append({a:'Paragraph style'})
@@ -571,7 +576,8 @@ SPARK.widget = (function() {
 			}
 
 			toolbar.watch('mousedown', preventdefault);
-			unselectable(toolbar);
+			toolbar.watch('selectstart', preventdefault);
+			//unselectable(toolbar);
 
 			teardowns.push(function() {
 				toolbar.unwatch('mousedown', preventdefault);

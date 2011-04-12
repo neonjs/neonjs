@@ -429,11 +429,24 @@ SPARK.widget = (function() {
 				.addClass('SPARK-widget-richtext-container'),
 			editor = container.append(canedit ? {div:''} : {textarea:''})
 				.addClass('SPARK-widget-richtext-editor'),
-			toolbar = editor.insert({div:''}).addClass('SPARK-widget-richtext-toolbar'),
+			toolbar = editor.insert({div:''})
+				.addClass('SPARK-widget-richtext-toolbar'),
 			source, thisel,
 			iconsize = myopts.iconsize || 14,
 			updators = [],
 			teardowns = [];
+
+		var unselectable = function(el) {
+			var i, j;
+			for (i = el.length; i--;) {
+				SPARK.select(el[i]).setAttribute('unselectable', 'on');
+				for (j = el[i].childNodes.length; j--;) {
+					if (el[i].childNodes[j].nodeType === 1) {
+						unselectable(SPARK.select(el[i].childNodes[j]));
+					}
+				}
+			}
+		};
 
 		var preventdefault = function(evt) {
 			evt.preventDefault();
@@ -451,13 +464,14 @@ SPARK.widget = (function() {
 
 		var addbutton = function(command, num, title) {
 			var
-				button = toolbar.append({div:'',$title:title})
-					//.setAttribute('unselectable', 'on') 
+				button = toolbar.append({a:'',$title:title,$href:"#"})
 					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable');
 
 			var clickhandler = function(evt) {
-				document.execCommand('useCSS', false, 1);
+				try {
+					document.execCommand('useCSS', false, 1);
+				} catch (e) {}
 				document.execCommand(command, false, null);
 				updatecontrols();
 			};
@@ -496,7 +510,7 @@ SPARK.widget = (function() {
 
 		var addstylechooser = function() {
 			var
-				chooser = toolbar.append({a:'',$title:'Paragraph style'})
+				chooser = toolbar.append({a:'',$title:'Paragraph style',$href:"#"})
 					.setAttribute('tabindex', '0')
 					.addClass('SPARK-widget-richtext-toolbar-selectable'),
 				text = chooser.append({a:'Paragraph style'})
@@ -533,8 +547,6 @@ SPARK.widget = (function() {
 
 		var populatetoolbar = function() {
 
-			toolbar.watch('mousedown', preventdefault);
-
 			if (!canedit) {
 				toolbar.append({div:"HTML tags allowed"})
 					.addClass('SPARK-widget-richtext-toolbar-altnotice');
@@ -557,6 +569,9 @@ SPARK.widget = (function() {
 				addbutton('outdent', 4, 'Decrease indent');
 				addbutton('indent', 5, 'Increase indent');
 			}
+
+			toolbar.watch('mousedown', preventdefault);
+			unselectable(toolbar);
 
 			teardowns.push(function() {
 				toolbar.unwatch('mousedown', preventdefault);

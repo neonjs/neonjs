@@ -448,8 +448,15 @@ SPARK.widget = (function() {
 			}
 		};
 
+		var docommand = function(command, param) {
+			try {
+				document.execCommand('useCSS', false, 1);
+			} catch (e) {}
+			document.execCommand(command, false, null);
+		}
+
 		var preventdefault = function(evt) {
-			evt.preventDefault();
+			evt.stopPropagation();
 		};
 
 		var updatecontrols = function() {
@@ -469,13 +476,17 @@ SPARK.widget = (function() {
 					.addClass('SPARK-widget-richtext-toolbar-selectable');
 
 			var clickhandler = function(evt) {
-				if (evt.which === 1 || evt.which === 13 || evt.which === 32) {
-					try {
-						document.execCommand('useCSS', false, 1);
-					} catch (e) {}
-					document.execCommand(command, false, null);
+				if (evt.which !== 2 && evt.which !== 3) {
+					docommand(command, null);
 					updatecontrols();
-					if (evt.which !== 1) evt.preventDefault();
+				}
+			};
+
+			var keyhandler = function(evt) {
+				if (evt.which === 13 || evt.which === 32) {
+					docommand(command, null);
+					updatecontrols();
+					evt.preventDefault();
 				}
 			};
 			
@@ -487,10 +498,10 @@ SPARK.widget = (function() {
 						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*num+1)+'px');
 
 			button.watch('click', clickhandler);
-			button.watch('keypress', clickhandler);
+			button.watch('keypress', keyhandler);
 			teardowns.push(function() {
 				button.unwatch('click', clickhandler)
-					.unwatch('keypress', clickhandler);
+					.unwatch('keypress', keyhandler);
 			});
 			updators.push(function() {
 				var
@@ -528,7 +539,7 @@ SPARK.widget = (function() {
 				.style('background',
 					'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
 
-			//widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
+			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
 
 			teardowns.push(function() {
 				//dropdown.remove();
@@ -575,9 +586,9 @@ SPARK.widget = (function() {
 				addbutton('indent', 5, 'Increase indent');
 			}
 
-			toolbar.watch('mousedown', preventdefault);
-			toolbar.watch('selectstart', preventdefault);
-			//unselectable(toolbar);
+			//toolbar.watch('mousedown', preventdefault);
+			//toolbar.watch('selectstart', preventdefault);
+			unselectable(toolbar);
 
 			teardowns.push(function() {
 				toolbar.unwatch('mousedown', preventdefault);

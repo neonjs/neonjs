@@ -1,5 +1,0 @@
-/*
- SPARK js lib (c) Thomas Rutter SPARKlib.com
-*/
-SPARK.jsonEncode=SPARK.jsonEncode||function(a,g){var b,d,c=g||[],h={"\n":"\\n","\r":"\\r",'"':'\\"',"\\":"\\\\"};b=/[\\\"\x00-\x1f\u007f-\uffff]/g;var e=[];if(typeof a=="object"&&a!==null){for(b=c.length;b--;)if(a===c[b])return;c.push(a);if(Object.prototype.toString.call(a)=="[object Array]"){b=0;for(d=a.length;b<d;b++)try{e.push(this.jsonencode(a[b],c)||"null")}catch(i){}return"["+e.join()+"]"}for(b in a)if(Object.hasOwnProperty.call(a,b))try{if(d=this.jsonencode(a[b],c))e.push(this.jsonencode(b)+
-":"+d)}catch(j){}return"{"+e.join()+"}"}return typeof a=="string"?'"'+a.replace(b,function(f){return h[f]||"\\u"+("000"+f.charCodeAt(0).toString(16)).slice(-4)})+'"':typeof a=="number"?isFinite(a)?String(a):"null":typeof a=="boolean"?String(a):a===null?"null":void 0};

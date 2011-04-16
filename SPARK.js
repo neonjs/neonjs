@@ -77,9 +77,7 @@ SPARK = (function() {
 			for (i = elements.length;i--;) {
 				if (elements[i].compareDocumentPosition ?
 						elements[i].compareDocumentPosition(newelement) & 16 :
-					elements[i].contains ?
-						(elements[i].contains(newelement) && elements[i] !== newelement) :
-					0) {
+						elements[i].contains(newelement) && elements[i] !== newelement) {
 					return 1;
 				}
 			}
@@ -372,21 +370,10 @@ SPARK = (function() {
 		// registered handler if it isn't.  suitable for implementing 
 		// mouseenter/mouseleave
 		return function(evt) {
-			var
-				el = evt.relatedTarget;
-
-			// we're using try/catch here because apparently relatedtarget can
-			// sometimes be from a xul element or some other context which wouldn't
-			// permit us to walk up the tree with el.parentNode
-			try {
-				for (;el;el = el.parentNode) {
-					if (el === evt.currentTarget) {
-						return;
-					}
-				}
+			if (!SPARK.select(evt.currentTarget).contains(
+				evt.relatedTarget)) {
 				callback.call(this, evt);
 			}
-			catch (e) {}
 		};
 	};
 
@@ -427,6 +414,38 @@ SPARK = (function() {
 		return this.select(document.querySelectorAll ?
 			document.querySelectorAll(selector) :
 			myqueryselector(selector));
+	};
+
+	SPARK.contains = function(what) {
+	// returns true if ALL of the nodes in "what" are descendents of
+	// any of the selected nodes
+	// "what" can be a SPARK object containing one or more nodes,
+	// a bare node, or anything that would otherwise be accepted as
+	// an argument to SPARK.select()
+	// note this is fastest when comparing one element with one element
+		var
+			i, j,
+			stdcompare = !!document.compareDocumentPosition,
+			found,
+			mylist = SPARK.select(what);
+
+		// the try/catch was protection against "what" sometimes being
+		// a xul element or from some other context where walking up the tree
+		// would raise exceptions
+		for (j = mylist.length; j--;) {
+			try {
+				for (found = 0, i = this.length; !found && i--;) {
+					found = stdcompare ?
+						this[i].compareDocumentPosition(mylist[j]) & 16 :
+						this[i].contains(mylist[j]) && this[i] !== mylist[j];
+				}
+			}
+			catch (e) {}
+			if (!found) {
+				return false;
+			}
+		}
+		return true;
 	};
 
 	SPARK.watch = function(eventname, callback) {

@@ -436,6 +436,7 @@ SPARK.widget = (function() {
 			updators = [],
 			teardowns = [];
 
+		/*
 		var unselectable = function(el) {
 			var i, j;
 			for (i = el.length; i--;) {
@@ -447,16 +448,13 @@ SPARK.widget = (function() {
 				}
 			}
 		};
+		*/
 
 		var docommand = function(command, param) {
 			try {
 				document.execCommand('useCSS', false, 1);
 			} catch (e) {}
 			document.execCommand(command, false, null);
-		}
-
-		var preventdefault = function(evt) {
-			evt.stopPropagation();
 		};
 
 		var updatecontrols = function() {
@@ -586,13 +584,6 @@ SPARK.widget = (function() {
 				addbutton('indent', 5, 'Increase indent');
 			}
 
-			//toolbar.watch('mousedown', preventdefault);
-			//toolbar.watch('selectstart', preventdefault);
-			unselectable(toolbar);
-
-			teardowns.push(function() {
-				toolbar.unwatch('mousedown', preventdefault);
-			});
 		};
 
 		if (canedit) {

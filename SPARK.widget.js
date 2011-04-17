@@ -426,197 +426,186 @@ SPARK.widget = (function() {
 			i,
 			myopts = opts || {},
 			container = el.insert({div:''})
-				.addClass('SPARK-widget-richtext-container'),
-			editor = container.append(canedit ? {div:''} : {textarea:''})
-				.addClass('SPARK-widget-richtext-editor'),
-			toolbar = editor.insert({div:''})
-				.addClass('SPARK-widget-richtext-toolbar'),
-			source, thisel,
+				.addClass('SPARK-widget-richtext'),
 			iconsize = myopts.iconsize || 14,
-			updators = [],
 			teardowns = [];
 
-		/*
-		var unselectable = function(el) {
-			var i, j;
-			for (i = el.length; i--;) {
-				SPARK.select(el[i]).setAttribute('unselectable', 'on');
-				for (j = el[i].childNodes.length; j--;) {
-					if (el[i].childNodes[j].nodeType === 1) {
-						unselectable(SPARK.select(el[i].childNodes[j]));
-					}
-				}
-			}
-		};
-		*/
-
-		var docommand = function(command, param) {
-			try {
-				document.execCommand('useCSS', false, 1);
-			} catch (e) {}
-			document.execCommand(command, false, null);
-		};
-
-		var updatecontrols = function() {
-			setTimeout(function() {
-				var
-					i;
-				for (i = updators.length;i--;) {
-					updators[i]();
-				}
-			}, 0);
-		};
-
-		var addbutton = function(command, num, title) {
+		var setupeditor = function(container) {
 			var
-				button = toolbar.append({span:'',$title:title})
-					.setAttribute('tabindex', '0')
-					.addClass('SPARK-widget-richtext-toolbar-selectable');
+				original = SPARK.select(container[0].nextSibling),
+				editor = container.append(canedit ? {div:''} : {textarea:''})
+					.addClass('SPARK-widget-richtext-editor'),
+				toolbar = editor.insert({div:''})
+					.addClass('SPARK-widget-richtext-toolbar'),
+				source,
+				updators = [];
 
-			var clickhandler = function(evt) {
-				if (evt.which !== 2 && evt.which !== 3) {
-					docommand(command, null);
-					updatecontrols();
-				}
+			var docommand = function(command, param) {
+				try {
+					document.execCommand('useCSS', false, true);
+				} catch (e) {}
+				document.execCommand(command, false, param);
 			};
 
-			var keyhandler = function(evt) {
-				if (evt.which === 13 || evt.which === 32) {
-					docommand(command, null);
-					updatecontrols();
-					evt.preventDefault();
-				}
+			var updatecontrols = function() {
+				setTimeout(function() {
+					var i;
+					for (i = updators.length; i--;) {
+						updators[i]();
+					}
+				}, 0);
 			};
+
+			var addbutton = function(command, iconnum, title) {
+				var
+					button = toolbar.append({span:'',$title:title})
+						.setAttribute('tabindex', '0')
+						.addClass('SPARK-widget-richtext-toolbar-selectable');
+
+				var onclick = function(evt) {
+					if (evt.which !== 2 && evt.which !== 3) {
+						docommand(command, null);
+						updatecontrols();
+					}
+				};
+
+				var onkeypress = function(evt) {
+					if (evt.which === 13 || evt.which === 32) {
+						docommand(command, null);
+						updatecontrols();
+						evt.preventDefault();
+					}
+				};
+
+				button.append({span:""})
+					.addClass('SPARK-widget-richtext-toolbar-icon')
+					.style('width', iconsize+"px")
+					.style('height', iconsize+"px")
+					.style('background', 
+						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*iconnum+1)+'px');
+				button.watch('click', onclick);
+				button.watch('keypress', onkeypress);
+				teardowns.push(function() {
+					button.unwatch('click', onclick)
+						.unwatch('keypress', onkeypress);
+				});
+				updators.push(function() {
+					try {
+						if (document.queryCommandState(command)) {
+							button.addClass('SPARK-widget-richtext-active');
+						}
+						else {
+							button.removeClass('SPARK-widget-richtext-active');
+						}
+					} catch(e) {}
+				});
+			};
+
+			var addseparator = function() {
+				toolbar.append({span:''})
+					.addClass('SPARK-widget-richtext-toolbar-separator');
+			};
+
+			var addstylechooser = function() {
+				var
+					chooser = toolbar.append({span:'',$title:'Paragraph style'})
+						.setAttribute('tabindex', '0')
+						.addClass('SPARK-widget-richtext-toolbar-selectable'),
+					text = chooser.append({span:"Paragraph style"})
+						.addClass('SPARK-widget-richtext-toolbar-label'),
+					menu;
+
+				chooser.append({span:""}) // drop arrow icon
+					.addClass('SPARK-widget-richtext-toolbar-icon')
+					.addClass('SPARK-widget-richtext-toolbar-sideicon')
+					.style('width', iconsize+"px")
+					.style('height', iconsize+"px")
+					.style('background',
+						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
+				
+				menu = widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"}]});
+
+				teardowns.push(function() {
+					menu.teardown();
+				});
+
+				updators.push(function() {
+					var
+						value, part;
+					try {
+						value = document.queryCommandValue('formatblock');
+						part = /^(?:h|Heading )(\d)$/.exec(value);
+						text.empty().append(
+							part ? 'Heading '+part[1] :
+							value === 'pre' || value === 'Formatted' ? 'Formatted code' :
+							'Normal text'
+						);
+					} catch(e) {}
+				});
+
+
+				// TODO add updator here 
+				
+			};
+
+			// now populate the toolbar
 			
-			button.append({span:""})
-				.addClass('SPARK-widget-richtext-toolbar-icon')
-				.style('width', iconsize+"px")
-				.style('height', iconsize+"px")
-				.style('background', 
-						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*num+1)+'px');
-
-			button.watch('click', clickhandler);
-			button.watch('keypress', keyhandler);
-			teardowns.push(function() {
-				button.unwatch('click', clickhandler)
-					.unwatch('keypress', keyhandler);
-			});
-			updators.push(function() {
-				var
-					value;
-				try {
-					value = document.queryCommandState(command);
-					if (value) {
-						button.addClass('SPARK-widget-richtext-active');
-					}
-					else {
-						button.removeClass('SPARK-widget-richtext-active');
-					}
-				}
-				catch (e) {}
-			});
-		};
-
-		var addseparator = function() {
-			toolbar.append({span:''})
-				.addClass('SPARK-widget-richtext-toolbar-separator');
-		};
-
-		var addstylechooser = function() {
-			var
-				chooser = toolbar.append({span:'',$title:'Paragraph style'})
-					.setAttribute('tabindex', '0')
-					.addClass('SPARK-widget-richtext-toolbar-selectable'),
-				text = chooser.append({a:'Paragraph style'})
-					.addClass('SPARK-widget-richtext-toolbar-label');
-
-			chooser.append({span:""}) // drop arrow icon
-				.addClass('SPARK-widget-richtext-toolbar-icon')
-				.style('width', iconsize+"px")
-				.style('height', iconsize+"px")
-				.style('background',
-					'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
-
-			widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2",$href:"http://example.com"}]});
-
-			teardowns.push(function() {
-				//dropdown.remove();
-			});
-
-			updators.push(function () {
-				var
-					value, part;
-				try {
-					value = document.queryCommandValue('formatblock');
-					part = /^(?:h|Heading )(\d)$/.exec(value);
-					text.empty().append(
-						part ? 'Heading '+part[1] :
-						value === 'pre' || value === 'Formatted' ? 'Formatted code' :
-						'Normal text'
-					);
-				}
-				catch (e) {}
-			});
-		};
-
-		var populatetoolbar = function() {
-
 			if (!canedit) {
 				toolbar.append({div:"HTML tags allowed"})
 					.addClass('SPARK-widget-richtext-toolbar-altnotice');
-				return;
-			}
-
-			if (myopts.stylechooser === undefined || myopts.stylechooser) {
-				addstylechooser();
-				addseparator();
-			}
-			addbutton('bold', 0, 'Bold');
-			addbutton('italic', 1, 'Italic');
-			if (myopts.listbuttons === undefined || myopts.listbuttons) {
-				addseparator();
-				addbutton('insertunorderedlist', 2, 'Insert bulleted list');
-				addbutton('insertorderedlist', 3, 'Insert numbered list');
-			}
-			if (myopts.indentbuttons === undefined || myopts.indentbuttons) {
-				addseparator();
-				addbutton('outdent', 4, 'Decrease indent');
-				addbutton('indent', 5, 'Increase indent');
-			}
-
-		};
-
-		if (canedit) {
-			editor.setAttribute('contenteditable', 'true');
-			editor.watch('keypress', updatecontrols);
-			editor.watch('mousedown', updatecontrols);
-			editor.watch('click', updatecontrols);
-		}
-
-		for (i = el.length; i--;) {
-			// transfer to new editor and remove old
-			if (el[i].tagName.toLowerCase() === 'textarea') {
-				source = el[i].value;
-				thisel = SPARK.select(el[i]);
-				//editor.style('minHeight', el.getStyle('height'));
-				thisel.insert({
-					input:'',
-					$type:'hidden',
-					$name:el[i].name,
-					$value:el[i].value
-					});
-				thisel.remove();
 			}
 			else {
-				source = el[i].innerHTML;
-				SPARK.select(el[i]).style('display', 'none');
+				if (myopts.stylechooser || myopts.stylechooser === undefined) {
+					addstylechooser();
+					addseparator();
+				}
+				addbutton('bold', 0, 'Bold');
+				addbutton('italic', 1, 'Italic');
+				if (myopts.listbuttons || myopts.listbuttons === undefined) {
+					addseparator();
+					addbutton('insertunorderedlist', 2, 'Insert bulleted list');
+					addbutton('insertorderedlist', 3, 'Insert numbered list');
+				}
+				if (myopts.indentbuttons || myopts.indentbuttons === undefined) {
+					addseparator();
+					addbutton('outdent', 4, 'Decrease indent');
+					addbutton('indent', 5, 'Increase indent');
+				}
+
+				editor.setAttribute('contenteditable', 'true');
+				editor.watch('keypress', updatecontrols);
+				editor.watch('mousedown', updatecontrols);
+
+				teardowns.push(function() {
+					editor.unwatch('keypress', updatecontrols)
+						.unwatch('mousedown', updatecontrols);
+				});
 			}
-			editor[i][canedit ? 'innerHTML' : 'value'] =
+
+			if (original[0].tagName.toLowerCase() === 'textarea') {
+				source = original[0].value;
+				container.append({
+					input:'',
+					$type:'hidden',
+					$name:original[0].name,
+					$value:el[0].value
+					});
+			}
+			else {
+				source = original[0].innerHTML;
+			}
+			original.remove();
+			editor[0][canedit ? 'innerHTML' : 'value'] =
 				htmlconvert(source, !canedit, 0);
+
+			updatecontrols();
+
+		};
+		
+		for (i = container.length; i--;) {
+			setupeditor(SPARK.select(container[i]));
 		}
 
-		populatetoolbar();
-		updatecontrols();
 	};
 
 	/************************
@@ -626,7 +615,7 @@ SPARK.widget = (function() {
 
 	// richtext
 
-	SPARK.styleRule('.SPARK-widget-richtext-container',
+	SPARK.styleRule('.SPARK-widget-richtext',
 		'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
 		.styleRule('.SPARK-widget-richtext-toolbar',
 			'font:12px sans-serif;margin:0 0 1px 0;background:#f9f6f3')
@@ -635,7 +624,7 @@ SPARK.widget = (function() {
 			'display:inline-block;padding:5px;cursor:default')
 		.styleRule('.SPARK-widget-richtext-toolbar-selectable:hover',
 			'background:#edd')
-		.styleRule('.SPARK-widget-richtext-toolbar-selectable .SPARK-widget-richtext-active',
+		.styleRule('.SPARK-widget-richtext-active',
 			'background:#e8d8d8')
 		.styleRule('.SPARK-widget-richtext-toolbar-separator',
 			'display:inline-block;width:5px')
@@ -644,7 +633,7 @@ SPARK.widget = (function() {
 	// outline:0 prevents dotted line in firefox
 	// position:relative is in case people paste in absolute positioned elements
 		.styleRule('div.SPARK-widget-richtext-editor',
-			'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:6em;overflow:auto')
+			'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:5em;overflow:auto')
 	// min-height needed as textareas don't auto-expand
 		.styleRule('textarea.SPARK-widget-richtext-editor',
 			'width:100%;border:0;padding:0;margin:0;background:#fff;color:#000;font:inherit;min-height:14em')
@@ -652,8 +641,10 @@ SPARK.widget = (function() {
 			'padding:5px;text-align:right')
 		.styleRule('.SPARK-widget-richtext-toolbar-icon',
 			'display:inline-block;vertical-align:middle')
+		.styleRule('.SPARK-widget-richtext-toolbar-sideicon',
+			'margin-left:4px')
 		.styleRule('.SPARK-widget-richtext-toolbar-label',
-			'vertical-align:middle;margin: 4px 3px');
+			'vertical-align:middle');
 
 	return function(func, opts) {
 		if (widgets.hasOwnProperty(func)) {

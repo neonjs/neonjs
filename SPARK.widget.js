@@ -320,9 +320,7 @@ SPARK.widget = (function() {
 
 		// returns the flyout(s) itself (a div containing your contents)
 		// in a fresh SPARK object
-		obj.getFlyout = function() {
-			return SPARK.select(flyouts);
-		};
+		obj.flyout = SPARK.select(flyouts);
 
 		flyouts.append(myopts.contents || []);
 
@@ -382,7 +380,7 @@ SPARK.widget = (function() {
 			myopts = opts || {},
 			links,
 			obj = widgets.flyout(el, myopts),
-			flyouts = obj.getFlyout()
+			flyouts = obj.flyout
 				.addClass('SPARK-widget-flyoutMenu');
 
 		for (i = flyouts.length; i--;) {
@@ -438,9 +436,53 @@ SPARK.widget = (function() {
 				toolbar = editor.insert({div:''})
 					.addClass('SPARK-widget-richtext-toolbar'),
 				source,
+				savedselection = null,
 				updators = [];
 
+			var getrange = function() {
+				var
+					sel, rng, par;
+				if (window.getSelection) {
+					sel = window.getSelection();
+					if (sel.rangeCount) {
+						rng = sel.getRangeAt(0);
+						if (rng.commonAncestorContainer === editor[0] ||
+							editor.contains(rng.commonAncestorContainer)) {
+							return rng;
+						}
+					}
+				}
+				else {
+					rng = document.selection.createRange();
+					par = rng.parentElement();
+					if (par === editor[0] ||
+						editor.contains(par)) {
+						return rng;
+					}
+				}
+			};
+
+			var saveselection = function() {
+				savedselection = getrange() || savedselection;
+			};
+
+			var restoreselection = function() {
+				var
+					sel;
+				if (savedselection && !getrange()) {
+					if (window.getSelection) {
+						sel = window.getSelection();
+						sel.removeAllRanges();
+						sel.addRange(savedselection);
+					}
+					else {
+						savedselection.select();
+					}
+				}
+			};
+
 			var docommand = function(command, param) {
+				restoreselection();
 				try {
 					document.execCommand('useCSS', false, true);
 				} catch (e) {}
@@ -489,6 +531,7 @@ SPARK.widget = (function() {
 					button.unwatch('click', onclick)
 						.unwatch('keypress', onkeypress);
 				});
+
 				updators.push(function() {
 					try {
 						if (document.queryCommandState(command)) {
@@ -576,9 +619,12 @@ SPARK.widget = (function() {
 				editor.watch('keypress', updatecontrols);
 				editor.watch('mousedown', updatecontrols);
 
+				toolbar.watch('mousedown', saveselection);
+
 				teardowns.push(function() {
 					editor.unwatch('keypress', updatecontrols)
 						.unwatch('mousedown', updatecontrols);
+					toolbar.unwatch('mousedown', saveselection);
 				});
 			}
 
@@ -623,9 +669,9 @@ SPARK.widget = (function() {
 		.styleRule('.SPARK-widget-richtext-toolbar-selectable',
 			'display:inline-block;padding:5px;cursor:default')
 		.styleRule('.SPARK-widget-richtext-toolbar-selectable:hover',
-			'background:#edd')
+			'padding:4px;border:1px solid #ddbfbf')
 		.styleRule('.SPARK-widget-richtext-active',
-			'background:#e8d8d8')
+			'background:#edd')
 		.styleRule('.SPARK-widget-richtext-toolbar-separator',
 			'display:inline-block;width:5px')
 		.styleRule('.SPARK-widget-richtext-editor',

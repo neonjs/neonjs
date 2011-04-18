@@ -208,7 +208,7 @@ SPARK.widget = (function() {
 	// to fly towards the right from the left ('r') or vice versa.  default
 	// is 'br'.
 		var
-			i, el,
+			i,
 			myopts = opts || {},
 			direction = myopts.direction,
 			horiz = /^[lr]/.test(direction),
@@ -229,13 +229,13 @@ SPARK.widget = (function() {
 				flyout = SPARK.select(host[0].firstChild.nextSibling);
 
 			windowpos = SPARK.select(window).getPosition();
-			hostpos = host.getPosition();
-			flyoutpos = flyout.style('left', horiz ? '100%' : '0')
+			flyoutpos = flyout.removeClass("SPARK-widget-flyout-hidden") 
 				.style('top', horiz ? '0' : '100%')
-				.style('right', 'auto', 'bottom', 'auto')
-				.removeClass("SPARK-widget-flyout-hidden")
-				.style('opacity', '1')
+				.style('left', horiz ? '100%' : '0')
+				.style('right', 'auto').style('bottom', 'auto') 
+				.style('opacity', '1') 
 				.getPosition();
+			hostpos = host.getPosition();
 			flyout.style('top', 'auto').style('left', 'auto');
 
 			addrect = horiz ? 0 : hostpos.right - hostpos.left;
@@ -410,7 +410,7 @@ SPARK.widget = (function() {
 				if (!opts.remainafterselect) {
 					obj.blur();
 				}
-			}
+			};
 
 			var onmouseenter = function(evt) {
 				for (i = options.length; i--;) {
@@ -429,8 +429,9 @@ SPARK.widget = (function() {
 				updateselection(null);
 			};
 
+			var onmouseleave = onblur;
+
 			var onkeydown = function(evt) {
-				var sel;
 				// arrow keys
 				if (evt.which >= 37 && evt.which <= 40) {
 					updateselection(
@@ -459,12 +460,15 @@ SPARK.widget = (function() {
 				.addClass('SPARK-widget-flyoutMenu-item');
 
 			host.watch('keydown', onkeydown);
+			flyout.watch('mouseleave', onmouseleave);
 			options.watch('mouseenter', onmouseenter);
 			options.watch('click', onclick);
 			teardowns.push(function() {
-				host.unwatch('keydown', onkeydown)
-					.unwatch('mouseenter', onmouseenter)
+				host.unwatch('keydown', onkeydown);
+				options.unwatch('mouseenter', onmouseenter)
 					.unwatch('click', onclick);
+				flyout.unwatch('mouseleave', onmouseleave);
+				
 			});
 			
 		};
@@ -477,14 +481,14 @@ SPARK.widget = (function() {
 			for (i = objects.length; i--;) {
 				objects[i].blur();
 			}
-		}
+		};
 
 		obj.teardown = function() {
 			for (i = teardowns.length; i--;) {
 				teardowns[i]();
 			}
 			for (i = objects.length; i--;) {
-				object[i].teardown();
+				objects[i].teardown();
 			}
 			objects = [];
 		};
@@ -522,7 +526,7 @@ SPARK.widget = (function() {
 	SPARK.styleRule('.SPARK-widget-flyoutMenu',
 		'background:#fff;color:#000;min-width:8em;max-height:400px;overflow:auto')
 		.styleRule('.SPARK-widget-flyoutMenu-item',
-			'display:block;text-decoration:none;color:MenuText;padding:2px 4px;cursor:default')
+			'display:block;text-decoration:none;color:MenuText;padding:3px 5px;cursor:default')
 		.styleRule('.SPARK-widget-flyoutMenu-selected',
 			'background:Highlight;color:HighlightText')
 		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
@@ -594,14 +598,6 @@ SPARK.widget = (function() {
 				}
 			};
 
-			var docommand = function(command, param) {
-				restoreselection();
-				try {
-					document.execCommand('useCSS', false, true);
-				} catch (e) {}
-				document.execCommand(command, false, param);
-			};
-
 			var updatecontrols = function() {
 				setTimeout(function() {
 					var i;
@@ -609,6 +605,14 @@ SPARK.widget = (function() {
 						updators[i]();
 					}
 				}, 0);
+			};
+
+			var docommand = function(command, param) {
+				restoreselection();
+				try {
+					document.execCommand('useCSS', false, true);
+				} catch (e) {}
+				document.execCommand(command, false, param);
 			};
 
 			var addbutton = function(command, iconnum, title) {
@@ -669,7 +673,14 @@ SPARK.widget = (function() {
 						.addClass('SPARK-widget-richtext-toolbar-selectable'),
 					text = chooser.append({span:"Paragraph style"})
 						.addClass('SPARK-widget-richtext-toolbar-label'),
+					selections = SPARK.build({div:""})
+						.addClass('SPARK-widget-richtext-toolbar-stylechooser'),
 					menu;
+
+				var onselect = function(evt) {
+					docommand('formatblock', '<'+evt.currentTarget.parentNode.tagName+'>');
+					updatecontrols();
+				};
 
 				chooser.append({span:""}) // drop arrow icon
 					.addClass('SPARK-widget-richtext-toolbar-icon')
@@ -678,8 +689,16 @@ SPARK.widget = (function() {
 					.style('height', iconsize+"px")
 					.style('background',
 						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
+
+				selections.append({p:{a:"Normal"}});
+				selections.append({h1:{a:"Heading 1"}});
+				selections.append({h2:{a:"Heading 2"}});
+				selections.append({h3:{a:"Heading 3"}});
+				selections.append({h4:{a:"Heading 4"}});
+				selections.append({pre:{a:"Fixed-width"}});
 				
-				menu = widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2"}]});
+				menu = widgets.flyoutMenu(chooser, {contents:selections,
+					onselect:onselect});
 
 				teardowns.push(function() {
 					menu.teardown();
@@ -693,14 +712,11 @@ SPARK.widget = (function() {
 						part = /^(?:h|Heading )(\d)$/.exec(value);
 						text.empty().append(
 							part ? 'Heading '+part[1] :
-							value === 'pre' || value === 'Formatted' ? 'Formatted code' :
-							'Normal text'
+							value === 'pre' || value === 'Formatted' ? 'Fixed-width' :
+							'Normal'
 						);
 					} catch(e) {}
 				});
-
-
-				// TODO add updator here 
 				
 			};
 
@@ -767,13 +783,6 @@ SPARK.widget = (function() {
 
 	};
 
-	/************************
-	 *        STYLES        *
-	 ************************/
-
-
-	// richtext
-
 	SPARK.styleRule('.SPARK-widget-richtext',
 		'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
 		.styleRule('.SPARK-widget-richtext-toolbar',
@@ -785,6 +794,8 @@ SPARK.widget = (function() {
 			'padding:4px;border:1px solid #ddbfbf')
 		.styleRule('.SPARK-widget-richtext-active',
 			'background:#edd')
+		.styleRule('.SPARK-widget-richtext-toolbar-stylechooser *',
+			'margin:0;white-space:nowrap')
 		.styleRule('.SPARK-widget-richtext-toolbar-separator',
 			'display:inline-block;width:5px')
 		.styleRule('.SPARK-widget-richtext-editor',

@@ -253,7 +253,7 @@ SPARK.widget = (function() {
 				!horiz ? '100%' : '0');
 
 			if (myopts.onfocus) {
-				myopts.onfocus.call(host[0]);
+				myopts.onfocus.call(host);
 			}
 		};
 
@@ -283,7 +283,7 @@ SPARK.widget = (function() {
 						flyout.addClass("SPARK-widget-flyout-hidden");
 					}
 					if (myopts.onblur) {
-						myopts.onblur.call(element);
+						myopts.onblur.call(SPARK.select(element));
 					}
 					fuzz = null;
 				}
@@ -403,9 +403,9 @@ SPARK.widget = (function() {
 				}
 			};
 
-			var select = function(evt) {
+			var select = function(el) {
 				if (opts.onselect) {
-					opts.onselect.call(this, evt);
+					opts.onselect(el);
 				}
 				if (!opts.remainafterselect) {
 					obj.blur();
@@ -422,7 +422,7 @@ SPARK.widget = (function() {
 
 			var onclick = function(evt) {
 				onmouseenter.call(this, evt);
-				select.call(this, evt);
+				select(SPARK.select(evt.currentTarget));
 			};
 
 			var onblur = function() {
@@ -442,8 +442,10 @@ SPARK.widget = (function() {
 						);
 				}
 				if (evt.which === 32 || evt.which === 13) {
-					select.call(evt);
-					evt.preventDefault();
+					if (currentsel !== null) {
+						select(SPARK.select(options[currentsel]));
+						evt.preventDefault();
+					}
 				}
 			};
 
@@ -678,8 +680,8 @@ SPARK.widget = (function() {
 						.addClass('SPARK-widget-richtext-toolbar-stylechooser'),
 					menu;
 
-				var onselect = function(evt) {
-					docommand('formatblock', '<'+evt.currentTarget.parentNode.tagName+'>');
+				var onselect = function(el) {
+					docommand('formatblock', '<'+el[0].parentNode.tagName+'>');
 					updatecontrols();
 				};
 
@@ -698,7 +700,7 @@ SPARK.widget = (function() {
 				selections.append({h4:{a:"Heading 4"}});
 				selections.append({pre:{a:"Fixed-width"}});
 
-				for (var i = selections[0].childNodes.length; i--;) {
+				for (i = selections[0].childNodes.length; i--;) {
 					SPARK.select(selections[0].childNodes[i])
 						.addClass("SPARK-widget-richtext-toolbar-styleelement");
 				}

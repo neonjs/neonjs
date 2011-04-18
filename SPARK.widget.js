@@ -187,6 +187,13 @@ SPARK.widget = (function() {
 		return output.replace(/^\s+|\s+$/g, '');
 	};
 
+	var cloneobject = function(obj) {
+		var
+			Constructor = function() {};
+		Constructor.prototype = obj;
+		return new Constructor();
+	};
+
 	/*******************************************
 	 *      FLYOUT - A POP-UP BOX/FLYOUT       *
 	 *******************************************/
@@ -208,6 +215,7 @@ SPARK.widget = (function() {
 			fuzz = null,
 			wasfocused,
 			hosts = elements.insert({span:""})
+				.setAttribute('tabindex', '-1')
 				.addClass("SPARK-widget-flyout-host"),
 			flyouts = hosts.append({div:""}).addClass("SPARK-widget-flyout")
 				.addClass("SPARK-widget-flyout-hidden"),
@@ -325,30 +333,23 @@ SPARK.widget = (function() {
 		flyouts.append(myopts.contents || []);
 
 		// add events
-		
-		hosts.setAttribute("tabindex", "-1")
-			.watch(myopts.hover ? "mouseenter" : "focusin", onfocusin);
+	
+		hosts.watch(myopts.hover ? "mouseenter" : "focusin", onfocusin);
 		hosts.watch(myopts.hover ? "mouseleave" : "focusout", onfocusout);
 		hosts.watch("keydown", onkeydown);
 		// ie in ietester does not fire keydown events??
 		hosts.watch("keypress", onkeydown);
 
 		for (i = elements.length; i--;) {
-			wasfocused = null;
-			try {
-				for (el = document.activeElement;el;el = el.parentNode) {
-					if (el === elements[i]) {
-						wasfocused = el;
-					}
-				}
-			}
-			catch (e) {}
+			wasfocused = document.activeElement;
 			SPARK.select(elements[i].previousSibling.firstChild)
 				.insert(elements[i]);
-			if (wasfocused) {
+			if (wasfocused === elements[i] ||
+				SPARK.select(elements[i]).contains(wasfocused)) {
 				// at least in FF3.5, the previous movement using insert()
-				// seems to mess up keyboard focus - we focus() to workaround
+				// seems to mess up keyboard focus - we focus() again to workaround
 				wasfocused.focus();
+				// show because it is already focused
 				show(SPARK.select(elements[i].parentNode));
 			}
 		}
@@ -375,19 +376,129 @@ SPARK.widget = (function() {
 	// that will turn into a menu option.
 	// You can change that with myopts.optiontag (default "a").
 		var
-			i, j, tmp, len,
-			collect = [],
+			i,
 			myopts = opts || {},
-			links,
-			obj = widgets.flyout(el, myopts),
-			flyouts = obj.flyout
-				.addClass('SPARK-widget-flyoutMenu');
+			objects = [],
+			flyouts = [],
+			obj = {},
+			teardowns = [];
 
+		var setupmenu = function(el) {
+			var
+				i,
+				opts,
+				obj,
+				flyout, host, options,
+				currentsel = null;
+
+			var updateselection = function(newval) {
+				if (currentsel !== null) {
+					SPARK.select(options[currentsel])
+						.removeClass('SPARK-widget-flyoutMenu-selected');
+				}
+				currentsel = newval;
+				if (currentsel !== null) {
+					SPARK.select(options[currentsel])
+						.addClass('SPARK-widget-flyoutMenu-selected');
+				}
+			};
+
+			var select = function(evt) {
+				if (opts.onselect) {
+					opts.onselect.call(this, evt);
+				}
+				if (!opts.remainafterselect) {
+					obj.blur();
+				}
+			}
+
+			var onmouseenter = function(evt) {
+				for (i = options.length; i--;) {
+					if (options[i] === evt.currentTarget) {
+						updateselection(i);
+					}
+				}
+			};
+
+			var onclick = function(evt) {
+				onmouseenter.call(this, evt);
+				select.call(this, evt);
+			};
+
+			var onblur = function() {
+				updateselection(null);
+			};
+
+			var onkeydown = function(evt) {
+				var sel;
+				// arrow keys
+				if (evt.which >= 37 && evt.which <= 40) {
+					updateselection(
+						evt.which >= 39 ?
+							(currentsel === null || currentsel === options.length - 1 ? 0 :
+								currentsel + 1) :
+							(currentsel ? currentsel - 1 : options.length - 1)
+						);
+				}
+				if (evt.which === 32 || evt.which === 13) {
+					select.call(evt);
+					evt.preventDefault();
+				}
+			};
+
+			opts = cloneobject(myopts);
+			opts.onblur = onblur;
+			obj = widgets.flyout(el, opts);
+			objects.push(obj);
+			flyout = obj.flyout
+				.addClass('SPARK-widget-flyoutMenu');
+			flyouts.push(flyout[0]);
+			host = SPARK.select(flyout[0].parentNode);
+			options = SPARK.select(flyout[0].getElementsByTagName(myopts.optiontag || "a"))
+				//.setAttribute('tabindex', '-1')
+				.addClass('SPARK-widget-flyoutMenu-item');
+
+			host.watch('keydown', onkeydown);
+			options.watch('mouseenter', onmouseenter);
+			options.watch('click', onclick);
+			teardowns.push(function() {
+				host.unwatch('keydown', onkeydown)
+					.unwatch('mouseenter', onmouseenter)
+					.unwatch('click', onclick);
+			});
+			
+		};
+			
+		for (i = el.length; i--;) {
+			setupmenu(SPARK.select(el[i]));
+		}
+
+		obj.blur = function() {
+			for (i = objects.length; i--;) {
+				objects[i].blur();
+			}
+		}
+
+		obj.teardown = function() {
+			for (i = teardowns.length; i--;) {
+				teardowns[i]();
+			}
+			for (i = objects.length; i--;) {
+				object[i].teardown();
+			}
+			objects = [];
+		};
+
+		obj.flyout = SPARK.select(flyouts);
+
+			
+/*
 		for (i = flyouts.length; i--;) {
 			tmp = flyouts[i].getElementsByTagName(myopts.optiontag || "a");
 			for (j = 0, len = tmp.length; j < len; j++) {
 				collect.push(tmp[j]);
 			}
+			setupchooser(SPARK.select(flyouts[i]), SPARK.select(tmp));
 		}
 
 		links = SPARK.select(collect)
@@ -403,14 +514,16 @@ SPARK.widget = (function() {
 			}
 		});
 
+		*/
+
 		return obj;
 	};
 
 	SPARK.styleRule('.SPARK-widget-flyoutMenu',
 		'background:#fff;color:#000;min-width:8em;max-height:400px;overflow:auto')
-		.styleRule('.SPARK-widget-flyoutMenu a',
+		.styleRule('.SPARK-widget-flyoutMenu-item',
 			'display:block;text-decoration:none;color:MenuText;padding:2px 4px;cursor:default')
-		.styleRule('.SPARK-widget-flyoutMenu a:hover',
+		.styleRule('.SPARK-widget-flyoutMenu-selected',
 			'background:Highlight;color:HighlightText')
 		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
 			'list-style:none;padding:none;margin:none');
@@ -566,7 +679,7 @@ SPARK.widget = (function() {
 					.style('background',
 						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
 				
-				menu = widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"}]});
+				menu = widgets.flyoutMenu(chooser, {contents:[{a:"Link 1"},{a:"Link 2"}]});
 
 				teardowns.push(function() {
 					menu.teardown();

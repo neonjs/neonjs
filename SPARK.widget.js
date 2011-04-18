@@ -668,6 +668,7 @@ SPARK.widget = (function() {
 
 			var addstylechooser = function() {
 				var
+					i,
 					chooser = toolbar.append({span:'',$title:'Paragraph style'})
 						.setAttribute('tabindex', '0')
 						.addClass('SPARK-widget-richtext-toolbar-selectable'),
@@ -696,6 +697,11 @@ SPARK.widget = (function() {
 				selections.append({h3:{a:"Heading 3"}});
 				selections.append({h4:{a:"Heading 4"}});
 				selections.append({pre:{a:"Fixed-width"}});
+
+				for (var i = selections[0].childNodes.length; i--;) {
+					SPARK.select(selections[0].childNodes[i])
+						.addClass("SPARK-widget-richtext-toolbar-styleelement");
+				}
 				
 				menu = widgets.flyoutMenu(chooser, {contents:selections,
 					onselect:onselect});
@@ -744,7 +750,8 @@ SPARK.widget = (function() {
 					addbutton('indent', 5, 'Increase indent');
 				}
 
-				editor.setAttribute('contenteditable', 'true');
+				// strangely in IE6 (and 7?) the following capital E is important
+				editor.setAttribute('contentEditable', 'true');
 				editor.watch('keypress', updatecontrols);
 				editor.watch('mousedown', updatecontrols);
 
@@ -794,8 +801,8 @@ SPARK.widget = (function() {
 			'padding:4px;border:1px solid #ddbfbf')
 		.styleRule('.SPARK-widget-richtext-active',
 			'background:#edd')
-		.styleRule('.SPARK-widget-richtext-toolbar-stylechooser *',
-			'margin:0;white-space:nowrap')
+		.styleRule('.SPARK-widget-richtext-toolbar-styleelement',
+			'margin:0;padding:0;white-space:nowrap')
 		.styleRule('.SPARK-widget-richtext-toolbar-separator',
 			'display:inline-block;width:5px')
 		.styleRule('.SPARK-widget-richtext-editor',

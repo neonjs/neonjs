@@ -600,13 +600,16 @@ neon.widget = (function() {
 				}
 			};
 
-			var updatecontrols = function() {
+			var updatecontrols = function(evt) {
 				setTimeout(function() {
 					var i;
 					for (i = updators.length; i--;) {
 						updators[i]();
 					}
 				}, 0);
+				if (evt && (evt.which === 9 || evt.which === 17)) {
+					saveselection();
+				}
 			};
 
 			var docommand = function(command, param) {
@@ -754,13 +757,12 @@ neon.widget = (function() {
 
 				// strangely in IE6 (and 7?) the following capital E is important
 				editor.setAttribute('contentEditable', 'true');
-				editor.watch('keypress', updatecontrols);
+				editor.watch('keydown', updatecontrols);
 				editor.watch('mousedown', updatecontrols);
-
 				toolbar.watch('mousedown', saveselection);
 
 				teardowns.push(function() {
-					editor.unwatch('keypress', updatecontrols)
+					editor.unwatch('keydown', updatecontrols)
 						.unwatch('mousedown', updatecontrols);
 					toolbar.unwatch('mousedown', saveselection);
 				});

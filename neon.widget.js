@@ -800,9 +800,11 @@ neon.widget = (function() {
 		.styleRule('.neon-widget-richtext-toolbar-selectable',
 			'display:inline-block;padding:5px;cursor:default')
 		.styleRule('.neon-widget-richtext-toolbar-selectable:hover',
-			'padding:4px;border:1px solid #ddbfbf')
+			'padding:4px;border:1px solid ButtonShadow')
+		.styleRule('.neon-widget-richtext-toolbar-selectable:focus',
+			'outline:1px dotted ButtonShadow')
 		.styleRule('.neon-widget-richtext-active',
-			'background:#edd')
+			'padding:4px;border:1px solid ButtonShadow;background:#e0e4e6')
 		.styleRule('.neon-widget-richtext-toolbar-styleelement',
 			'margin:0;padding:0;white-space:nowrap')
 		.styleRule('.neon-widget-richtext-toolbar-separator',

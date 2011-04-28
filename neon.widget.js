@@ -1,9 +1,9 @@
 /*
 
-The SPARK Javascript Library: widget 
-A widget library for SPARK
+The Neon Javascript Library: widget 
+A widget library for Neon
 
-Part of the SPARK Javascript Library
+Part of the Neon Javascript Library
 Copyright (c) 2011, Thomas Rutter
 All rights reserved.
 
@@ -31,21 +31,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --
 
-See http://SPARKlib.com for documentation and examples of use.
+See http://neonjs.com for documentation and examples of use.
 
 */
 
 /*jslint browser:true,newcap:true,undef:true */
-/*global SPARK:true */
+/*global neon:true */
 
 /**
-@preserve The SPARK Javascript Library: widget
+@preserve The Neon Javascript Library: widget
 Copyright (c) Thomas Rutter 2011
-http://SPARKlib.com
-http://SPARKlib.com/license
+http://neonjs.com
+http://neonjs.com/license
 */
 
-SPARK.widget = (function() {
+neon.widget = (function() {
 	
 	var
 		canedit = document.body.contentEditable !== undefined,
@@ -216,9 +216,9 @@ SPARK.widget = (function() {
 			wasfocused,
 			hosts = elements.insert({span:""})
 				.setAttribute('tabindex', '-1')
-				.addClass("SPARK-widget-flyout-host"),
-			flyouts = hosts.append({div:""}).addClass("SPARK-widget-flyout")
-				.addClass("SPARK-widget-flyout-hidden"),
+				.addClass("neon-widget-flyout-host"),
+			flyouts = hosts.append({div:""}).addClass("neon-widget-flyout")
+				.addClass("neon-widget-flyout-hidden"),
 			obj = {};
 
 		var show = function(host) {
@@ -226,10 +226,10 @@ SPARK.widget = (function() {
 				hostpos, flyoutpos,
 				windowpos,
 				addrect, dim,
-				flyout = SPARK.select(host[0].firstChild.nextSibling);
+				flyout = neon.select(host[0].firstChild.nextSibling);
 
-			windowpos = SPARK.select(window).getPosition();
-			flyoutpos = flyout.removeClass("SPARK-widget-flyout-hidden") 
+			windowpos = neon.select(window).getPosition();
+			flyoutpos = flyout.removeClass("neon-widget-flyout-hidden") 
 				.style('top', horiz ? '0' : '100%')
 				.style('left', horiz ? '100%' : '0')
 				.style('right', 'auto').style('bottom', 'auto') 
@@ -259,7 +259,7 @@ SPARK.widget = (function() {
 
 		var onfocusin = function(evt) {
 			if (fuzz !== evt.currentTarget) {
-				return show(SPARK.select(evt.currentTarget));
+				return show(neon.select(evt.currentTarget));
 			}
 			fuzz = null;
 		};
@@ -272,18 +272,18 @@ SPARK.widget = (function() {
 				var
 					flyout;
 				if (fuzz === element) {
-					flyout = SPARK.select(element.firstChild.nextSibling);
+					flyout = neon.select(element.firstChild.nextSibling);
 					if (myopts.fade) {
 						flyout.style('opacity', '1', '0',
 							myopts.fade > 1 ? myopts.fade : null, null, function() {
-							flyout.addClass("SPARK-widget-flyout-hidden");
+							flyout.addClass("neon-widget-flyout-hidden");
 						});
 					}
 					else {
-						flyout.addClass("SPARK-widget-flyout-hidden");
+						flyout.addClass("neon-widget-flyout-hidden");
 					}
 					if (myopts.onblur) {
-						myopts.onblur.call(SPARK.select(element));
+						myopts.onblur.call(neon.select(element));
 					}
 					fuzz = null;
 				}
@@ -321,14 +321,14 @@ SPARK.widget = (function() {
 				.unwatch("keydown", onkeydown)
 				.unwatch("keypress", onkeydown);
 			for (i = hosts.length; i--;) {
-				SPARK.select(hosts[i]).insert(hosts[i].firstChild).remove();
+				neon.select(hosts[i]).insert(hosts[i].firstChild).remove();
 			}
 			obj = null;
 		};
 
 		// returns the flyout(s) itself (a div containing your contents)
-		// in a fresh SPARK object
-		obj.flyout = SPARK.select(flyouts);
+		// in a fresh neon object
+		obj.flyout = neon.select(flyouts);
 
 		flyouts.append(myopts.contents || []);
 
@@ -342,27 +342,27 @@ SPARK.widget = (function() {
 
 		for (i = elements.length; i--;) {
 			wasfocused = document.activeElement;
-			SPARK.select(elements[i].previousSibling.firstChild)
+			neon.select(elements[i].previousSibling.firstChild)
 				.insert(elements[i]);
 			if (wasfocused === elements[i] ||
-				SPARK.select(elements[i]).contains(wasfocused)) {
+				neon.select(elements[i]).contains(wasfocused)) {
 				// at least in FF3.5, the previous movement using insert()
 				// seems to mess up keyboard focus - we focus() again to workaround
 				wasfocused.focus();
 				// show because it is already focused
-				show(SPARK.select(elements[i].parentNode));
+				show(neon.select(elements[i].parentNode));
 			}
 		}
 
 		return obj;
 	};
 
-	SPARK.styleRule('.SPARK-widget-flyout',
+	neon.styleRule('.neon-widget-flyout',
 		'position:absolute;z-index:999;border:1px solid ButtonShadow;padding:1px;background:#fff;min-width:14px;box-shadow:0 4px 10px rgba(0,0,0,0.16)')
-		.styleRule('.SPARK-widget-flyout-hidden',
+		.styleRule('.neon-widget-flyout-hidden',
 			'display:none')
 		// some ugly-ish hacks for ie6/ie7.  the broken background-image makes transparent areas part of the focus:
-		.styleRule('.SPARK-widget-flyout-host',
+		.styleRule('.neon-widget-flyout-host',
 			'position:relative;display:inline-block;outline:none;z-index:998;background-image:url(x)');
 	
 	/*******************************************
@@ -393,13 +393,13 @@ SPARK.widget = (function() {
 
 			var updateselection = function(newval) {
 				if (currentsel !== null) {
-					SPARK.select(options[currentsel])
-						.removeClass('SPARK-widget-flyoutMenu-selected');
+					neon.select(options[currentsel])
+						.removeClass('neon-widget-flyoutMenu-selected');
 				}
 				currentsel = newval;
 				if (currentsel !== null) {
-					SPARK.select(options[currentsel])
-						.addClass('SPARK-widget-flyoutMenu-selected');
+					neon.select(options[currentsel])
+						.addClass('neon-widget-flyoutMenu-selected');
 				}
 			};
 
@@ -422,7 +422,7 @@ SPARK.widget = (function() {
 
 			var onclick = function(evt) {
 				onmouseenter.call(this, evt);
-				select(SPARK.select(evt.currentTarget));
+				select(neon.select(evt.currentTarget));
 			};
 
 			var onblur = function() {
@@ -443,7 +443,7 @@ SPARK.widget = (function() {
 				}
 				if (evt.which === 32 || evt.which === 13) {
 					if (currentsel !== null) {
-						select(SPARK.select(options[currentsel]));
+						select(neon.select(options[currentsel]));
 						evt.preventDefault();
 					}
 				}
@@ -454,12 +454,12 @@ SPARK.widget = (function() {
 			obj = widgets.flyout(el, opts);
 			objects.push(obj);
 			flyout = obj.flyout
-				.addClass('SPARK-widget-flyoutMenu');
+				.addClass('neon-widget-flyoutMenu');
 			flyouts.push(flyout[0]);
-			host = SPARK.select(flyout[0].parentNode);
-			options = SPARK.select(flyout[0].getElementsByTagName(myopts.optiontag || "a"))
+			host = neon.select(flyout[0].parentNode);
+			options = neon.select(flyout[0].getElementsByTagName(myopts.optiontag || "a"))
 				//.setAttribute('tabindex', '-1')
-				.addClass('SPARK-widget-flyoutMenu-item');
+				.addClass('neon-widget-flyoutMenu-item');
 
 			host.watch('keydown', onkeydown);
 			flyout.watch('mouseleave', onmouseleave);
@@ -476,7 +476,7 @@ SPARK.widget = (function() {
 		};
 			
 		for (i = el.length; i--;) {
-			setupmenu(SPARK.select(el[i]));
+			setupmenu(neon.select(el[i]));
 		}
 
 		obj.blur = function() {
@@ -495,7 +495,7 @@ SPARK.widget = (function() {
 			objects = [];
 		};
 
-		obj.flyout = SPARK.select(flyouts);
+		obj.flyout = neon.select(flyouts);
 
 			
 /*
@@ -504,10 +504,10 @@ SPARK.widget = (function() {
 			for (j = 0, len = tmp.length; j < len; j++) {
 				collect.push(tmp[j]);
 			}
-			setupchooser(SPARK.select(flyouts[i]), SPARK.select(tmp));
+			setupchooser(neon.select(flyouts[i]), neon.select(tmp));
 		}
 
-		links = SPARK.select(collect)
+		links = neon.select(collect)
 			.setAttribute('tabindex', '-1');
 
 		links.watch('click', function(evt) {
@@ -525,13 +525,13 @@ SPARK.widget = (function() {
 		return obj;
 	};
 
-	SPARK.styleRule('.SPARK-widget-flyoutMenu',
+	neon.styleRule('.neon-widget-flyoutMenu',
 		'background:#fff;color:#000;min-width:8em;max-height:400px;overflow:auto')
-		.styleRule('.SPARK-widget-flyoutMenu-item',
+		.styleRule('.neon-widget-flyoutMenu-item',
 			'display:block;text-decoration:none;color:MenuText;padding:3px 5px;cursor:default')
-		.styleRule('.SPARK-widget-flyoutMenu-selected',
+		.styleRule('.neon-widget-flyoutMenu-selected',
 			'background:Highlight;color:HighlightText')
-		.styleRule('.SPARK-widget-flyoutMenu ul, .SPARK-widget-flyoutMenu ol, .SPARK-widget-flyoutMenu li',
+		.styleRule('.neon-widget-flyoutMenu ul, .neon-widget-flyoutMenu ol, .neon-widget-flyoutMenu li',
 			'list-style:none;padding:none;margin:none');
 
 	/*******************************************
@@ -543,17 +543,17 @@ SPARK.widget = (function() {
 			i,
 			myopts = opts || {},
 			container = el.insert({div:''})
-				.addClass('SPARK-widget-richtext'),
+				.addClass('neon-widget-richtext'),
 			iconsize = myopts.iconsize || 14,
 			teardowns = [];
 
 		var setupeditor = function(container) {
 			var
-				original = SPARK.select(container[0].nextSibling),
+				original = neon.select(container[0].nextSibling),
 				editor = container.append(canedit ? {div:''} : {textarea:''})
-					.addClass('SPARK-widget-richtext-editor'),
+					.addClass('neon-widget-richtext-editor'),
 				toolbar = editor.insert({div:''})
-					.addClass('SPARK-widget-richtext-toolbar'),
+					.addClass('neon-widget-richtext-toolbar'),
 				source,
 				savedselection = null,
 				updators = [];
@@ -621,7 +621,7 @@ SPARK.widget = (function() {
 				var
 					button = toolbar.append({span:'',$title:title})
 						.setAttribute('tabindex', '0')
-						.addClass('SPARK-widget-richtext-toolbar-selectable');
+						.addClass('neon-widget-richtext-toolbar-selectable');
 
 				var onclick = function(evt) {
 					if (evt.which !== 2 && evt.which !== 3) {
@@ -639,11 +639,11 @@ SPARK.widget = (function() {
 				};
 
 				button.append({span:""})
-					.addClass('SPARK-widget-richtext-toolbar-icon')
+					.addClass('neon-widget-richtext-toolbar-icon')
 					.style('width', iconsize+"px")
 					.style('height', iconsize+"px")
 					.style('background', 
-						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*iconnum+1)+'px');
+						'url(images/neon-widget-richtext.png) -1px -'+((iconsize+2)*iconnum+1)+'px');
 				button.watch('click', onclick);
 				button.watch('keypress', onkeypress);
 				teardowns.push(function() {
@@ -654,10 +654,10 @@ SPARK.widget = (function() {
 				updators.push(function() {
 					try {
 						if (document.queryCommandState(command)) {
-							button.addClass('SPARK-widget-richtext-active');
+							button.addClass('neon-widget-richtext-active');
 						}
 						else {
-							button.removeClass('SPARK-widget-richtext-active');
+							button.removeClass('neon-widget-richtext-active');
 						}
 					} catch(e) {}
 				});
@@ -665,7 +665,7 @@ SPARK.widget = (function() {
 
 			var addseparator = function() {
 				toolbar.append({span:''})
-					.addClass('SPARK-widget-richtext-toolbar-separator');
+					.addClass('neon-widget-richtext-toolbar-separator');
 			};
 
 			var addstylechooser = function() {
@@ -673,11 +673,11 @@ SPARK.widget = (function() {
 					i,
 					chooser = toolbar.append({span:'',$title:'Paragraph style'})
 						.setAttribute('tabindex', '0')
-						.addClass('SPARK-widget-richtext-toolbar-selectable'),
+						.addClass('neon-widget-richtext-toolbar-selectable'),
 					text = chooser.append({span:"Paragraph style"})
-						.addClass('SPARK-widget-richtext-toolbar-label'),
-					selections = SPARK.build({div:""})
-						.addClass('SPARK-widget-richtext-toolbar-stylechooser'),
+						.addClass('neon-widget-richtext-toolbar-label'),
+					selections = neon.build({div:""})
+						.addClass('neon-widget-richtext-toolbar-stylechooser'),
 					menu;
 
 				var onselect = function(el) {
@@ -686,12 +686,12 @@ SPARK.widget = (function() {
 				};
 
 				chooser.append({span:""}) // drop arrow icon
-					.addClass('SPARK-widget-richtext-toolbar-icon')
-					.addClass('SPARK-widget-richtext-toolbar-sideicon')
+					.addClass('neon-widget-richtext-toolbar-icon')
+					.addClass('neon-widget-richtext-toolbar-sideicon')
 					.style('width', iconsize+"px")
 					.style('height', iconsize+"px")
 					.style('background',
-						'url(images/SPARK-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
+						'url(images/neon-widget-richtext.png) -1px -'+((iconsize+2)*9+1)+'px');
 
 				selections.append({p:{a:"Normal"}});
 				selections.append({h1:{a:"Heading 1"}});
@@ -701,8 +701,8 @@ SPARK.widget = (function() {
 				selections.append({pre:{a:"Fixed-width"}});
 
 				for (i = selections[0].childNodes.length; i--;) {
-					SPARK.select(selections[0].childNodes[i])
-						.addClass("SPARK-widget-richtext-toolbar-styleelement");
+					neon.select(selections[0].childNodes[i])
+						.addClass("neon-widget-richtext-toolbar-styleelement");
 				}
 				
 				menu = widgets.flyoutMenu(chooser, {contents:selections,
@@ -732,7 +732,7 @@ SPARK.widget = (function() {
 			
 			if (!canedit) {
 				toolbar.append({div:"HTML tags allowed"})
-					.addClass('SPARK-widget-richtext-toolbar-altnotice');
+					.addClass('neon-widget-richtext-toolbar-altnotice');
 			}
 			else {
 				if (myopts.stylechooser || myopts.stylechooser === undefined) {
@@ -787,42 +787,42 @@ SPARK.widget = (function() {
 		};
 		
 		for (i = container.length; i--;) {
-			setupeditor(SPARK.select(container[i]));
+			setupeditor(neon.select(container[i]));
 		}
 
 	};
 
-	SPARK.styleRule('.SPARK-widget-richtext',
+	neon.styleRule('.neon-widget-richtext',
 		'border:1px solid ButtonShadow;width:auto;padding:1px;background:#fff;color:#000')
-		.styleRule('.SPARK-widget-richtext-toolbar',
+		.styleRule('.neon-widget-richtext-toolbar',
 			'font:12px sans-serif;margin:0 0 1px 0;background:#f9f6f3')
 		// button text needs to be re-set in FF (at least)
-		.styleRule('.SPARK-widget-richtext-toolbar-selectable',
+		.styleRule('.neon-widget-richtext-toolbar-selectable',
 			'display:inline-block;padding:5px;cursor:default')
-		.styleRule('.SPARK-widget-richtext-toolbar-selectable:hover',
+		.styleRule('.neon-widget-richtext-toolbar-selectable:hover',
 			'padding:4px;border:1px solid #ddbfbf')
-		.styleRule('.SPARK-widget-richtext-active',
+		.styleRule('.neon-widget-richtext-active',
 			'background:#edd')
-		.styleRule('.SPARK-widget-richtext-toolbar-styleelement',
+		.styleRule('.neon-widget-richtext-toolbar-styleelement',
 			'margin:0;padding:0;white-space:nowrap')
-		.styleRule('.SPARK-widget-richtext-toolbar-separator',
+		.styleRule('.neon-widget-richtext-toolbar-separator',
 			'display:inline-block;width:5px')
-		.styleRule('.SPARK-widget-richtext-editor',
+		.styleRule('.neon-widget-richtext-editor',
 			'max-height:27em')
 	// outline:0 prevents dotted line in firefox
 	// position:relative is in case people paste in absolute positioned elements
-		.styleRule('div.SPARK-widget-richtext-editor',
+		.styleRule('div.neon-widget-richtext-editor',
 			'cursor:text;padding:1px 0 1px 2px;outline:0;position:relative;min-height:5em;overflow:auto')
 	// min-height needed as textareas don't auto-expand
-		.styleRule('textarea.SPARK-widget-richtext-editor',
+		.styleRule('textarea.neon-widget-richtext-editor',
 			'width:100%;border:0;padding:0;margin:0;background:#fff;color:#000;font:inherit;min-height:14em')
-		.styleRule('.SPARK-widget-richtext-toolbar-altnotice',
+		.styleRule('.neon-widget-richtext-toolbar-altnotice',
 			'padding:5px;text-align:right')
-		.styleRule('.SPARK-widget-richtext-toolbar-icon',
+		.styleRule('.neon-widget-richtext-toolbar-icon',
 			'display:inline-block;vertical-align:middle')
-		.styleRule('.SPARK-widget-richtext-toolbar-sideicon',
+		.styleRule('.neon-widget-richtext-toolbar-sideicon',
 			'margin-left:4px')
-		.styleRule('.SPARK-widget-richtext-toolbar-label',
+		.styleRule('.neon-widget-richtext-toolbar-label',
 			'vertical-align:middle');
 
 	return function(func, opts) {

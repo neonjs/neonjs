@@ -4,13 +4,13 @@
 
 <head>
 	<title>Animation test</title>
-<script type="text/javascript" src="SPARK.js"></script>
+<script type="text/javascript" src="neon.js"></script>
 <script type="text/javascript">
 
-SPARK.ready(function() {
-	var notice = SPARK.select('body').append({p:"Click somewhere with your mouse"});
-	SPARK.select(document.documentElement).watch('mouseup', function(evt) {
-		var el = SPARK.select('body').append({div:""}).
+neon.ready(function() {
+	var notice = neon.select('body').append({p:"Click somewhere with your mouse"});
+	neon.select(document.documentElement).watch('mouseup', function(evt) {
+		var el = neon.select('body').append({div:""}).
 			style('height', '30px').
 			style('width', '30px').style('background', 'grey').
 			style('position', 'absolute').

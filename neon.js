@@ -1,9 +1,9 @@
 /*
 
-The SPARK Javascript Library: core 
-SPARK core library
+The Neon Javascript Library: core 
+All of Neon's core functionality in a small package
 
-Part of the SPARK Javascript Library
+Part of the Neon Javascript Library
 Copyright (c) 2011, Thomas Rutter
 All rights reserved.
 
@@ -31,28 +31,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --
 
-See http://SPARKlib.com for documentation and examples of use.
+See http://neonjs.com for documentation and examples of use.
 
 */
 
 /*jslint browser:true,evil:true,newcap:true,undef:true */
-/*global SPARK:true,attachEvent,window,self,top,opera,ActiveXObject */
+/*global neon:true,attachEvent,window,self,top,opera,ActiveXObject */
 
 /**
-@preserve The SPARK Javascript Library
+@preserve The Neon Javascript Library
 Copyright (c) Thomas Rutter 2011
-http://SPARKlib.com
-http://SPARKlib.com/license
+http://neonjs.com
+http://neonjs.com/license
 */
 
-// overwrites any existing SPARK object
-SPARK = (function() {
+// overwrites any existing neon object
+neon = (function() {
 
 	// ##################################################################
 	// PRIVATE VARIABLES
 	
 	var
-		SPARK = {},
+		neon = {},
 		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
 		eventstore = {}, // remembering event handlers
 		animations = [], // information about properties currently animating
@@ -119,8 +119,8 @@ SPARK = (function() {
 			callback();
 		}
 		// unwatch these events - a potential memory leak breaker (and good hygeine)
-		SPARK.select(document).unwatch("DOMContentLoaded", processreadyqueue);
-		SPARK.select(window).unwatch("load", processreadyqueue);
+		neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
+		neon.select(window).unwatch("load", processreadyqueue);
 		ready = 1;
 	};
 
@@ -147,12 +147,12 @@ SPARK = (function() {
 	};
 
 	var myqueryselector = function(selector) {
-	// css selector engine for SPARK.  returns array of elements according to
+	// css selector engine for neon.  returns array of elements according to
 	// the given selector string.  as much of CSS 2.1 selector syntax as
 	// possible is supported including A > B, A + B, A:first-child
 	// processes the selector string as a CSS style selector and returns
 	// just an array of elements matching.  for internal use - call
-	// SPARK.select() in your own code.
+	// neon.select() in your own code.
 		var
 			i, len,
 			parts,
@@ -321,7 +321,7 @@ SPARK = (function() {
 			if (x === 1 && anim[9]) {
 				collect.push(anim[0]);
 				if (!i || animations[i-1][10] !== anim[10]) {
-					anim[9].call(SPARK.select(collect));
+					anim[9].call(neon.select(collect));
 					collect = [];
 				}
 			}
@@ -370,7 +370,7 @@ SPARK = (function() {
 		// registered handler if it isn't.  suitable for implementing 
 		// mouseenter/mouseleave
 		return function(evt) {
-			if (!SPARK.select(evt.currentTarget).contains(
+			if (!neon.select(evt.currentTarget).contains(
 				evt.relatedTarget)) {
 				callback.call(this, evt);
 			}
@@ -379,12 +379,12 @@ SPARK = (function() {
 
 	// ##################################################################
 	// PUBLIC METHODS
-	// call these methods using SPARK.methodname() eg SPARK.watch()
+	// call these methods using neon.methodname() eg neon.watch()
 	
-	SPARK.select = function(selector) {
-	// main way of selecting elements in SPARK.  accepts a CSS selector
+	neon.select = function(selector) {
+	// main way of selecting elements in neon.  accepts a CSS selector
 	// string, or a node or array of nodes.  also accepts the window object
-	// returns a SPARK object with the given elements selected.
+	// returns a neon object with the given elements selected.
 		var
 			i,
 			elements,
@@ -416,18 +416,18 @@ SPARK = (function() {
 			myqueryselector(selector));
 	};
 
-	SPARK.contains = function(what) {
+	neon.contains = function(what) {
 	// returns true if ALL of the nodes in "what" are descendents of
 	// any of the selected nodes
-	// "what" can be a SPARK object containing one or more nodes,
+	// "what" can be a neon object containing one or more nodes,
 	// a bare node, or anything that would otherwise be accepted as
-	// an argument to SPARK.select()
+	// an argument to neon.select()
 	// note this is fastest when comparing one element with one element
 		var
 			i, j,
 			stdcompare = !!document.compareDocumentPosition,
 			found,
-			mylist = SPARK.select(what);
+			mylist = neon.select(what);
 
 		// the try/catch was protection against "what" sometimes being
 		// a xul element or from some other context where walking up the tree
@@ -448,7 +448,7 @@ SPARK = (function() {
 		return true;
 	};
 
-	SPARK.watch = function(eventname, callback) {
+	neon.watch = function(eventname, callback) {
 	// simple cross-platform event handling. registers the given callback
 	// as an even handler for each currently selected element, for the event
 	// named by eventname.  eventname should not include the "on" prefix.
@@ -468,7 +468,7 @@ SPARK = (function() {
 				null,
 			mycallback;
 
-		callback.$SPARKi = callback.$SPARKi || ++gid;
+		callback.$neoni = callback.$neoni || ++gid;
 
 		for (i = this.length; i--;) {
 
@@ -485,14 +485,14 @@ SPARK = (function() {
 					(mycallback = eventwrapIE(mycallback, this[i])));
 			}
 
-			this[i].$SPARKi = this[i].$SPARKi || ++gid;
-			eventstore[this[i].$SPARKi+eventname+callback.$SPARKi] = mycallback;
+			this[i].$neoni = this[i].$neoni || ++gid;
+			eventstore[this[i].$neoni+eventname+callback.$neoni] = mycallback;
 		}
 
 	};
 
-	SPARK.unwatch = function(eventname, callback) {
-	// removes an event handler added with watch(). While SPARK can be mixed
+	neon.unwatch = function(eventname, callback) {
+	// removes an event handler added with watch(). While neon can be mixed
 	// with other frameworks and even with native browser calls, you need to
 	// always un-register each event handler with the same framework/method
 	// as the event was registered with.
@@ -509,29 +509,29 @@ SPARK = (function() {
 
 		for (i = this.length; i--;) {
 
-			if (this[i].$SPARKi && callback.$SPARKi &&
-				eventstore[this[i].$SPARKi+eventname+callback.$SPARKi]) {
+			if (this[i].$neoni && callback.$neoni &&
+				eventstore[this[i].$neoni+eventname+callback.$neoni]) {
 
 				if (this[i].addEventListener) {
 					// other browsers
 					this[i].removeEventListener(hoverevent || captureevent || eventname,
-						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi],
+						eventstore[this[i].$neoni+eventname+callback.$neoni],
 						!!captureevent);
 				} 
 				else {
 					// IE
 					this[i].detachEvent("on"+eventname,
-						eventstore[this[i].$SPARKi+eventname+callback.$SPARKi]);
+						eventstore[this[i].$neoni+eventname+callback.$neoni]);
 				}
 
-				delete eventstore[this[i].$SPARKi+eventname+callback.$SPARKi];
+				delete eventstore[this[i].$neoni+eventname+callback.$neoni];
 			}
 
 		}
 		return this;
 	};
 
-	SPARK.ready = function(callback) {
+	neon.ready = function(callback) {
 	// specify a callback function that should be executed when the document is
 	// ready, ie has fully loaded (not necessarily images, other external files)
 	// will run instantly if the document is already ready.
@@ -544,16 +544,16 @@ SPARK = (function() {
 		// ready asks for callback so don't chain
 	};
 
-	SPARK.loaddir = "";
-	// any relative URLs passed to SPARK.load() will use this as a base.
+	neon.loaddir = "";
+	// any relative URLs passed to neon.load() will use this as a base.
 	// if specified, this must contain the trailing slash of a directory.
 	// it can be a full url like "http://example.org/dir/" or just the 
 	// path like "/dir/", and so on.
 	// It's suggested to set this to the base directory where all your
-	// SPARK modules are located, so that you can have modules that
+	// neon modules are located, so that you can have modules that
 	// depend on other modules and can load them dynamically
 
-	SPARK.load = function(urls, callback) {
+	neon.load = function(urls, callback) {
 	// dynamically load and execute other javascript urls asynchronously,
 	// allowing the rest of the page to continue loading and the user to
 	// interact with it while loading.  urls may be a single URL or an
@@ -573,7 +573,7 @@ SPARK = (function() {
 			loadid = ++gid,
 			registerscript = function(url) {
 				var
-					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : (SPARK.loaddir||"")+url,
+					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : (neon.loaddir||"")+url,
 					myscript = that.build({script:"",	$src:myurl}),
 					gencallback;
 				gencallback = function() {
@@ -582,10 +582,10 @@ SPARK = (function() {
 						loadstate[url] = 2;
 						myscript.unwatch("load", gencallback).unwatch("readystatechange",
 							gencallback).remove();
-						if (!(--mycallback["$SPARKl"+loadid])) {
+						if (!(--mycallback["$neonl"+loadid])) {
 							// this callback is no longer waiting on any files, so call it
 							mycallback();
-							//delete mycallback["$SPARKl"+loadid];
+							//delete mycallback["$neonl"+loadid];
 						}
 					}
 				};
@@ -597,28 +597,28 @@ SPARK = (function() {
 
 		// store a count of how many files this callback (for this loadid)
 		// is still "waiting on"
-		mycallback["$SPARKl"+loadid] = 0;
+		mycallback["$neonl"+loadid] = 0;
 
 		this.ready(function() {
 			for (i = myurls.length; i--;) {
 				if (!loadstate[myurls[i]]) {
-					mycallback["$SPARKl"+loadid]++;
+					mycallback["$neonl"+loadid]++;
 					registerscript(myurls[i]);
 				}
 			}
-			if (!mycallback["$SPARKl"+loadid]) {
+			if (!mycallback["$neonl"+loadid]) {
 				mycallback();
 			}
 		});
 	};
 
-	SPARK.getStyle = function(style) {
+	neon.getStyle = function(style) {
 	// fetches and returns the "computed"/"current" style value for
 	// the given style, for the first selected element.
 	// Note that this value may be returned in a range of different
 	// notations, in particular in IE where it's as it was set eg.
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
-	// spark doesn't normalise them
+	// neon doesn't normalise them
 		var 
 			val = !this.length ? undefined :
 			document.defaultView && document.defaultView.getComputedStyle ?
@@ -636,7 +636,7 @@ SPARK = (function() {
 			undefined;
 	};
 
-	SPARK.getPosition = function(relative) {
+	neon.getPosition = function(relative) {
 	// fetches the position of the first selected element and returns
 	// it as an array with members left, top, right and bottom which
 	// are relative to the client viewport
@@ -647,9 +647,9 @@ SPARK = (function() {
 	// If relative is given, the position is given relative to
 	// the provided argument, which can be the document element,
 	// a DOM element, or a selection using the same format as
-	// SPARK.select() (if so, it uses the first match only).
+	// neon.select() (if so, it uses the first match only).
 	// To just get the height and width of the client viewport,
-	// you could use SPARK.select(window).getPosition() and just
+	// you could use neon.select(window).getPosition() and just
 	// read the bottom and right properties.
 		var
 			rel = this.select(relative),
@@ -690,7 +690,7 @@ SPARK = (function() {
 		return pos;
 	};
 
-	SPARK.setAttribute = function(attr, value) {
+	neon.setAttribute = function(attr, value) {
 	// shortcut, for setting attribute on all selected elements
 	// note that in this function, setting the value to "" (empty
 	// string) removes that attribute.  handy for boolean attributes
@@ -728,11 +728,11 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.removeAttribute = function(attr) {
+	neon.removeAttribute = function(attr) {
 		return this.setAttribute(attr, "");
 	};
 
-	SPARK.removeClass = function(myclass) {
+	neon.removeClass = function(myclass) {
 	// removes the given class from all selected nodes.
 	// it's assumed that classes are always separated by spaces
 		var i = this.length;
@@ -744,7 +744,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.addClass = function(myclass) {
+	neon.addClass = function(myclass) {
 	// adds the given class to all selected nodes.
 	// removes the class first if it's already there, to prevent
 	// duplication
@@ -757,24 +757,24 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.styleRule = function(selector, rules) {
+	neon.styleRule = function(selector, rules) {
 	// inserts a rule into the page's stylesheet.  this is distinct
 	// from setting an inline style on an element as it sets a global
 	// style rule to be applied to current and future selector matches.
 	// it's therefore preferable to inline styles in many situations
 	// since they can be overridden by user stylesheets on the page.
-	// however, these rules cannot be un-set (through SPARK) nor can
+	// however, these rules cannot be un-set (through neon) nor can
 	// they be animated.  the same style shouldn't be set multiple
 	// times.  certain browsers like IE also have a limit
 	// (of a few thousand?) on the number of style rules in a
 	// stylesheet
 	// The document must have a head element when calling this.
 		var
-			style = this.select('#SPARK-styleRule-s');
+			style = this.select('#neon-styleRule-s');
 
 		if (!style.length) {
 			style = this.select('head').append({style:""})
-				.setAttribute('id', 'SPARK-styleRule-s');
+				.setAttribute('id', 'neon-styleRule-s');
 		}
 		if (style[0].styleSheet) {
 			// IE
@@ -787,7 +787,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.style = function(style, value, lastval, duration, easing, endfunc) {
+	neon.style = function(style, value, lastval, duration, easing, endfunc) {
 	// sets an inline style to the given value on all selected nodes.
 	// if lastval is given, then after the style is initially set to
 	// the first value, it is animated towards the last value.  easing,
@@ -850,9 +850,9 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.build = function(spec) {
+	neon.build = function(spec) {
 	// builds one or more new nodes (elements/text nodes) according to
-	// the given spec and returns a spark object with the new nodes
+	// the given spec and returns a neon object with the new nodes
 	// selected. this can be used to generate nodes for the document
 	// without inserting them anywhere yet.
 	// The spec is one of:
@@ -904,7 +904,7 @@ SPARK = (function() {
 		return element;
 	};
 	
-	SPARK.append = function(spec) {
+	neon.append = function(spec) {
 	// inserts a new element or array of elements into the document.
 	// the parameter may be either a node, a spec as defined in build(),
 	// or an array containing a mixture of such.
@@ -936,7 +936,7 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
-	SPARK.insert = function(spec) {
+	neon.insert = function(spec) {
 	// inserts a new element or array of elements into the document.
 	// the parameter may be either a node, a spec as defined in build(),
 	// or an array containing a mixture of such.
@@ -968,7 +968,7 @@ SPARK = (function() {
 		return this.select(collected);
 	};
 
-	SPARK.remove = function() {
+	neon.remove = function() {
 	// removes the selected nodes from the document and all their contents.
 		var i = this.length;
 		for (; i--;) {
@@ -979,7 +979,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.empty = function() {
+	neon.empty = function() {
 	// deletes the contents of the selected nodes, but not the nodes
 	// themselves
 		var i = this.length,
@@ -992,7 +992,7 @@ SPARK = (function() {
 		return this;
 	};
 
-	SPARK.jsonDecode = function(json) {
+	neon.jsonDecode = function(json) {
 	// unserialises the JSON string into the equivalent value.  Does a check
 	// on the string that is only thorough enough to prevent arbitrary code
 	// execution.
@@ -1011,7 +1011,7 @@ SPARK = (function() {
 		}
 	};
 
-	SPARK.getHttp = function(url, callback, method, body, contenttype) {
+	neon.getHttp = function(url, callback, method, body, contenttype) {
 	// places an HTTP request (using XMLHttpRequest) for the given URL.
 	// method and body are optional.
 	// callback is only called when the load is 100% complete (that is, you
@@ -1030,12 +1030,12 @@ SPARK = (function() {
 
 				// implement JSON parsing
 				// we've disabled setting responseJSON here since setting a value
-				// to it breaks in IE6 - for now user should use SPARK.jsonDecode()
+				// to it breaks in IE6 - for now user should use neon.jsonDecode()
 				// not ideal I know
 				/*
 					if (!xmlhttprequest.responseJSON) {
 						xmlhttprequest.responseJSON =
-							SPARK.jsonDecode(xmlhttprequest.responseText);
+							neon.jsonDecode(xmlhttprequest.responseText);
 					}
 				*/
 
@@ -1069,12 +1069,12 @@ SPARK = (function() {
 	};
 
 	// set up ready listening
-	SPARK.select(document).watch("DOMContentLoaded", processreadyqueue);
-	SPARK.select(window).watch("load", processreadyqueue);
+	neon.select(document).watch("DOMContentLoaded", processreadyqueue);
+	neon.select(window).watch("load", processreadyqueue);
 	// IE only hack; testing doscroll method - check IE9 support
 	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
 
-	return SPARK;
+	return neon;
 }()); 

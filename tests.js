@@ -1,17 +1,17 @@
 
 if (!document.createDocumentFragment) {
 	document.open();
-	document.write("<p>Your browser appears to be too old to support SPARK</p>");
+	document.write("<p>Your browser appears to be too old to support neon</p>");
 }
 
-SPARK.load("SPARK.tester.js", function() {
+neon.load("neon.tester.js", function() {
 
-	SPARK.tester("Document ready state", function() {
+	neon.tester("Document ready state", function() {
 		var
 			called = 0,
 			that = this;
 
-		SPARK.ready(function() {
+		neon.ready(function() {
 			called++;
 			that.assert(called == 1, "Ready called only once");
 			setTimeout(function() { that.finish(); }, 80);
@@ -19,9 +19,9 @@ SPARK.load("SPARK.tester.js", function() {
 		
 	});
 
-	SPARK.ready(function() {
+	neon.ready(function() {
 
-		SPARK.tester("Selectors", function() {
+		neon.tester("Selectors", function() {
 
 			this.testdiv.append([
 				{div:"",$id:"myid"},
@@ -29,50 +29,50 @@ SPARK.load("SPARK.tester.js", function() {
 				{p:"",$lang:"en-US"}
 			]);
 
-			this.assert(SPARK.select('body').length == 1, "Single tag name select");
-			this.assert(SPARK.select('html')[0].firstChild.nodeName, "Ensure element is node");
-			this.assert(SPARK.select('body html').length == 0, "Negative descendant child match");
-			this.assert(SPARK.select('body> #myid').length == 0, "Negative immediate child match");
-			this.assert(SPARK.select('body #myid').length == 1, "Test descendant child match");
-			this.assert(SPARK.select("#"+this.id+">#myid").length == 1,
+			this.assert(neon.select('body').length == 1, "Single tag name select");
+			this.assert(neon.select('html')[0].firstChild.nodeName, "Ensure element is node");
+			this.assert(neon.select('body html').length == 0, "Negative descendant child match");
+			this.assert(neon.select('body> #myid').length == 0, "Negative immediate child match");
+			this.assert(neon.select('body #myid').length == 1, "Test descendant child match");
+			this.assert(neon.select("#"+this.id+">#myid").length == 1,
 				"Test immediate child match");
-			this.assert(SPARK.select('head+body').length == 1, "Test next sibling match");
-			this.assert(SPARK.select('body+body').length == 0, "Negative next sibling match");
-			this.assert(SPARK.select("#"+this.id+' div.test2').length == 1,
+			this.assert(neon.select('head+body').length == 1, "Test next sibling match");
+			this.assert(neon.select('body+body').length == 0, "Negative next sibling match");
+			this.assert(neon.select("#"+this.id+' div.test2').length == 1,
 				"Test class name match");
-			this.assert(SPARK.select("#"+this.id+' div.otherclass').length == 0,
+			this.assert(neon.select("#"+this.id+' div.otherclass').length == 0,
 				"Negative class name match");
-			this.assert(SPARK.select('div#myid').length == 1, "Tag name and ID match");
-			this.assert(SPARK.select('#myid').length == 1, "ID match");
-			this.assert(SPARK.select("#"+this.id+' div[title="Tom\'s + [\\"cat\\"]?"]').length == 1, 
+			this.assert(neon.select('div#myid').length == 1, "Tag name and ID match");
+			this.assert(neon.select('#myid').length == 1, "ID match");
+			this.assert(neon.select("#"+this.id+' div[title="Tom\'s + [\\"cat\\"]?"]').length == 1, 
 				"Complex attribute selector match");
-			this.assert(SPARK.select('*').length > 0, "* tagname match");
-			this.assert(SPARK.select("#"+this.id+' div[class~=test2]').length == 1, 
+			this.assert(neon.select('*').length > 0, "* tagname match");
+			this.assert(neon.select("#"+this.id+' div[class~=test2]').length == 1, 
 				"~= attribute selector match");
-			this.assert(SPARK.select("#"+this.id+' div[class=test2]').length == 0, 
+			this.assert(neon.select("#"+this.id+' div[class=test2]').length == 0, 
 				"Negative = attribute selector match");
-			this.assert(SPARK.select('html, head, #myid, #asdf').length == 3, 
+			this.assert(neon.select('html, head, #myid, #asdf').length == 3, 
 				"Multiple selectors with commas");
-			this.assert(SPARK.select('div#myid *').length == 0, "Negative descendant * match");
-			this.assert(SPARK.select('head:first-child').length == 1, ":first-child match count");
-			this.assert(SPARK.select('body:first-child').length == 0,
+			this.assert(neon.select('div#myid *').length == 0, "Negative descendant * match");
+			this.assert(neon.select('head:first-child').length == 1, ":first-child match count");
+			this.assert(neon.select('body:first-child').length == 0,
 				"Negative :first-child match");
-			this.assert(SPARK.select('* html').length == 0, "Document descendant child checking");
-			this.assert(SPARK.select(window)[0].alert, "Manual selector: window");
-			this.assert(SPARK.select(document)[0].createElement, "Manual selector: document");
-			this.assert(SPARK.select("#"+this.id+' p[lang|=en]').length == 1, 
+			this.assert(neon.select('* html').length == 0, "Document descendant child checking");
+			this.assert(neon.select(window)[0].alert, "Manual selector: window");
+			this.assert(neon.select(document)[0].createElement, "Manual selector: document");
+			this.assert(neon.select("#"+this.id+' p[lang|=en]').length == 1, 
 				"|= attribute selector match");
-			this.assert(SPARK.select("#"+this.id+' p[lang|=en-US]').length == 1,
+			this.assert(neon.select("#"+this.id+' p[lang|=en-US]').length == 1,
 				"|= attribute selector match 2");
-			this.assert(SPARK.select("#"+this.id+' p[lang|=US]').length == 0,
+			this.assert(neon.select("#"+this.id+' p[lang|=US]').length == 0,
 				"Negative |= attribute selector");
-			this.assert(SPARK.select(document.createElement('p')).length == 1,
+			this.assert(neon.select(document.createElement('p')).length == 1,
 				"Createelement in select");
 
 			this.finish();
 		});
 
-		SPARK.tester("Event handling", function() {
+		neon.tester("Event handling", function() {
 
 			var
 				that = this,
@@ -118,41 +118,41 @@ SPARK.load("SPARK.tester.js", function() {
 			});
 		});
 
-		SPARK.tester("Extending SPARK", function() {
+		neon.tester("Extending neon", function() {
 			var
 				myobj = {name: "thisisatest"},
 				myobj2 = {name: "2nd"};
-			SPARK.SPARKunittesttry1 = myobj;
-			this.assert(SPARK.SPARKunittesttry1 === myobj,
-				"Writing to SPARK global");
-			this.assert(SPARK.select(document.body).SPARKunittesttry1 === myobj,
-				"Derived SPARK objects inherit written property.");
+			neon.neonunittesttry1 = myobj;
+			this.assert(neon.neonunittesttry1 === myobj,
+				"Writing to neon global");
+			this.assert(neon.select(document.body).neonunittesttry1 === myobj,
+				"Derived neon objects inherit written property.");
 			this.finish();
 		});
 
-		SPARK.tester("Loading external Javascript", function() {
+		neon.tester("Loading external Javascript", function() {
 			var
 				that = this;
 			this.assert(1, "Must have worked for these tests to function");
-			SPARK.load("SPARK.tester.js", function() {
+			neon.load("neon.tester.js", function() {
 				that.assert(1, "Has worked a second time");
 				that.finish();
 			});
 		});
 
 		/*
-		SPARK.tester("Getting/setting element properties", function() {
+		neon.tester("Getting/setting element properties", function() {
 			var
-				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
-			this.assert(newdiv.get("id") == "SPARKtestertestget", "Testing get() on id");
+				newdiv = this.testdiv.append({div:"",$id:"neontestertestget"});
+			this.assert(newdiv.get("id") == "neontestertestget", "Testing get() on id");
 			this.assert(newdiv.get("nodeName").toLowerCase() == "div", "Testing get() on nodeName");
-			newdiv.set('SPARKtest', 555);
-			this.assert(newdiv.get('SPARKtest') === 555, "Setting and getting custom property");
+			newdiv.set('neontest', 555);
+			this.assert(newdiv.get('neontest') === 555, "Setting and getting custom property");
 			this.finish();
 		});
 		*/
 
-		SPARK.tester("Getting/setting style properties", function() {
+		neon.tester("Getting/setting style properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$style:"width:66px"});
 			this.assert(newdiv.getStyle('width') == "66px", "Read inline style");
@@ -161,12 +161,12 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester("Getting element position", function() {
+		neon.tester("Getting element position", function() {
 			var
 				newdiv = this.testdiv.append({div:""})
 					.style('width', '50px').style('height', '55px'),
 				divpos = newdiv.getPosition(),
-				windowpos = SPARK.select(window).getPosition(),
+				windowpos = neon.select(window).getPosition(),
 				divtodoc = newdiv.getPosition(document.documentElement);
 
 			this.assert(divpos, "Get a position object");
@@ -180,9 +180,9 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester("Setting/clearing attributes", function() {
+		neon.tester("Setting/clearing attributes", function() {
 			var
-				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
+				newdiv = this.testdiv.append({div:"",$id:"neontestertestget"});
 
 			newdiv.setAttribute("title", "title1")
 				.setAttribute("class", "myclass")
@@ -198,9 +198,9 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester("Adding and removing classes", function() {
+		neon.tester("Adding and removing classes", function() {
 			var
-				newdiv = this.testdiv.append({div:"",$id:"SPARKtestertestget"});
+				newdiv = this.testdiv.append({div:"",$id:"neontestertestget"});
 
 			newdiv.addClass("class1").addClass("class2").addClass("class3")
 				.removeClass("class1");
@@ -212,11 +212,11 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester("Building elements", function() {
+		neon.tester("Building elements", function() {
 			var
-				elements = SPARK.build({p:"Contents",$title:"Mytitle"}),
-				pandtext = SPARK.build([{p:""},"Mycontents"]),
-				complex = SPARK.build({p:"",$style:"width:66px",$class:"mysomething"});
+				elements = neon.build({p:"Contents",$title:"Mytitle"}),
+				pandtext = neon.build([{p:""},"Mycontents"]),
+				complex = neon.build({p:"",$style:"width:66px",$class:"mysomething"});
 
 			this.assert(elements[0].nodeName.toLowerCase() == "p", "Correct element name created");
 			this.assert(elements[0].firstChild.nodeType == 3, "Text node child created");
@@ -227,7 +227,7 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester("Document manipulation", function() {
+		neon.tester("Document manipulation", function() {
 			var
 				testelement = this.testdiv.append({div:{p:""}}),
 				appended2 = this.testdiv.append({p:"TestAppend"}),
@@ -248,14 +248,14 @@ SPARK.load("SPARK.tester.js", function() {
 			this.finish();
 		});
 
-		SPARK.tester("JSON decoding", function() {
+		neon.tester("JSON decoding", function() {
 			var
-				obj = SPARK.jsonDecode('{"a":5.3e2,"b":false,"c":null}'),
-				obj2 = SPARK.jsonDecode('{"a":"my\\"string\\n","b":[1,2]}'),
-				obj3 = SPARK.jsonDecode('{"a":{"a":5}}'),
-				obj4 = SPARK.jsonDecode('7');
-				invalid = SPARK.jsonDecode('{"a":5+5}'),
-				invalid2 = SPARK.jsonDecode('{"a":alert(\'2\')}');
+				obj = neon.jsonDecode('{"a":5.3e2,"b":false,"c":null}'),
+				obj2 = neon.jsonDecode('{"a":"my\\"string\\n","b":[1,2]}'),
+				obj3 = neon.jsonDecode('{"a":{"a":5}}'),
+				obj4 = neon.jsonDecode('7');
+				invalid = neon.jsonDecode('{"a":5+5}'),
+				invalid2 = neon.jsonDecode('{"a":alert(\'2\')}');
 
 
 			this.assert(obj.a === 5.3e2, "Read decimal number with exponent");
@@ -274,12 +274,12 @@ SPARK.load("SPARK.tester.js", function() {
 
 			/*
 			var
-				windowjson = SPARK.jsonencode(window),
-				arrjson = SPARK.jsonencode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]),
-				objjson = SPARK.jsonencode({val:function() {}, "val\n": 5 / 0, nested: []}),
-				newwindow = SPARK.jsondecode(windowjson),
-				newarr = SPARK.jsondecode(arrjson),
-				newobj = SPARK.jsondecode(objjson);
+				windowjson = neon.jsonencode(window),
+				arrjson = neon.jsonencode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]),
+				objjson = neon.jsonencode({val:function() {}, "val\n": 5 / 0, nested: []}),
+				newwindow = neon.jsondecode(windowjson),
+				newarr = neon.jsondecode(arrjson),
+				newobj = neon.jsondecode(objjson);
 
 			this.assert(windowjson, "JSON encoding window object is OK");
 			this.assert(arrjson == "[null,null,null,456.67,\"Tom's + [\\\"cat\\\"]?\"]",
@@ -295,7 +295,7 @@ SPARK.load("SPARK.tester.js", function() {
 			*/
 		});
 
-		SPARK.tester("AJAX requests", function() {
+		neon.tester("AJAX requests", function() {
 			var
 				that = this,
 				finished = false,
@@ -310,9 +310,9 @@ SPARK.load("SPARK.tester.js", function() {
 
 			this.wait(10000);
 
-			SPARK.getHttp('./tests.html', callback);
-			//SPARK.getHttp('http://example.org/', callback);
-			//SPARK.getHttp('http://localhost/', callback);
+			neon.getHttp('./tests.html', callback);
+			//neon.getHttp('http://example.org/', callback);
+			//neon.getHttp('http://localhost/', callback);
 
 		});
 

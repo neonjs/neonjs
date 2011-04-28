@@ -1,9 +1,9 @@
 /*
 
-The SPARK Javascript Library: tester 
-A unit testing library for SPARK
+The Neon Javascript Library: tester 
+A unit testing library for Neon
 
-Part of the SPARK Javascript Library
+Part of the Neon Javascript Library
 Copyright (c) 2011, Thomas Rutter
 All rights reserved.
 
@@ -31,27 +31,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --
 
-See http://SPARKlib.com for documentation and examples of use.
+See http://neonjs.com for documentation and examples of use.
 
 */
 
 /*jslint browser:true,newcap:true,undef:true */
-/*global SPARK:true */
+/*global neon:true */
 
 /**
-@preserve The SPARK Javascript Library: tester
+@preserve The Neon Javascript Library: tester
 Copyright (c) Thomas Rutter 2011
-http://SPARKlib.com
-http://SPARKlib.com/license
+http://neonjs.com
+http://neonjs.com/license
 */
 
-SPARK.tester = (function() {
+neon.tester = (function() {
 	var
 		testtbody,
 		gid = 0;
 
 	var setuptable = function() {
-		return (testtbody = SPARK.select('body').append({table:""}).append({tbody:""}));
+		return (testtbody = neon.select('body').append({table:""}).append({tbody:""}));
 	};
 
 	var tester = function(testname, testfunction) {
@@ -104,9 +104,9 @@ SPARK.tester = (function() {
 			clearTimeout(testobj.timeout);
 		};
 
-		testobj.id = "SPARK-tester-" + (++gid);
+		testobj.id = "neon-tester-" + (++gid);
 
-		testobj.testdiv = SPARK.select('body>:first-child').insert({div:"",$id:testobj.id});
+		testobj.testdiv = neon.select('body>:first-child').insert({div:"",$id:testobj.id});
 
 		testobj.timeout = setTimeout(mytimeout, 2490);
 

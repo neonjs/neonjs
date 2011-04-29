@@ -573,7 +573,7 @@ neon = (function() {
 			loadid = ++gid,
 			registerscript = function(url) {
 				var
-					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : (neon.loaddir||"")+url,
+					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : neon.loaddir+url,
 					myscript = that.build({script:"",	$src:myurl}),
 					gencallback;
 				gencallback = function() {

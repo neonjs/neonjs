@@ -807,7 +807,7 @@ neon = (function() {
 			suffix = parts[3],
 			endfuncid = endfunc && ++gid;
 
-		endfunc = function() {
+		var myendfunc = function() {
 			endfunc.call(this);
 		};
 
@@ -829,7 +829,7 @@ neon = (function() {
 				animations.push([
 					this[i], style, myval, mylastval - myval,
 					time, suffix, prefix, duration, easing,
-					endfunc, endfuncid
+					myendfunc, endfuncid
 				]);
 			}
 		}

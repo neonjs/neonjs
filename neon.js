@@ -630,7 +630,7 @@ neon = (function() {
 		}
 		if (style === "opacity") {
 			val = /opacity=(\d+)/.exec(this.getStyle('filter'));
-			return val ? parseFloat(val[1]) * 100 : undefined;
+			return val ? ""+(parseFloat(val[1]) / 100) : undefined;
 		}
 		return style === "cssFloat" ? this.getStyle("styleFloat") :
 			undefined;

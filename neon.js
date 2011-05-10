@@ -805,10 +805,11 @@ neon = (function() {
 			animated = !isNaN(myval) && !isNaN(mylastval), // NaN test
 			prefix = parts[1],
 			suffix = parts[3],
+			that = this,
 			endfuncid = endfunc && ++gid;
 
-		var myendfunc = function() {
-			endfunc.call(this);
+		var myendfunc = endfunc && function() {
+			endfunc.call(that);
 		};
 
 		style = style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });

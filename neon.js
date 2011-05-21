@@ -370,7 +370,8 @@ neon = (function() {
 		// registered handler if it isn't.  suitable for implementing 
 		// mouseenter/mouseleave
 		return function(evt) {
-			if (!neon.select(evt.currentTarget).contains(
+			if (evt.currentTarget !== evt.relatedTarget &&
+				!neon.select(evt.currentTarget).contains(
 				evt.relatedTarget)) {
 				callback.call(this, evt);
 			}

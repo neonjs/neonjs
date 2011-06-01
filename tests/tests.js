@@ -182,18 +182,61 @@ neon.load("neon.tester.js", function() {
 
 		neon.tester("Setting/clearing attributes", function() {
 			var
-				newdiv = this.testdiv.append({div:"",$id:"neontestertestget"});
+				newdiv = this.testdiv.append({div:"",$id:"neontestertestget"}),
+				newsomething = this.testdiv.append({div:"",$id:"neontestertestsomething"}),
+				newlabel = this.testdiv.append({label:"Label",$for:"neontestertestsomething"}),
+				label2 = this.testdiv.append({label:"Label2"}),
+				img = this.testdiv.append({img:null});
+
+			var hasattribute = function(element, attribute) {
+				// cross-browser hasAttribute() - this is hacky
+				if (!element.hasAttribute) {
+					if (element.getAttribute(attribute) === null) {
+						return false;
+					}
+					return element.outerHTML.indexOf(attribute) >= 0;
+				}
+				return element.hasAttribute(attribute);
+			};
 
 			newdiv.setAttribute("title", "title1")
 				.setAttribute("class", "myclass")
+				.setAttribute("style", "color:blue")
 				.setAttribute("tabindex", "-1");
 
-			this.assert(newdiv[0].getAttribute("title") === "title1", "Set title attribute");
+			newlabel.setAttribute("for", "neontestertestget");
+			label2.setAttribute("for", "neontestertestget");
+			img.setAttribute("src", "something");
+
+			this.assert(newdiv[0].title === "title1", "Set title attribute");
+			this.assert(newdiv[0].style.cssText.indexOf('blue') >= 0, "Set style attribute");
 			this.assert(newdiv[0].className === "myclass", "Set class attribute");
 			this.assert(newdiv[0].tabIndex === -1, "Set tabindex attribute");
+			this.assert(/something$/.test(img[0].src), "Set src attribute");
+			this.assert(newlabel[0].htmlFor === "neontestertestget",
+				"Modify for attribute on label");
+			this.assert(label2[0].htmlFor === "neontestertestget",
+				"Set for attribute on label");
 
 			newdiv.removeAttribute("title");
-			this.assert(!newdiv[0].getAttribute("title"), "Clear title attribute");
+			newdiv.removeAttribute("class");
+			newdiv.removeAttribute("style");
+			newdiv.removeAttribute("tabindex");
+			newlabel.removeAttribute("for");
+			newdiv.removeAttribute("for");
+			img.removeAttribute("src");
+			this.assert(!hasattribute(newdiv[0], "title"), "Remove title attribute");
+			this.assert(!hasattribute(newdiv[0], "class"), "Remove class attribute");
+			this.assert(!hasattribute(newdiv[0], "style"), "Remove style attribute");
+			this.assert(!hasattribute(newdiv[0], "tabindex"), "Remove tabindex attribute");
+			this.assert(!hasattribute(newlabel[0], "for"), "Remove for attribute");
+			this.assert(!hasattribute(img[0], "src"), "Remove src attribute");
+			this.assert(!hasattribute(newdiv[0], "htmlFor"),
+					"Don't wrongly leave htmlFor attribute");
+			this.assert(!hasattribute(newdiv[0], "className"),
+					"Don't wrongly leave className attribute");
+			this.assert(!hasattribute(newdiv[0], "tabIndex"),
+					"Don't wrongly leave tabIndex attribute");
 
 			this.finish();
 		});

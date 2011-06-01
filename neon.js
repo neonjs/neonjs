@@ -700,30 +700,28 @@ neon = (function() {
 			i = this.length,
 			lower = attr.toLowerCase();
 		for (;i--;) {
-
+			// all the following exceptions except "style" are mainly just for IE6/7
 			if (lower === "style") {
 				this[i].style.cssText = value;
-			}
-			else if (lower === "for") {
-				this[i].htmlFor = value;
 			}
 			else if (lower === "class") {
 				this[i].className = value;
 			}
 			else if (lower === "tabindex") {
 				this[i].tabIndex = value;
+				if (!value) {
+					this[i].removeAttribute("tabIndex");
+				}
 			}
-			// i'm not sure if the following is necessary (src):
-			/*
-			else if (lower == "src") {
-				this[i].src = value;
+			else if (lower === "for" && this[i].htmlFor !== undefined) {
+				this[i].htmlFor = value;
 			}
-			*/
-			else if (!value) {
-				this[i].removeAttribute(attr);
-			}
-			else {
+			else if (value) {
 				this[i].setAttribute(attr, value);
+			}
+
+			if (!value) {
+				this[i].removeAttribute(attr);
 			}
 		}
 		return this;

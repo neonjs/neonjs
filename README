@@ -1,0 +1,66 @@
+
+The Neon Javascript Library
+===========================
+
+The Neon Javascript Library aims to be an extremely compact, high
+performance cross-browser Javascript framework.
+
+Fitting in less than 4KB minified and gzipped, the core library includes
+all the basics you would expect from a sophisticated Javascript framework:
+
+- CSS-based selection engine
+- Cross-browser event handling
+- AJAX and JSON decoding
+- Animation with easing and custom functions
+- DOM manipulation
+- Style manipulation
+- Calculation of element size and position
+- Attribute and class manipulation
+- Asynchronous loading of other Javascript
+- Familiar method chaining syntax
+
+Neon makes coding easier with innovations like a simple JSON-based
+notation for generating new DOM elements, and an ability to set stylesheet
+rules which apply to present and future matching elements.
+
+Neon does not try to redefine Javascript or change your coding style, but
+includes only the functionality you most need to take the headache out of
+dealing with web browsers.  Utilising good coding practices, Neon has its
+own unit testing suite and is checked with JSLint.
+
+If you need it to, Neon plays well with other Javascript frameworks, and
+can even be used to load them asynchronously.
+
+Installation and use
+====================
+
+The file neon.js contains the core library.  This file should be included
+within a <script> element in the <head> section of your page.
+
+This file is available in a minified and a source version.  The minified
+version is intended for production use and will save bandwidth and speed
+up page loads, particularly when your server is configured to use gzip
+compression.
+
+Documentation
+=============
+
+See http://neonjs.com for documentation and examples of use.
+
+The Neon archive also contains a demos/ directory which contains some small
+examples you can run in your browser.
+
+License
+=======
+
+The Neon Javascript Library
+Copyright (c) 2011, Thomas Rutter
+All rights reserved.
+
+The Neon Javascript Library is available for use under the Modified BSD
+License included in this distribution or available at:
+http://neonjs/license
+
+The Modified BSD License is an open source free software license compatible
+with the GNU General Public License.  Neon may be redistributed in your own
+software, commercial or open, providing that its few license terms are met.

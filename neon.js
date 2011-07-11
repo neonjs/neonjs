@@ -35,7 +35,7 @@ See http://neonjs.com for documentation and examples of use.
 
 */
 
-/*jslint browser:true,evil:true,newcap:true,undef:true */
+/*jslint browser:true,white:true,evil:true,sloppy:true,plusplus:true,bitwise:true,vars:true,regexp:true,confusion:true,unparam:true */
 /*global neon:true,attachEvent,window,self,top,opera,ActiveXObject */
 
 /**
@@ -189,9 +189,9 @@ neon = (function() {
 				// to the previous set.  >> is just a ancestor-descendent relationship
 				// like a space in a CSS selector
 
-				cascade = parts[2] ? parts[2] :
-					parts[1] && cascade ? " " :
-					cascade;
+				cascade = parts[2] || 
+					(parts[1] && cascade ? " " :
+					cascade);
 
 				singleparent = elements.length===1 && (cascade === ">" || cascade === " ");
 				searchwithin = singleparent ? elements[0] : document;
@@ -348,8 +348,7 @@ neon = (function() {
 				evt.button & 1 ? 1 :
 				evt.button & 2 ? 3 :
 				evt.button & 4 ? 2 : 
-				evt.keyCode ? evt.keyCode :
-				evt.charCode;
+				evt.keyCode || evt.charCode;
 			evt.pageX = evt.clientX + 
 				(document.documentElement.scrollLeft || document.body.scrollLeft);
 			evt.pageY = evt.clientY + 
@@ -631,7 +630,7 @@ neon = (function() {
 		}
 		if (style === "opacity") {
 			val = /opacity=(\d+)/.exec(this.getStyle('filter'));
-			return val ? ""+(parseFloat(val[1]) / 100) : undefined;
+			return val ? (parseFloat(val[1]) / 100).toString() : undefined;
 		}
 		return style === "cssFloat" ? this.getStyle("styleFloat") :
 			undefined;

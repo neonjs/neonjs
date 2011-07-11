@@ -155,9 +155,13 @@ neon.load("neon.tester.js", function() {
 		neon.tester("Getting/setting style properties", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$style:"width:66px"});
-			this.assert(newdiv.getStyle('width') == "66px", "Read inline style");
-			newdiv.style('width', '555px');
-			this.assert(newdiv.getStyle('width') == '555px', "Set and read element style");
+			this.assert(newdiv.getStyle('width') === "66px", "Read inline style");
+			newdiv.style('width', '555px')
+				.style('opacity', '0.6')
+				.style('cssFloat', 'right');
+			this.assert(newdiv.getStyle('width') === '555px', "Set and read element style");
+			this.assert(newdiv.getStyle('opacity') === '0.6', "Set and read element opacity");
+			this.assert(newdiv.getStyle('cssFloat') === 'right', "Set and read element float style");
 			this.finish();
 		});
 

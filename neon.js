@@ -1006,7 +1006,7 @@ neon = (function() {
 			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
 			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
 			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
-			return eval("("+json+")");
+			return this.$ev("("+json+")");
 		}
 	};
 
@@ -1077,3 +1077,11 @@ neon = (function() {
 
 	return neon;
 }()); 
+
+neon.$ev = function(a) {
+	// internal use only
+	// eval is currently needed for decoding JSON.  We separate this into another function
+	// scope so it won't execute in the same scope as everything else.  Among other things
+	// this allow minification to work properly.
+	return eval(a);
+};

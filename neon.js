@@ -900,7 +900,7 @@ neon = (function() {
 		for (tmp = attributes.length; tmp--;) {
 			element.setAttribute(attributes[tmp][0], attributes[tmp][1]);
 		}
-		return element;
+		return this.select(element);
 	};
 	
 	neon.append = function(spec) {

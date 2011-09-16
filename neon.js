@@ -620,10 +620,15 @@ neon = (function() {
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// neon doesn't normalise them
 		var 
+			styles = document.defaultView &&
+				document.defaultView.getComputedStyle ?
+				document.defaultView.getComputedStyle(this[0], null) :
+				this[0].currentStyle,
 			val = !this.length ? undefined :
-			document.defaultView && document.defaultView.getComputedStyle ?
-				document.defaultView.getComputedStyle(this[0], null)[style] :
-			this[0].currentStyle[style];
+				styles[style === 'float' ? 'cssFloat' :
+				style.replace(/-(.)/g, function(a,b) { 
+					return b.toUpperCase(); 
+				})];
 
 		if (val !== undefined) {
 			return val;
@@ -810,7 +815,8 @@ neon = (function() {
 			endfunc.call(that);
 		};
 
-		style = style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
+		style = style === 'float' ? 'cssFloat' :
+			style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
 
 		while (i--) {
 			this[i].style[style] = value;

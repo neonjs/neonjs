@@ -157,11 +157,13 @@ neon.load("neon.tester.js", function() {
 				newdiv = this.testdiv.append({div:"",$style:"width:66px"});
 			this.assert(newdiv.getStyle('width') === "66px", "Read inline style");
 			newdiv.style('width', '555px')
-				.style('opacity', '0.6')
-				.style('cssFloat', 'right');
+				.style('opacity', '0.75')
+				.style('font-size', '16px')
+				.style('float', 'right');
 			this.assert(newdiv.getStyle('width') === '555px', "Set and read element style");
-			this.assert(newdiv.getStyle('opacity') === '0.6', "Set and read element opacity");
-			this.assert(newdiv.getStyle('cssFloat') === 'right', "Set and read element float style");
+			this.assert(newdiv.getStyle('opacity') === '0.75', "Set and read element opacity");
+			this.assert(newdiv.getStyle('font-size') === '16px', "Set and read element white-space");
+			this.assert(newdiv.getStyle('float') === 'right', "Set and read element float style");
 			this.finish();
 		});
 

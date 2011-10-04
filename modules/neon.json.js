@@ -76,7 +76,7 @@ neon.jsonEncode = function(obj) {
 		if (Object.prototype.toString.call(obj) == '[object Array]') {
 			for (i = 0, len = obj.length; i < len; i++) {
 				try {
-					collected.push(this.jsonencode(obj[i], exclude) || 'null');
+					collected.push(this.jsonEncode(obj[i], exclude) || 'null');
 				}
 				catch (err1) {}
 			}
@@ -87,8 +87,8 @@ neon.jsonEncode = function(obj) {
 		for (i in obj) {
 			if (Object.hasOwnProperty.call(obj, i)) {
 				try {
-					if ((current = this.jsonencode(obj[i], exclude))) {
-						collected.push(this.jsonencode(i) + ':' + current);
+					if ((current = this.jsonEncode(obj[i], exclude))) {
+						collected.push(this.jsonEncode(i) + ':' + current);
 					}
 				} catch (err2) {}
 			}

@@ -132,12 +132,29 @@ neon.load("neon.tester.js", function() {
 
 		neon.tester("Loading external Javascript", function() {
 			var
-				that = this;
+				that = this,
+				callback1 = 0,
+				callback2 = 0,
+				callback2code = function() { 
+					callback2++; 
+					that.assert(typeof neon.jsonEncode === 'undefined', 
+						"Callback waits until JS loaded");
+				};
+
 			this.assert(1, "Must have worked for these tests to function");
-			neon.load("neon.tester.js", function() {
-				that.assert(1, "Has worked a second time");
+
+			neon.load("neon.tester.js", function() { callback1++; });
+			neon.load("neon.json.js", callback2code);
+			neon.load("neon.json.js", callback2code);
+			neon.load("neon.json.js", callback2code);
+
+			setTimeout(function() {
+				that.assert(callback1 == 1, "Callback fires when JS already loaded");
+				that.assert(callback2 == 3, "Callback fires 3 times when called 3 times");
+				that.assert(neon.jsonEncode, "Included code has executed");
 				that.finish();
-			});
+			}, 8000);
+			
 		});
 
 		/*
@@ -320,28 +337,42 @@ neon.load("neon.tester.js", function() {
 			this.assert(invalid2 === undefined, "Reject invalid function call");
 
 			this.finish();
+		});
 
-			/*
+		neon.tester("JSON encoding", function() {
 			var
-				windowjson = neon.jsonencode(window),
-				arrjson = neon.jsonencode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]),
-				objjson = neon.jsonencode({val:function() {}, "val\n": 5 / 0, nested: []}),
-				newwindow = neon.jsondecode(windowjson),
-				newarr = neon.jsondecode(arrjson),
-				newobj = neon.jsondecode(objjson);
+				that = this;
 
-			this.assert(windowjson, "JSON encoding window object is OK");
-			this.assert(arrjson == "[null,null,null,456.67,\"Tom's + [\\\"cat\\\"]?\"]",
-				"Correct encoding of an array");
-			this.assert(objjson == "{\"val\\n\":null,\"nested\":[]}",
-				"Correct encoding of an object");
-			this.assert(newarr.length == 5, "Correct array length reconstructed");
-			this.assert(newarr[3] == 456.67, "Correct float reconstructed");
-			this.assert(newarr[4] == "Tom's + [\"cat\"]?", "Correct string reconstructed");
-			this.assert(newobj["val\n"] === null, "Correct null reconstructed");
-			this.assert(newobj.nested.length == 0, "Correct empty array reconstructed");
-			this.finish();
-			*/
+			neon.load("neon.json.js", function() {
+				var
+					windowjson,
+					arrjson,
+					objjson,
+					newwindow,
+					newarr,
+					newobj;
+
+				that.assert(neon.jsonEncode, "JSON encoding loaded before called");
+
+				windowjson = neon.jsonEncode(window);
+				arrjson = neon.jsonEncode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]);
+				objjson = neon.jsonEncode({val:function() {}, "val\n": 5 / 0, nested: []});
+				newwindow = neon.jsonDecode(windowjson);
+				newarr = neon.jsonDecode(arrjson);
+				newobj = neon.jsonDecode(objjson);
+
+				that.assert(windowjson, "JSON encoding window object is OK");
+				that.assert(arrjson == "[null,null,null,456.67,\"Tom's + [\\\"cat\\\"]?\"]",
+					"Correct encoding of an array");
+				that.assert(objjson == "{\"val\\n\":null,\"nested\":[]}",
+					"Correct encoding of an object");
+				that.assert(newarr.length == 5, "Correct array length reconstructed");
+				that.assert(newarr[3] == 456.67, "Correct float reconstructed");
+				that.assert(newarr[4] == "Tom's + [\"cat\"]?", "Correct string reconstructed");
+				that.assert(newobj["val\n"] === null, "Correct null reconstructed");
+				that.assert(newobj.nested.length == 0, "Correct empty array reconstructed");
+				that.finish();
+			});
 		});
 
 		neon.tester("AJAX requests", function() {

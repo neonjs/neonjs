@@ -565,6 +565,10 @@ neon = (function() {
 	// It's safe to call this many times with the same url, and it won't be
 	// loaded again, as long as the url string is completely the same (not
 	// just resolving to the same destination)
+	//
+	// FIXME this doesn't work right when loading the same script twice with
+	// the same callback.  Info on how many URLs a callback is waiting for
+	// could be stored in the closure instead of on the callback
 		var
 			i,
 			myurls = typeof urls === "string" ? [urls] : urls,

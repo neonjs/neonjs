@@ -61,6 +61,7 @@ neon.jsonEncode = function(obj) {
 		meta = {'\n': '\\n', '\r': '\\r', '"' : '\\"', '\\': '\\\\'},
 		escapechars = /[\\\"\x00-\x1f\u007f-\uffff]/g,
 		undef,
+		objtype,
 		collected = [];
 
 	if (typeof obj == 'object' && obj !== null && exclude.length < 1000) {
@@ -73,8 +74,10 @@ neon.jsonEncode = function(obj) {
 		}
 		exclude.push(obj);
 
+		objtype = Object.prototype.toString.call(obj);
+
 		// treat it as array
-		if (Object.prototype.toString.call(obj) == '[object Array]') {
+		if (objtype === '[object Array]') {
 			for (i = 0, len = obj.length; i < len; i++) {
 				try {
 					collected.push(this.jsonEncode(obj[i], exclude) || 'null');
@@ -85,8 +88,8 @@ neon.jsonEncode = function(obj) {
 			return '[' + collected.join() + ']';
 		}
 
-		if (Object.prototype.toString.call(obj) == '[object Object]' ||
-			exclude.length <= 1) {
+		if ((objtype === '[object Object]' &&
+			typeof obj.hasOwnProperty !== 'undefined') || exclude.length == 1) {
 			for (i in obj) {
 				try {
 					if (Object.hasOwnProperty.call(obj, i)) {

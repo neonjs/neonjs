@@ -35,8 +35,8 @@ See http://neonjs.com for documentation and examples of use.
 
 */
 
-/*jslint browser:true,newcap:true,undef:true */
-/*global neon:true */
+/*jslint browser: true, sloppy: true, vars: true, white: true, plusplus: true*/
+/*global neon */
 
 /**
 @preserve The Neon Javascript Library: tester

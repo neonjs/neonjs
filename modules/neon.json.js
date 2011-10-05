@@ -63,7 +63,7 @@ neon.jsonEncode = function(obj) {
 		undef,
 		collected = [];
 
-	if (typeof obj == 'object' && obj !== null) {
+	if (typeof obj == 'object' && obj !== null && exclude.length < 1000) {
 
 		// prevent endless recursion; check if processing same object inside itself
 		for (i = exclude.length; i--;) {
@@ -73,6 +73,7 @@ neon.jsonEncode = function(obj) {
 		}
 		exclude.push(obj);
 
+		// treat it as array
 		if (Object.prototype.toString.call(obj) == '[object Array]') {
 			for (i = 0, len = obj.length; i < len; i++) {
 				try {
@@ -84,20 +85,22 @@ neon.jsonEncode = function(obj) {
 			return '[' + collected.join() + ']';
 		}
 
-		// not array so treat it as pairs of name:value
-		for (i in obj) {
-			try {
-				if (Object.hasOwnProperty.call(obj, i) &&
-					typeof obj[i].hasOwnProperty !== 'undefined') {
-					if ((current = this.jsonEncode(obj[i], exclude))) {
-						collected.push(this.jsonEncode(i) + ':' + current);
+		if (Object.prototype.toString.call(obj) == '[object Object]' ||
+			exclude.length <= 1) {
+			for (i in obj) {
+				try {
+					if (Object.hasOwnProperty.call(obj, i)) {
+						if ((current = this.jsonEncode(obj[i], exclude))) {
+							collected.push(this.jsonEncode(i) + ':' + current);
+						}
 					}
-				}
-			} catch (err2) {}
+				} catch (err2) {}
+			}
+			exclude.pop();
+			return '{' + collected.join() + '}';
 		}
 
 		exclude.pop();
-		return '{' + collected.join() + '}';
 	}
 
 	return typeof obj == 'string' ? '"' + obj.replace(escapechars, function(ch) {

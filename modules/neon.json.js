@@ -67,7 +67,7 @@ neon.jsonEncode = function(obj) {
 
 		// prevent endless recursion; check if processing same object inside itself
 		for (i = exclude.length; i--;) {
-			if (obj === exclude[i]) {
+			if (obj == exclude[i]) {
 				return undef;
 			}
 		}
@@ -80,19 +80,23 @@ neon.jsonEncode = function(obj) {
 				}
 				catch (err1) {}
 			}
+			exclude.pop();
 			return '[' + collected.join() + ']';
 		}
 
 		// not array so treat it as pairs of name:value
 		for (i in obj) {
-			if (Object.hasOwnProperty.call(obj, i)) {
-				try {
+			try {
+				if (Object.hasOwnProperty.call(obj, i) &&
+					typeof obj[i].hasOwnProperty !== 'undefined') {
 					if ((current = this.jsonEncode(obj[i], exclude))) {
 						collected.push(this.jsonEncode(i) + ':' + current);
 					}
-				} catch (err2) {}
-			}
+				}
+			} catch (err2) {}
 		}
+
+		exclude.pop();
 		return '{' + collected.join() + '}';
 	}
 

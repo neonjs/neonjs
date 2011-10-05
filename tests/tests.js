@@ -6,20 +6,21 @@ if (!document.createDocumentFragment) {
 
 neon.load("neon.tester.js", function() {
 
-	neon.tester("Document ready state", function() {
-		var
-			called = 0,
-			that = this;
-
-		neon.ready(function() {
-			called++;
-			that.assert(called == 1, "Ready called only once");
-			setTimeout(function() { that.finish(); }, 80);
-		});
-		
-	});
-
 	neon.ready(function() {
+
+		neon.tester("Document ready state", function() {
+			var
+				called = 0,
+				that = this;
+
+			this.assert(1, "Document was ready before testing began");
+			neon.ready(function() {
+				called++;
+				that.assert(called == 1, "Ready called only once");
+				setTimeout(function() { that.finish(); }, 80);
+			});
+			
+		});
 
 		neon.tester("Selectors", function() {
 

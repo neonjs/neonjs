@@ -582,8 +582,7 @@ neon = (function() {
 							(!this.readyState || /loade|co/.test(this.readyState))) {
 							loadscripts[url] = triggered = true;
 							myscript.unwatch("load", gencallback)
-								.unwatch("readystatechange", gencallback)
-								.remove();
+								.unwatch("readystatechange", gencallback);
 							if (callback && !(--loadcounter)) {
 								// this callback is no longer waiting on any files, so call it
 								callback();

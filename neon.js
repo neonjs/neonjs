@@ -349,10 +349,10 @@ neon = (function() {
 				evt.button & 2 ? 3 :
 				evt.button & 4 ? 2 : 
 				evt.keyCode || evt.charCode;
-			evt.pageX = evt.clientX + 
-				(document.documentElement.scrollLeft || document.body.scrollLeft);
-			evt.pageY = evt.clientY + 
-				(document.documentElement.scrollTop || document.body.scrollTop);
+			evt.pageX = evt.clientX + (document.documentElement.scrollLeft ||
+				(document.body && document.body.scrollLeft));
+			evt.pageY = evt.clientY + (document.documentElement.scrollTop ||
+				(document.body && document.body.scrollTop));
 			evt.currentTarget = element;
 			evt.target = evt.srcElement;
 			evt.relatedTarget = 

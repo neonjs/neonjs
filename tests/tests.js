@@ -137,8 +137,16 @@ neon.load("neon.tester.js", function() {
 				callback2 = 0,
 				callback2code = function() { 
 					callback2++; 
-					that.assert(typeof neon.jsonEncode === 'undefined', 
+					that.assert(typeof neon.jsonEncode !== 'undefined', 
 						"Callback waits until JS loaded");
+					if (callback2 == 3) {
+						setTimeout(function() {
+							that.assert(callback1 == 1, "Callback fires when JS already loaded");
+							that.assert(callback2 == 3, "Callback fires 3 times when called 3 times");
+							that.assert(neon.jsonEncode, "Included code has executed");
+							that.finish();
+						}, 80);
+					}
 				};
 
 			this.assert(1, "Must have worked for these tests to function");
@@ -148,13 +156,7 @@ neon.load("neon.tester.js", function() {
 			neon.load("neon.json.js", callback2code);
 			neon.load("neon.json.js", callback2code);
 
-			setTimeout(function() {
-				that.assert(callback1 == 1, "Callback fires when JS already loaded");
-				that.assert(callback2 == 3, "Callback fires 3 times when called 3 times");
-				that.assert(neon.jsonEncode, "Included code has executed");
-				that.finish();
-			}, 8000);
-			
+			this.wait(30000);
 		});
 
 		/*

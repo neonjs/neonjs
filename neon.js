@@ -53,7 +53,7 @@ neon = (function() {
 	
 	var
 		neon = {},
-		loadstate = {}, // for each file, loadstate 1 = loading, 2 = loaded
+		loadscripts = {}, // for each file, script element while loading, true when finished
 		eventstore = {}, // remembering event handlers
 		animations = [], // information about properties currently animating
 		readyqueue = [], // just callbacks to execute when ready
@@ -565,55 +565,51 @@ neon = (function() {
 	// It's safe to call this many times with the same url, and it won't be
 	// loaded again, as long as the url string is completely the same (not
 	// just resolving to the same destination)
-	//
-	// FIXME this doesn't work right when loading the same script twice with
-	// the same callback.  Info on how many URLs a callback is waiting for
-	// could be stored in the closure instead of on the callback
 		var
 			i,
+			// store a count of how many files this callback (for this loadid)
+			// is still "waiting on"
+			loadcounter = 0,
 			myurls = typeof urls === "string" ? [urls] : urls,
 			mycallback = callback || function() {},
 			that = this,
 			loadid = ++gid,
 			registerscript = function(url) {
 				var
+					triggered = 0,
 					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : neon.loaddir+url,
-					myscript = that.build({script:"",	$src:myurl}),
+					myscript = loadscripts[url] || that.build({script:"",$src:myurl}),
 					gencallback;
 				gencallback = function() {
-					if (loadstate[url] !== 2 &&
+					if (!triggered &&
 						(!this.readyState || /loade|co/.test(this.readyState))) {
-						loadstate[url] = 2;
-						myscript.unwatch("load", gencallback).unwatch("readystatechange",
-							gencallback).remove();
-						if (!(--mycallback["$neonl"+loadid])) {
+						loadscripts[url] = triggered = true;
+						myscript.unwatch("load", gencallback)
+							.unwatch("readystatechange", gencallback)
+							.remove();
+						if (!(--loadcounter)) {
 							// this callback is no longer waiting on any files, so call it
 							mycallback();
-							//delete mycallback["$neonl"+loadid];
 						}
 					}
 				};
-				loadstate[url] = 1;
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
-				that.select(document.documentElement.childNodes[0]).append(myscript);
+				if (loadscripts[url] !== myscript) {
+					that.select(document.documentElement.childNodes[0]).append(
+						loadscripts[url] = myscript);
+				}
 			};
 
-		// store a count of how many files this callback (for this loadid)
-		// is still "waiting on"
-		mycallback["$neonl"+loadid] = 0;
-
-		this.ready(function() {
-			for (i = myurls.length; i--;) {
-				if (!loadstate[myurls[i]]) {
-					mycallback["$neonl"+loadid]++;
-					registerscript(myurls[i]);
-				}
+		for (i = myurls.length; i--;) {
+			if (loadscripts[myurls[i]] !== true) {
+				loadcounter++;
+				registerscript(myurls[i]);
 			}
-			if (!mycallback["$neonl"+loadid]) {
-				mycallback();
-			}
-		});
+		}
+		if (!loadcounter) {
+			mycallback();
+		}
 	};
 
 	neon.getStyle = function(style) {

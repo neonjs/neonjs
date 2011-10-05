@@ -35,8 +35,8 @@ See http://neonjs.com for documentation and examples of use.
 
 */
 
-/*jslint browser:true,evil:true,newcap:true,undef:true */
-/*global neon:true */
+/*jslint sloppy: true, white: true, plusplus: true */
+/*global neon */
 
 /**
 @preserve The Neon Javascript Library: json
@@ -49,7 +49,7 @@ http://neonjs.com/license
 // to do in Javascript - until browsers start supporting it
 // natively.
 
-neon.jsonEncode = function(obj) {
+neon.jsonEncode = function(obj, $exclude) {
 // serialises the value obj into a JSON string.
 // this JSON encoder guards against infinite recursion, as well as
 // write-only properties (properties which throw an error when you
@@ -57,18 +57,18 @@ neon.jsonEncode = function(obj) {
 // contains native objects, circular references etc.
 	var
 		i, current, len,
-		exclude = arguments[1] || [],
+		exclude = $exclude || [],
 		meta = {'\n': '\\n', '\r': '\\r', '"' : '\\"', '\\': '\\\\'},
 		escapechars = /[\\\"\x00-\x1f\u007f-\uffff]/g,
 		undef,
 		objtype,
 		collected = [];
 
-	if (typeof obj == 'object' && obj !== null && exclude.length < 1000) {
+	if (typeof obj === 'object' && obj !== null && exclude.length < 1000) {
 
 		// prevent endless recursion; check if processing same object inside itself
 		for (i = exclude.length; i--;) {
-			if (obj == exclude[i]) {
+			if (obj === exclude[i]) {
 				return undef;
 			}
 		}
@@ -89,15 +89,16 @@ neon.jsonEncode = function(obj) {
 		}
 
 		if ((objtype === '[object Object]' &&
-			typeof obj.hasOwnProperty !== 'undefined') || exclude.length == 1) {
+			typeof obj.hasOwnProperty !== 'undefined') || exclude.length === 1) {
 			for (i in obj) {
-				try {
-					if (Object.hasOwnProperty.call(obj, i)) {
-						if ((current = this.jsonEncode(obj[i], exclude))) {
+				if (Object.prototype.hasOwnProperty.call(obj, i)) {
+					try {
+						current = this.jsonEncode(obj[i], exclude);
+						if (current) {
 							collected.push(this.jsonEncode(i) + ':' + current);
 						}
-					}
-				} catch (err2) {}
+					} catch (err2) {}
+				}
 			}
 			exclude.pop();
 			return '{' + collected.join() + '}';
@@ -106,11 +107,11 @@ neon.jsonEncode = function(obj) {
 		exclude.pop();
 	}
 
-	return typeof obj == 'string' ? '"' + obj.replace(escapechars, function(ch) {
+	return typeof obj === 'string' ? '"' + obj.replace(escapechars, function(ch) {
 			return meta[ch] || '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
 			}) + '"' :
-		typeof obj == 'number' ? (isFinite(obj) ? String(obj) : 'null') :
-		typeof obj == 'boolean' ? String(obj) :
+		typeof obj === 'number' ? (isFinite(obj) ? String(obj) : 'null') :
+		typeof obj === 'boolean' ? String(obj) :
 		obj === null ? "null" :
 		undef;
 };

@@ -567,32 +567,30 @@ neon = (function() {
 	// just resolving to the same destination)
 		var
 			i,
-			// store a count of how many files this callback (for this loadid)
+			// store a count of how many files this callback
 			// is still "waiting on"
 			loadcounter = 0,
 			myurls = typeof urls === "string" ? [urls] : urls,
 			mycallback = callback || function() {},
 			that = this,
-			loadid = ++gid,
 			registerscript = function(url) {
 				var
-					triggered = 0,
 					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : neon.loaddir+url,
 					myscript = loadscripts[url] || that.build({script:"",$src:myurl}),
-					gencallback;
-				gencallback = function() {
-					if (!triggered &&
-						(!this.readyState || /loade|co/.test(this.readyState))) {
-						loadscripts[url] = triggered = true;
-						myscript.unwatch("load", gencallback)
-							.unwatch("readystatechange", gencallback)
-							.remove();
-						if (!(--loadcounter)) {
-							// this callback is no longer waiting on any files, so call it
-							mycallback();
+					triggered = 0,
+					gencallback = function() {
+						if (!triggered &&
+							(!this.readyState || /loade|co/.test(this.readyState))) {
+							loadscripts[url] = triggered = true;
+							myscript.unwatch("load", gencallback)
+								.unwatch("readystatechange", gencallback)
+								.remove();
+							if (!(--loadcounter)) {
+								// this callback is no longer waiting on any files, so call it
+								mycallback();
+							}
 						}
-					}
-				};
+					};
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
 				if (loadscripts[url] !== myscript) {

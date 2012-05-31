@@ -4,7 +4,7 @@ The Neon Javascript Library: core
 All of Neon's core functionality in a small package
 
 Part of the Neon Javascript Library
-Copyright (c) 2011, Thomas Rutter
+Copyright (c) 2012, Thomas Rutter
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -35,7 +35,8 @@ See http://neonjs.com for documentation and examples of use.
 
 */
 
-/*jslint browser: true, sloppy: true, vars: true, white: true, plusplus: true*/
+/*jshint strict:false,smarttabs:true,browser:true,
+	curly:true,eqeqeq:true,forin:true,immed:true,latedef:true,newcap:true,noarg:true,undef:true,trailing:true */
 /*global neon */
 
 /**

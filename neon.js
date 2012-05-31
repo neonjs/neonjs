@@ -1,6 +1,6 @@
 /*
 
-The Neon Javascript Library: core 
+The Neon Javascript Library: core
 All of Neon's core functionality in a small package
 
 Part of the Neon Javascript Library
@@ -35,7 +35,9 @@ See http://neonjs.com for documentation and examples of use.
 
 */
 
-/*jslint browser:true,white:true,evil:true,sloppy:true,plusplus:true,bitwise:true,vars:true,regexp:true,confusion:true,unparam:true */
+/*jshint strict:false,smarttabs:true,browser:true,
+	bitwise:false,evil:true,
+	curly:true,eqeqeq:true,forin:true,immed:true,latedef:true,newcap:true,noarg:true,undef:true,trailing:true */
 /*global neon:true,attachEvent,window,self,top,opera,ActiveXObject */
 
 /**
@@ -189,7 +191,7 @@ neon = (function() {
 				// to the previous set.  >> is just a ancestor-descendent relationship
 				// like a space in a CSS selector
 
-				cascade = parts[2] || 
+				cascade = parts[2] ||
 					(parts[1] && cascade ? " " :
 					cascade);
 
@@ -240,7 +242,7 @@ neon = (function() {
 
 						// phase one, filtering of existing nodes to narrow down
 						// selection
-						pass = skipfilter ? 1 : 
+						pass = skipfilter ? 1 :
 							!type ? name === "*" || newelements[i].nodeName.toLowerCase() ===
 								name.toLowerCase() :
 							type === "#" ? newelements[i].id === name :
@@ -250,7 +252,7 @@ neon = (function() {
 							type === "[" ? (
 								!attrcompare || !attrvalue ? newelements[i].hasAttribute(name) :
 								compareattrib(newelements[i], name, attrcompare, attrvalue)) :
-							name.toLowerCase() === "first-child" ? 
+							name.toLowerCase() === "first-child" ?
 								!getprevioussibling(newelements[i]) :
 							0;
 
@@ -344,10 +346,10 @@ neon = (function() {
 			evt.stopPropagation = function() {
 				evt.cancelBubble = true;
 			};
-			evt.which = 
+			evt.which =
 				evt.button & 1 ? 1 :
 				evt.button & 2 ? 3 :
-				evt.button & 4 ? 2 : 
+				evt.button & 4 ? 2 :
 				evt.keyCode || evt.charCode;
 			evt.pageX = evt.clientX + (document.documentElement.scrollLeft ||
 				(document.body && document.body.scrollLeft));
@@ -355,7 +357,7 @@ neon = (function() {
 				(document.body && document.body.scrollTop));
 			evt.currentTarget = element;
 			evt.target = evt.srcElement;
-			evt.relatedTarget = 
+			evt.relatedTarget =
 				evt.fromElement !== evt.target ? evt.fromElement : evt.toElement;
 			retval = callback.call(element, evt);
 			// try to solve memory leak in IE - do we need this? (investigate more)
@@ -366,7 +368,7 @@ neon = (function() {
 
 	var eventwrapfocus = function(callback) {
 		// checks if the relatedtarget is within the target and only calls the
-		// registered handler if it isn't.  suitable for implementing 
+		// registered handler if it isn't.  suitable for implementing
 		// mouseenter/mouseleave
 		return function(evt) {
 			if (evt.currentTarget !== evt.relatedTarget &&
@@ -478,7 +480,7 @@ neon = (function() {
 				// other browsers
 				this[i].addEventListener(hoverevent || captureevent || eventname,
 					hoverevent ? (mycallback = eventwrapfocus(mycallback)) : mycallback, !!captureevent);
-			} 
+			}
 			else {
 				// IE
 				this[i].attachEvent("on"+eventname,
@@ -517,7 +519,7 @@ neon = (function() {
 					this[i].removeEventListener(hoverevent || captureevent || eventname,
 						eventstore[this[i].$neoni+eventname+callback.$neoni],
 						!!captureevent);
-				} 
+				}
 				else {
 					// IE
 					this[i].detachEvent("on"+eventname,
@@ -547,7 +549,7 @@ neon = (function() {
 	neon.loaddir = "";
 	// any relative URLs passed to neon.load() will use this as a base.
 	// if specified, this must contain the trailing slash of a directory.
-	// it can be a full url like "http://example.org/dir/" or just the 
+	// it can be a full url like "http://example.org/dir/" or just the
 	// path like "/dir/", and so on.
 	// It's suggested to set this to the base directory where all your
 	// neon modules are located, so that you can have modules that
@@ -616,15 +618,15 @@ neon = (function() {
 	// notations, in particular in IE where it's as it was set eg.
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// neon doesn't normalise them
-		var 
+		var
 			styles = document.defaultView &&
 				document.defaultView.getComputedStyle ?
 				document.defaultView.getComputedStyle(this[0], null) :
 				this[0].currentStyle,
 			val = !this.length ? undefined :
 				styles[style === 'float' ? 'cssFloat' :
-				style.replace(/-(.)/g, function(a,b) { 
-					return b.toUpperCase(); 
+				style.replace(/-(.)/g, function(a,b) {
+					return b.toUpperCase();
 				})];
 
 		if (val !== undefined) {
@@ -656,7 +658,7 @@ neon = (function() {
 		var
 			rel = this.select(relative),
 			pos = !this.length ? undefined :
-				this[0] === window ? {left:0, top:0, 
+				this[0] === window ? {left:0, top:0,
 					right: window.innerWidth || document.documentElement.clientWidth,
 					bottom: window.innerHeight || document.documentElement.clientHeight
 				} :
@@ -677,9 +679,9 @@ neon = (function() {
 			document.documentElement.scrollLeft || document.body.scrollLeft;
 		pos.right +=
 			document.documentElement.scrollLeft || document.body.scrollLeft;
-		pos.top += 
+		pos.top +=
 			document.documentElement.scrollTop || document.body.scrollTop;
-		pos.bottom += 
+		pos.bottom +=
 			document.documentElement.scrollTop || document.body.scrollTop;
 
 		if (rel[0] !== document.documentElement) {
@@ -1079,7 +1081,7 @@ neon = (function() {
 	}
 
 	return neon;
-}()); 
+}());
 
 neon.$ev = function(a) {
 	// internal use only

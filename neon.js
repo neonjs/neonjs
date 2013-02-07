@@ -509,8 +509,7 @@ neon = (function() {
 	// string) removes that attribute.  handy for boolean attributes
 	// like 'selected'
 		var
-			i = this.length,
-			lower = attr.toLowerCase();
+			i = this.length;
 		for (;i--;) {
 			if (value) {
 				this[i].setAttribute(attr, value);
@@ -695,8 +694,8 @@ neon = (function() {
 				}
 			}
 		}
-		for (tmp = attributes.length; tmp--;) {
-			element.setAttribute(attributes[tmp][0], attributes[tmp][1]);
+		for (tmp = 0, len = attributes.length; tmp < len;) {
+			element.setAttribute(attributes[tmp][0], attributes[tmp++][1]);
 		}
 		return this.select(element);
 	};

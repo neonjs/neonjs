@@ -482,16 +482,16 @@ neon = (function() {
 		// so we clone them
 		pos = {left:pos.left,right:pos.right,top:pos.top,bottom:pos.bottom};
 
-		// document.body fallback should be necessary cos some browser modes
-		// ie quirks mode scroll the 'body' rather than the document
+		// no longer compatible with various "quirks" modes.
+		// (neon now requires a browser in standards mode)
 		pos.left +=
-			document.documentElement.scrollLeft || document.body.scrollLeft;
+			window.pageXOffset || document.documentElement.scrollLeft;
 		pos.right +=
-			document.documentElement.scrollLeft || document.body.scrollLeft;
+			window.pageXOffset || document.documentElement.scrollLeft;
 		pos.top +=
-			document.documentElement.scrollTop || document.body.scrollTop;
+			window.pageYOffset || document.documentElement.scrollTop;
 		pos.bottom +=
-			document.documentElement.scrollTop || document.body.scrollTop;
+			window.pageYOffset || document.documentElement.scrollTop;
 
 		if (rel[0] !== document.documentElement) {
 			relpos = rel.getPosition(document.documentElement);

@@ -571,7 +571,7 @@ neon = (function() {
 				.setAttribute('id', 'neon-styleRule-s');
 		}
 		if (style[0].styleSheet) {
-			// IE
+			// IE - we need a test for this so we can see if still needed in IE8
 			style[0].styleSheet.cssText += selector+"{"+rules+"}";
 		}
 		else {

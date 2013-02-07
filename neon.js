@@ -635,6 +635,7 @@ neon = (function() {
 		}
 
 		if (style === 'opacity') {
+			// still required for IE8
 			this.style('filter', 'alpha(opacity='+(100*myval)+')',
 				animated && 100*mylastval, duration, easing, endfunc);
 		}

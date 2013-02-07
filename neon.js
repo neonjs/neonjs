@@ -224,7 +224,6 @@ neon = (function() {
 	// note this is fastest when comparing one element with one element
 		var
 			i, j,
-			stdcompare = !!document.compareDocumentPosition,
 			found,
 			mylist = neon.select(what);
 
@@ -234,9 +233,8 @@ neon = (function() {
 		for (j = mylist.length; j--;) {
 			try {
 				for (found = 0, i = this.length; !found && i--;) {
-					found = stdcompare ?
-						this[i].compareDocumentPosition(mylist[j]) & 16 :
-						this[i].contains(mylist[j]) && this[i] !== mylist[j];
+					// not supported in FF < 9.0!
+					found = this[i].contains(mylist[j]) && this[i] !== mylist[j];
 				}
 			}
 			catch (e) {}

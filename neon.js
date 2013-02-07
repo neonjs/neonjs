@@ -788,23 +788,16 @@ neon = (function() {
 		return this;
 	};
 
-	neon.jsonDecode = function(json) {
-	// unserialises the JSON string into the equivalent value.  Does a check
-	// on the string that is only thorough enough to prevent arbitrary code
-	// execution.
-	
-		/*
-		var cx = /[\x00\u007f-\uffff]/g;
-		json = json.replace(cx, function(ch) {
-			return '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-		});
-		*/
-		if (/^[\],:{}\s]+$/.test(
-			json.replace(/\\["\\\/bfnrt]|\\u[0-9a-fA-F]{4}/g, "$")
-			.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]")
-			.replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) {
-			return this.$ev("("+json+")");
-		}
+	neon.jsonDecode = function(json) { // DEPRECATED
+	// unserialises the JSON string into the equivalent value.  In case of syntax error,
+	// returns nothing
+	//
+	// This function is no longer useful since browsers now support JSON.parse()
+	// It's included only for backward compatibility.  The only difference between this
+	// and JSON.parse() is that this suppresses errors and returns nothing on error
+		try {
+			return JSON.parse(json);
+		} catch (e) {}
 	};
 
 	neon.getHttp = function(url, callback, method, body, contenttype) {

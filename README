@@ -5,7 +5,7 @@ The Neon Javascript Library
 The Neon Javascript Library aims to be an extremely compact, high
 performance cross-browser Javascript framework.
 
-Fitting in less than 4KB minified and gzipped, the core library includes
+Fitting in less than 3kB minified and gzipped, the core library includes
 all the basics you would expect from a sophisticated Javascript framework:
 
 - CSS-based selection engine

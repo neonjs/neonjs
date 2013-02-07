@@ -36,7 +36,7 @@ See http://neonjs.com for documentation and examples of use.
 */
 
 /*jshint strict:false,smarttabs:true,browser:true,
-	bitwise:false,evil:true,
+	bitwise:false,
 	curly:true,eqeqeq:true,forin:true,immed:true,latedef:true,newcap:true,noarg:true,undef:true,trailing:true */
 /*global neon:true,window */
 
@@ -846,11 +846,3 @@ neon = (function() {
 
 	return neon;
 }());
-
-neon.$ev = function(a) {
-	// internal use only
-	// eval is currently needed for decoding JSON.  We separate this into another function
-	// scope so it won't execute in the same scope as everything else.  Among other things
-	// this allow minification to work properly.
-	return eval(a);
-};

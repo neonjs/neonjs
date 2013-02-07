@@ -38,7 +38,7 @@ See http://neonjs.com for documentation and examples of use.
 /*jshint strict:false,smarttabs:true,browser:true,
 	bitwise:false,evil:true,
 	curly:true,eqeqeq:true,forin:true,immed:true,latedef:true,newcap:true,noarg:true,undef:true,trailing:true */
-/*global neon:true,attachEvent,window,self,top,opera,ActiveXObject */
+/*global neon:true,window,self,top,ActiveXObject */
 
 /**
 @preserve The Neon Javascript Library
@@ -62,53 +62,6 @@ neon = (function() {
 		animationschedule, // next scheduled tick or 0/undefined if stopped
 		ready = 0, // 0 = not ready, 1 = ready
 		gid = 0;
-
-	var getprevioussibling = function(element) {
-	// find the previous sibling of this element which is an element node
-		for (element = element.previousSibling; element;
-			element = element.previousSibling) {
-			if (element.nodeType === 1) {
-				return element;
-			}
-		}
-	};
-
-	var checkinarray = {
-		" " : function(elements, newelement) {
-			var i;
-			for (i = elements.length;i--;) {
-				if (elements[i].compareDocumentPosition ?
-						elements[i].compareDocumentPosition(newelement) & 16 :
-						elements[i].contains(newelement) && elements[i] !== newelement) {
-					return 1;
-				}
-			}
-		},
-		">" : function(elements, newelement) {
-			var i;
-			for (i = elements.length;i--;) {
-				if (elements[i] === newelement.parentNode) {
-					return 1;
-				}
-			}
-		},
-		"+" : function(elements, newelement) {
-			var i;
-			for (i = elements.length;i--;) {
-				if (elements[i] === getprevioussibling(newelement)) {
-					return 1;
-				}
-			}
-		},
-		"&" : function(elements, newelement) {
-			var i;
-			for (i = elements.length;i--;) {
-				if (elements[i] === newelement) {
-					return 1;
-				}
-			}
-		}
-	};
 
 	var processreadyqueue;
 	processreadyqueue = function() {
@@ -138,148 +91,6 @@ neon = (function() {
 				setTimeout(checkscroll, 16);
 			}
 		}
-	};
-
-	var compareattrib = function(element, name, attrcompare, attrvalue) {
-		var
-			tmp = name === "class" ? element.className : element.getAttribute(name);
-		return attrcompare === "=" ? tmp === attrvalue :
-			attrcompare === "~=" ? (" "+tmp+" ").indexOf(" "+attrvalue+" ") >= 0 :
-			(tmp+"-").indexOf(attrvalue) === 0;
-	};
-
-	var myqueryselector = function(selector) {
-	// css selector engine for neon.  returns array of elements according to
-	// the given selector string.  as much of CSS 2.1 selector syntax as
-	// possible is supported including A > B, A + B, A:first-child
-	// processes the selector string as a CSS style selector and returns
-	// just an array of elements matching.  for internal use - call
-	// neon.select() in your own code.
-		var
-			i, len,
-			parts,
-			tmp,
-			elements = [],
-			collected = [],
-			cascade,
-			singleparent,
-			searchwithin,
-			pass,
-			regex = /(([>+]?)\s*)([#.\[:]?)([*\w\-]+)(([|~]?=)("|'|)((\\.|[^\\])*?)\7\])?|,/g;
-
-		selector += ","; // makes the loop with the regex easier
-
-		// grab the parts of the selector one by one, and process it as we go.
-		// whether there is whitespace before the part is significant
-		for (parts = regex.exec(selector); parts; parts = regex.exec(selector)) {
-
-			if (parts[4]) {
-				// we have at least a name; this is part of a selector and not a comma or the end
-				var
-					// set these parts for readability, mostly
-					//whitespace = parts[1],
-					//combine = parts[2],
-					type = parts[3],
-					name = parts[4],
-					attrcompare = parts[6],
-					attrvalue = (parts[8]||"").replace(/\\(.)/g, "$1"), // strip slashes
-					skipcascade = !cascade,
-					skipfilter = 0,
-					newelements = [];
-
-				// the cascade is the way in which the new set of elements must relate
-				// to the previous set.  >> is just a ancestor-descendent relationship
-				// like a space in a CSS selector
-
-				cascade = parts[2] ||
-					(parts[1] && cascade ? " " :
-					cascade);
-
-				singleparent = elements.length===1 && (cascade === ">" || cascade === " ");
-				searchwithin = singleparent ? elements[0] : document;
-
-				// if we have no starting elements and this isn't the first run,
-				// then don't bother
-				if (elements.length || skipcascade) {
-
-					// see if we can skip the cascade, narrow down only
-					if (cascade === "&") {
-						skipcascade = 1;
-						newelements = elements.slice(0);
-					}
-					else {
-						// see if we can narrow down.  in some cases if there's a single
-						// parent we can still skip the cascade
-						if (type === "#") {
-							skipfilter = 1;
-							// get element by ID (quick - there's only one!)
-							tmp = document.getElementById(name);
-							if (tmp) {
-								newelements.push(tmp);
-							}
-						}
-						else {
-							// get element by tag name or get all elements (worst case, when comparing
-							// attributes and there's no '&' cascade)
-							if (type === "." && searchwithin.getElementsByClassName) {
-								skipfilter = 1;
-								tmp = searchwithin.getElementsByClassName(name);
-							}
-							else {
-								skipfilter = !type;
-								tmp = searchwithin.getElementsByTagName(type ? "*" : name);
-							}
-							for (i = 0, len = tmp.length; i < len;) {
-								newelements.push(tmp[i++]);
-							}
-							if (singleparent && cascade === " ") {
-								skipcascade = 1;
-							}
-						}
-					}
-					// now we do filtering and cascading in one big loop!  stand back!
-					for (i = newelements.length; i--;) {
-
-						// phase one, filtering of existing nodes to narrow down
-						// selection
-						pass = skipfilter ? 1 :
-							!type ? name === "*" || newelements[i].nodeName.toLowerCase() ===
-								name.toLowerCase() :
-							type === "#" ? newelements[i].id === name :
-							type === "." ?
-								(" "+newelements[i].className+" ").replace(/\s/g, " ")
-								.indexOf(" "+name+" ") >= 0 :
-							type === "[" ? (
-								!attrcompare || !attrvalue ? newelements[i].hasAttribute(name) :
-								compareattrib(newelements[i], name, attrcompare, attrvalue)) :
-							name.toLowerCase() === "first-child" ?
-								!getprevioussibling(newelements[i]) :
-							0;
-
-						// phase two, filtering of nodes against the previously matched
-						// set according to cascade type
-						if (!pass ||
-							(!skipcascade && !checkinarray[cascade](elements, newelements[i]))) {
-							newelements.splice(i, 1);
-						}
-					}
-					elements = newelements;
-					cascade = "&";
-				}
-			}
-			else {
-				// if we have reached either a comma or the end of the selector
-				for (tmp = elements.shift(); tmp; tmp = elements.shift()) {
-
-					if (!checkinarray["&"](collected, tmp)) {
-						// if elements[p] DOESN'T exist in newelement
-						collected.push(tmp);
-					}
-				}
-				cascade = 0;
-			}
-		}
-		return collected;
 	};
 
 	var animationtick;
@@ -413,9 +224,8 @@ neon = (function() {
 			return newelement;
 		}
 
-		return this.select(document.querySelectorAll ?
-			document.querySelectorAll(selector) :
-			myqueryselector(selector));
+		// requires querySelectorAll support
+		return this.select(document.querySelectorAll(selector));
 	};
 
 	neon.contains = function(what) {

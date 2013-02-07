@@ -69,7 +69,7 @@ neon = (function() {
 	// and sets ready to 1
 		var
 			callback;
-		for (callback = readyqueue.shift(); callback; callback = readyqueue.shift()) {
+		while ((callback = readyqueue.shift())) {
 			// shift callback from array, and execute it at same time
 			callback();
 		}
@@ -781,7 +781,7 @@ neon = (function() {
 		var i = this.length,
 			tmp;
 		for (; i--;) {
-			for (tmp = this[i].lastChild; tmp; tmp = this[i].lastChild) {
+			while ((tmp = this[i].lastChild)) {
 				this[i].removeChild(tmp);
 			}
 		}

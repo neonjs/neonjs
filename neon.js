@@ -811,32 +811,23 @@ neon = (function() {
 		var
 			i,
 			collected = [],
-			xmlhttprequest = window.XMLHttpRequest ?
-				new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+			xhr = new XMLHttpRequest();
 
-		xmlhttprequest.onreadystatechange = function() {
-			if (xmlhttprequest.readyState === 4) {
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState === 4) {
 
-				// implement JSON parsing
-				// we've disabled setting responseJSON here since setting a value
-				// to it breaks in IE6 - for now user should use neon.jsonDecode()
-				// not ideal I know
-				/*
-					if (!xmlhttprequest.responseJSON) {
-						xmlhttprequest.responseJSON =
-							neon.jsonDecode(xmlhttprequest.responseText);
-					}
-				*/
+				// neon doesn't implement responseJSON at this time
+				// users should use JSON.parse() instead.
 
-				callback.call(xmlhttprequest);
+				callback.call(xhr);
 
 				// this may be desirable to free memory, not sure if it's a
 				// memory leak problem though
 				// fixme: this was causing an error in my IE6 tester
-				// xmlhttprequest.onreadystatechange = null;
+				// xhr.onreadystatechange = null;
 			}
 		};
-		xmlhttprequest.open(method || "GET", url, true);
+		xhr.open(method || "GET", url, true);
 		if (body && typeof body !== "string" /*&&
 			typeof body.cloneNode != "function" &&
 			typeof body.read != "function"*/) {
@@ -850,10 +841,10 @@ neon = (function() {
 			contenttype = "application/x-www-form-urlencoded";
 		}
 		if (contenttype) {
-			xmlhttprequest.setRequestHeader("Content-type",
+			xhr.setRequestHeader("Content-type",
 				contenttype);
 		}
-		xmlhttprequest.send(body);
+		xhr.send(body);
 		// asks for callback so don't chain
 	};
 

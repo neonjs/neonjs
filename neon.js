@@ -38,7 +38,7 @@ See http://neonjs.com for documentation and examples of use.
 /*jshint strict:false,smarttabs:true,browser:true,
 	bitwise:false,evil:true,
 	curly:true,eqeqeq:true,forin:true,immed:true,latedef:true,newcap:true,noarg:true,undef:true,trailing:true */
-/*global neon:true,window,self,top,ActiveXObject */
+/*global neon:true,window,self,top */
 
 /**
 @preserve The Neon Javascript Library

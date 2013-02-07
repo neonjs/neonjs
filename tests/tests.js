@@ -206,6 +206,18 @@ neon.load("neon.tester.js", function() {
 			this.finish();
 		});
 
+		neon.tester("Checking element relationship", function() {
+			var
+				newdiv = this.testdiv.append({div:""}),
+				span = this.testdiv.append({span:""});
+
+			this.assert(this.testdiv.contains(newdiv), "Parent contains child");
+			this.assert(this.testdiv.contains(span), "Parent contains inline child");
+			this.assert(!newdiv.contains(span), "Element does not contain sibling");
+
+			this.finish();
+		});
+
 		neon.tester("Setting/clearing attributes", function() {
 			var
 				newdiv = this.testdiv.append({div:"",$id:"neontestertestget"}),

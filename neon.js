@@ -38,7 +38,7 @@ See http://neonjs.com for documentation and examples of use.
 /*jshint strict:false,smarttabs:true,browser:true,
 	bitwise:false,evil:true,
 	curly:true,eqeqeq:true,forin:true,immed:true,latedef:true,newcap:true,noarg:true,undef:true,trailing:true */
-/*global neon:true,window,self,top */
+/*global neon:true,window */
 
 /**
 @preserve The Neon Javascript Library
@@ -69,27 +69,15 @@ neon = (function() {
 	// and sets ready to 1
 		var
 			callback;
-		while ((callback = readyqueue.shift())) {
-			// shift callback from array, and execute it at same time
-			callback();
-		}
-		// unwatch these events - a potential memory leak breaker (and good hygeine)
-		neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
-		neon.select(window).unwatch("load", processreadyqueue);
-		ready = 1;
-	};
-
-	var checkscroll;
-	checkscroll = function() {
-	// hack, intended only for IE, for checking when the DOM content is
-	// loaded
-		try {
-			document.documentElement.doScroll("left");
-			processreadyqueue();
-		} catch (e) {
-			if (!ready) {
-				setTimeout(checkscroll, 16);
+		if (this.readyState !== 'loading') {
+			while ((callback = readyqueue.shift())) {
+				// shift callback from array, and execute it at same time
+				callback();
 			}
+			// unwatch these events - a potential memory leak breaker (and good hygeine)
+			neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
+			neon.select(document).unwatch("readystatechange", processreadyqueue);
+			ready = 1;
 		}
 	};
 
@@ -850,11 +838,13 @@ neon = (function() {
 
 	// set up ready listening
 	neon.select(document).watch("DOMContentLoaded", processreadyqueue);
-	neon.select(window).watch("load", processreadyqueue);
+	neon.select(document).watch("readystatechange", processreadyqueue);
+	/*
 	// IE only hack; testing doscroll method - check IE9 support
 	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
 		checkscroll();
 	}
+	*/
 
 	return neon;
 }());

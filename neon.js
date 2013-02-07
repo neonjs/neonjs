@@ -162,10 +162,9 @@ neon = (function() {
 				evt.button & 2 ? 3 :
 				evt.button & 4 ? 2 :
 				evt.keyCode || evt.charCode;
-			evt.pageX = evt.clientX + (document.documentElement.scrollLeft ||
-				(document.body && document.body.scrollLeft));
-			evt.pageY = evt.clientY + (document.documentElement.scrollTop ||
-				(document.body && document.body.scrollTop));
+			// documentElement.scrollLeft/Top required only for IE8
+			evt.pageX = evt.clientX + (window.pageXOffset || document.documentElement.scrollLeft);
+			evt.pageY = evt.clientY + (window.pageYOffset || document.documentElement.scrollTop);
 			evt.currentTarget = element;
 			evt.target = evt.srcElement;
 			evt.relatedTarget =

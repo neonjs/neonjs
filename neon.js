@@ -836,13 +836,8 @@ neon = (function() {
 
 	// set up ready listening
 	neon.select(document).watch("DOMContentLoaded", processreadyqueue);
+	// processreadyqueue is IE8-only
 	neon.select(document).watch("readystatechange", processreadyqueue);
-	/*
-	// IE only hack; testing doscroll method - check IE9 support
-	if (/\bMSIE\s/.test(navigator.userAgent) && !window.opera && self === top) {
-		checkscroll();
-	}
-	*/
 
 	return neon;
 }());

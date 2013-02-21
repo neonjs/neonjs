@@ -836,7 +836,7 @@ neon = (function() {
 
 	// set up ready listening
 	neon.select(document).watch("DOMContentLoaded", processreadyqueue);
-	// processreadyqueue is IE8-only
+	// readystatechange is IE8-only
 	neon.select(document).watch("readystatechange", processreadyqueue);
 
 	return neon;

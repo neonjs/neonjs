@@ -57,9 +57,7 @@ neon = (function() {
 		neon = {},
 		loadscripts = {}, // for each file, script element while loading, true when finished
 		eventstore = {}, // remembering event handlers
-		animations = [], // information about properties currently animating
 		readyqueue = [], // just callbacks to execute when ready
-		animationschedule, // next scheduled tick or 0/undefined if stopped
 		ready = 0, // 0 = not ready, 1 = ready
 		gid = 0;
 
@@ -78,55 +76,6 @@ neon = (function() {
 			neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
 			neon.select(document).unwatch("readystatechange", processreadyqueue);
 			ready = 1;
-		}
-	};
-
-	var animationtick;
-	animationtick = function() {
-	// process a single frame for all registered animations.  Any
-	// animation callback that returns false is deregistered, and when
-	// there are no registered animations left this function stops
-	// calling itself.
-		var
-			i = animations.length,
-			anim, x,
-			time = +new Date(),
-			collect = [];
-
-		animationschedule = !i ? 0 :
-			time < animationschedule + 10 ? animationschedule + (50/3) :
-			time + 4;
-
-		if (animationschedule) {
-			setTimeout(animationtick, animationschedule - time);
-		}
-
-		while (i--) {
-			anim = animations[i];
-			x = (time - anim[4]) / (anim[7]||400);
-			if (x >= 1) {
-				animations.splice(i, x = 1);
-			}
-
-			anim[0].style[anim[1]] = anim[6] + ((
-				anim[8] === "lin"             ? x :
-				anim[8] === "in"              ? x*x :
-				anim[8] === "inout"           ? (1-Math.cos(Math.PI*x)) / 2 :
-				anim[8] === "el"              ? ((2-x)*x-1) *
-					Math.cos(Math.PI*x*3.5) + 1 :
-				typeof anim[8] === "function" ? anim[8](x) :
-				(2-x)*x // 'out' (default)
-				) * anim[3] + anim[2]) + anim[5];
-
-			// execute function after animation finishes?
-			if (x === 1 && anim[9]) {
-				collect.push(anim[0]);
-				if (!i || animations[i-1][10] !== anim[10]) {
-					anim[9].call(neon.select(collect));
-					collect = [];
-				}
-			}
-
 		}
 	};
 
@@ -566,67 +515,30 @@ neon = (function() {
 		return this;
 	};
 
-	neon.style = function(style, value, lastval, duration, easing, endfunc) {
+	neon.style = function(style, value, _lastval, _d, _e, _func) {
 	// sets an inline style to the given value on all selected nodes.
-	// if lastval is given, then after the style is initially set to
-	// the first value, it is animated towards the last value.  easing,
-	// msec and parm are all optional and specify parameters for the
-	// animation; if they are not given, a fairly basic and short
-	// animation is used by default.
+	// DEPRECATED: all arguments after "value" are deprecated
 		var
-			i = this.length, j,
-			time = +new Date(),
-				// the following redundancy gzips well ;)
-			parts     = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(value),
-			lastparts = /([^\d\.\-]*)([\d\.\-]*)([\d\D]*)/.exec(lastval),
-			myval = parseFloat(parts[2]), // need to account for prefix
-			mylastval = parseFloat(lastparts[2]),
-			animated = !isNaN(myval) && !isNaN(mylastval), // NaN test
-			prefix = parts[1],
-			suffix = parts[3],
-			that = this,
-			endfuncid = endfunc && ++gid;
-
-		var myendfunc = endfunc && function() {
-			endfunc.call(that);
-		};
-
-		style = style === 'float' ? 'cssFloat' :
-			style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
+			i = this.length,
+			myval = _lastval === undefined ? value : _lastval,
+			mystyle = style === 'float' ? 'cssFloat' :
+				style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
 
 		while (i--) {
-			this[i].style[style] = value;
-
-			// remove existing animations on same property
-			for (j = animations.length; j--;) {
-				if (animations[j][0] === this[i] &&
-					animations[j][1] === style) {
-					animations.splice(j, 1);
-				}
-			}
-
-			// add this animation into the animation queue
-			if (animated) {
-				animations.push([
-					this[i], style, myval, mylastval - myval,
-					time, suffix, prefix, duration, easing,
-					myendfunc, endfuncid
-				]);
-			}
+			this[i].style[mystyle] = myval;
 		}
 
-		if (style === 'cssFloat') {
-			this.style('styleFloat', value);
+		if (mystyle === 'cssFloat') {
+			this.style('styleFloat', myval);
 		}
 
-		if (style === 'opacity') {
+		if (mystyle === 'opacity') {
 			// still required for IE8
-			this.style('filter', 'alpha(opacity='+(100*myval)+')',
-				animated && 100*mylastval, duration, easing, endfunc);
+			this.style('filter', 'alpha(opacity='+(100*parseFloat(myval))+')');
 		}
 
-		if (animated && !animationschedule) {
-			animationtick();
+		if (_func) {
+			_func.call(this);
 		}
 
 		return this;

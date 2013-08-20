@@ -466,7 +466,7 @@ neon = (function() {
 		var i = this.length;
 		for (; i--;) {
 			this[i].className =
-				(" "+this[i].className+" ").replace(/\s/g, " ")
+				(" "+this[i].className+" ").replace(/\s+/g, " ")
 				.replace(" "+myclass+" ", " ").slice(1,-1);
 		}
 		return this;
@@ -479,7 +479,7 @@ neon = (function() {
 		var i = this.length;
 		for (; i--;) {
 			this[i].className =
-				(" "+this[i].className+" ").replace(/\s/g, " ")
+				(" "+this[i].className+" ").replace(/\s+/g, " ")
 				.replace(" "+myclass+" ", " ").slice(1) + myclass;
 		}
 		return this;

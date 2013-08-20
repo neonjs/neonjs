@@ -404,6 +404,7 @@ neon = (function() {
 			rel = this.select(relative),
 			pos = !this.length ? undefined :
 				this[0] === window ? {left:0, top:0,
+					// IE8 doesn't support innerWidth/innerHeight
 					right: window.innerWidth || document.documentElement.clientWidth,
 					bottom: window.innerHeight || document.documentElement.clientHeight
 				} :

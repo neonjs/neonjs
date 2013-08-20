@@ -141,8 +141,6 @@ neon = (function() {
 			/** @constructor */
 			Constructor = function() {};
 		
-		Constructor.prototype = this;
-		newelement = new Constructor();
 
 		if (typeof selector !== "string") {
 		// handle the case where no selector is given, or a node, window,
@@ -150,6 +148,9 @@ neon = (function() {
 			elements = !selector ? [] :
 				selector.nodeType || selector.setTimeout ? [selector] :
 				selector;
+
+			Constructor.prototype = this;
+			newelement = new Constructor();
 
 			for (i = newelement.length; --i >= elements.length;) {
 				delete newelement[i];

@@ -606,15 +606,14 @@ neon = (function() {
 		var
 			i, j, len,
 			elements = this.build(spec),
-			element = elements.length && elements[0],
+			element = elements.length && (
+				elements.length === 1 ? elements[0] :
+				elements[0].parentNode),
 			instance,
 			group,
 			collected = [];
 		
 		if (element) {
-			if (element.parentNode && element.parentNode.nodeType === 11) {
-				element = element.parentNode;
-			}
 			for (i = this.length; i--;) {
 				if (this[i].appendChild) {
 					instance = i ? element.cloneNode(true) : element;
@@ -638,15 +637,14 @@ neon = (function() {
 		var
 			i, j, len,
 			elements = this.build(spec),
-			element = elements.length && elements[0],
+			element = elements.length && (
+				elements.length === 1 ? elements[0] :
+				elements[0].parentNode),
 			instance,
 			group,
 			collected = [];
 		
 		if (element) {
-			if (element.parentNode && element.parentNode.nodeType === 11) {
-				element = element.parentNode;
-			}
 			for (i = this.length; i--;) {
 				if (this[i].parentNode) {
 					instance = i ? element.cloneNode(true) : element;

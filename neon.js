@@ -497,11 +497,11 @@ neon = (function() {
 	// stylesheet
 	// The document must have a head element when calling this.
 		var
-			style = this.select('#neon-styleRule-s');
+			style = this.select('#neon-styleRule');
 
 		if (!style.length) {
 			style = this.select('head').append({style:""})
-				.setAttribute('id', 'neon-styleRule-s');
+				.setAttribute('id', 'neon-styleRule');
 		}
 		if (style[0].styleSheet) {
 			// IE - we need a test for this so we can see if still needed in IE8

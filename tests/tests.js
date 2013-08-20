@@ -343,9 +343,6 @@ neon.load("neon.tester.js", function() {
 				obj2 = neon.jsonDecode('{"a":"my\\"string\\n","b":[1,2]}'),
 				obj3 = neon.jsonDecode('{"a":{"a":5}}'),
 				obj4 = neon.jsonDecode('7');
-				invalid = neon.jsonDecode('{"a":5+5}'),
-				invalid2 = neon.jsonDecode('{"a":alert(\'2\')}');
-
 
 			this.assert(obj.a === 5.3e2, "Read decimal number with exponent");
 			this.assert(obj.b === false, "Read boolean value");
@@ -355,9 +352,6 @@ neon.load("neon.tester.js", function() {
 				"Read array value");
 			this.assert(obj3.a.a === 5, "Read nested object");
 			this.assert(obj4 === 7, "Read primitive value");
-
-			this.assert(invalid === undefined, "Reject invalid expression");
-			this.assert(invalid2 === undefined, "Reject invalid function call");
 
 			this.finish();
 		});

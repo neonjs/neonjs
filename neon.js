@@ -415,28 +415,25 @@ neon = (function() {
 			return pos;
 		}
 
-		// some browsers (tested in FF3.5/linux) cannot write to these
+		relpos = rel[0] !== document.documentElement ?
+			rel.getPosition(document.documentElement) : {};
+
+		// some browsers (tested in FF3.5/linux) cannot write to pos.left etc
 		// so we clone them
-		pos = {left:pos.left,right:pos.right,top:pos.top,bottom:pos.bottom};
 
 		// no longer compatible with various "quirks" modes.
 		// (neon now requires a browser in standards mode)
-		pos.left +=
-			window.pageXOffset || document.documentElement.scrollLeft;
-		pos.right +=
-			window.pageXOffset || document.documentElement.scrollLeft;
-		pos.top +=
-			window.pageYOffset || document.documentElement.scrollTop;
-		pos.bottom +=
-			window.pageYOffset || document.documentElement.scrollTop;
+		pos = {
+			left: pos.left +
+				window.pageXOffset || document.documentElement.scrollLeft - relpos.left,
+			right: pos.right +
+				window.pageXOffset || document.documentElement.scrollLeft - relpos.right,
+			top: pos.top +
+				window.pageYOffset || document.documentElement.scrollTop - relpos.top,
+			bottom: pos.bottom +
+				window.pageYOffset || document.documentElement.scrollTop - relpos.bottom
+			};
 
-		if (rel[0] !== document.documentElement) {
-			relpos = rel.getPosition(document.documentElement);
-			pos.left -= relpos.left;
-			pos.right -= relpos.right;
-			pos.top -= relpos.top;
-			pos.bottom -= relpos.bottom;
-		}
 		return pos;
 	};
 

@@ -686,17 +686,10 @@ neon = (function() {
 		return this;
 	};
 
-	neon.jsonDecode = function(json) { // DEPRECATED
-	// unserialises the JSON string into the equivalent value.  In case of syntax error,
-	// returns nothing
-	//
+	neon.jsonDecode = JSON.parse; // DEPRECATED
+	// unserialises the JSON string into the equivalent value.
 	// This function is no longer useful since browsers now support JSON.parse()
-	// It's included only for backward compatibility.  The only difference between this
-	// and JSON.parse() is that this suppresses errors and returns nothing on error
-		try {
-			return JSON.parse(json);
-		} catch (e) {}
-	};
+	// It's included only for backward compatibility.
 
 	neon.getHttp = function(url, callback, method, body, contenttype) {
 	// places an HTTP request (using XMLHttpRequest) for the given URL.

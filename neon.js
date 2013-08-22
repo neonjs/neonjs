@@ -411,28 +411,27 @@ neon = (function() {
 				this[0].getBoundingClientRect(),
 			relpos;
 
-		if (!rel.length || !pos || rel[0] === window) {
-			return pos;
+		if (pos && rel.length && rel[0] !== window) {
+
+			relpos = rel[0] === document.documentElement ? {left:0,top:0,right:0,bottom:0} :
+				rel.getPosition(document.documentElement);
+
+			// some browsers (tested in FF3.5/linux) cannot write to pos.left etc
+			// so we clone them
+
+			// no longer compatible with various "quirks" modes.
+			// (neon now requires a browser in standards mode)
+			pos = {
+				left: pos.left - relpos.left +
+					(window.pageXOffset || document.documentElement.scrollLeft),
+				top: pos.top - relpos.top +
+					(window.pageYOffset || document.documentElement.scrollTop),
+				right: pos.right - relpos.right +
+					(window.pageXOffset || document.documentElement.scrollLeft),
+				bottom: pos.bottom - relpos.bottom +
+					(window.pageYOffset || document.documentElement.scrollTop)
+				};
 		}
-
-		relpos = rel[0] !== document.documentElement ?
-			rel.getPosition(document.documentElement) : {};
-
-		// some browsers (tested in FF3.5/linux) cannot write to pos.left etc
-		// so we clone them
-
-		// no longer compatible with various "quirks" modes.
-		// (neon now requires a browser in standards mode)
-		pos = {
-			left: pos.left +
-				window.pageXOffset || document.documentElement.scrollLeft - relpos.left,
-			right: pos.right +
-				window.pageXOffset || document.documentElement.scrollLeft - relpos.right,
-			top: pos.top +
-				window.pageYOffset || document.documentElement.scrollTop - relpos.top,
-			bottom: pos.bottom +
-				window.pageYOffset || document.documentElement.scrollTop - relpos.bottom
-			};
 
 		return pos;
 	};
@@ -606,9 +605,10 @@ neon = (function() {
 		var
 			i, j, len,
 			elements = this.build(spec),
+			// we rely on this.build returning children of a DocumentFragment
 			element = elements.length && (
-				elements.length === 1 ? elements[0] :
-				elements[0].parentNode),
+				elements.length > 1 ? elements[0].parentNode :
+				elements[0]),
 			instance,
 			group,
 			collected = [];
@@ -617,7 +617,7 @@ neon = (function() {
 			for (i = this.length; i--;) {
 				if (this[i].appendChild) {
 					instance = i ? element.cloneNode(true) : element;
-					group = instance.nodeType === 11 ? instance.childNodes : [instance];
+					group = elements.length > 1 ? instance.childNodes : [instance];
 					for (j = 0, len = group.length; j < len;) {
 						collected.push(group[j++]);
 					}
@@ -638,8 +638,8 @@ neon = (function() {
 			i, j, len,
 			elements = this.build(spec),
 			element = elements.length && (
-				elements.length === 1 ? elements[0] :
-				elements[0].parentNode),
+				elements.length > 1 ? elements[0].parentNode :
+				elements[0]),
 			instance,
 			group,
 			collected = [];
@@ -648,7 +648,7 @@ neon = (function() {
 			for (i = this.length; i--;) {
 				if (this[i].parentNode) {
 					instance = i ? element.cloneNode(true) : element;
-					group = instance.nodeType === 11 ? instance.childNodes : [instance];
+					group = elements.length > 1 ? instance.childNodes : [instance];
 					for (j = 0, len = group.length; j < len;) {
 						collected.push(group[j++]);
 					}

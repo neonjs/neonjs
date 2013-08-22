@@ -422,14 +422,10 @@ neon = (function() {
 			// no longer compatible with various "quirks" modes.
 			// (neon now requires a browser in standards mode)
 			pos = {
-				left: pos.left - relpos.left +
-					(window.pageXOffset || document.documentElement.scrollLeft),
-				top: pos.top - relpos.top +
-					(window.pageYOffset || document.documentElement.scrollTop),
-				right: pos.right - relpos.right +
-					(window.pageXOffset || document.documentElement.scrollLeft),
-				bottom: pos.bottom - relpos.bottom +
-					(window.pageYOffset || document.documentElement.scrollTop)
+				left: pos.left + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.left,
+				top: pos.top + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.top,
+				right: pos.right + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.right,
+				bottom: pos.bottom + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.bottom
 				};
 		}
 

@@ -525,10 +525,9 @@ neon = (function() {
 		if (mystyle === 'cssFloat') {
 			this.style('styleFloat', myval);
 		}
-
-		if (mystyle === 'opacity') {
+		else if (mystyle === 'opacity') {
 			// still required for IE8
-			this.style('filter', 'alpha(opacity='+(100*parseFloat(myval))+')');
+			this.style('filter', 'alpha(opacity='+(parseFloat(myval) * 100)+')');
 		}
 
 		if (_func) {

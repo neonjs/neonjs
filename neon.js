@@ -175,7 +175,7 @@ neon = (function() {
 		var
 			i, j,
 			found,
-			mylist = neon.select(what);
+			mylist = this.select(what);
 
 		// the try/catch was protection against "what" sometimes being
 		// a xul element or from some other context where walking up the tree

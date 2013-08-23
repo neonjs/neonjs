@@ -187,6 +187,20 @@ neon.load("neon.tester.js", function() {
 			this.finish();
 		});
 
+		neon.tester("Setting stylesheet rules", function() {
+			var
+				newdiv = this.testdiv.append({div:"",$class:"styleRule-test"});
+
+			neon.styleRule('.styleRule-test', 'height: 683px');
+			neon.styleRule('div.styleRule-test', 'width: 291px');
+			neon.styleRule('.styleRule-test', 'height: 684px');
+			
+			this.assert(newdiv.getStyle('width') === '291px', "Set global stylesheet rule");
+			this.assert(newdiv.getStyle('height') === '684px', "Re-set global stylesheet rule");
+
+			this.finish();
+		});
+
 		neon.tester("Getting element position", function() {
 			var
 				newdiv = this.testdiv.append({div:""})

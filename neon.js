@@ -577,7 +577,8 @@ neon = (function() {
 			registerscript = function(url) {
 				var
 					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : that.loaddir+url,
-					myscript = loadscripts[url] || that.build({script:"",$src:myurl}),
+					myscript = loadscripts[url] ||
+						(loadscripts[url] = that.select('head').append({script:"",$src:myurl})),
 					triggered = 0,
 					gencallback = function() {
 						if (!triggered &&
@@ -593,9 +594,6 @@ neon = (function() {
 					};
 				myscript.watch("load", gencallback);
 				myscript.watch("readystatechange", gencallback);
-				if (loadscripts[url] !== myscript) {
-					that.select('head').append(loadscripts[url] = myscript);
-				}
 			};
 
 		for (i = myurls.length; i--;) {

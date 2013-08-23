@@ -365,6 +365,7 @@ neon = (function() {
 	// neon doesn't normalise them
 		var
 			styles = document.defaultView &&
+				// getComputedStyle not supported by IE8
 				document.defaultView.getComputedStyle ?
 				document.defaultView.getComputedStyle(this[0], null) :
 				this[0].currentStyle,

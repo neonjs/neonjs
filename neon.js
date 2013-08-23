@@ -372,14 +372,10 @@ neon = (function() {
 					return b.toUpperCase();
 				})];
 
-		if (val !== undefined) {
-			return val;
-		}
-		if (style === "opacity") {
-			val = /opacity=(\d+)/.exec(this.getStyle('filter'));
-			return val ? (parseFloat(val[1]) / 100).toString() : undefined;
-		}
-		return style === "cssFloat" ? this.getStyle("styleFloat") :
+		return val !== undefined ? val :
+			style === "cssFloat" ? this.getStyle("styleFloat") :
+			style === "opacity" && /opacity=(\d+)/.exec(this.getStyle('filter')) ?
+				(parseFloat(val[1]) / 100).toString() :
 			undefined;
 	};
 

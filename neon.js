@@ -703,6 +703,8 @@ neon = (function() {
 		for (;i--;) {
 			// all the following exceptions except "style" are mainly just for IE6/7
 			if (lower === "style") {
+				// chrome appears to require setAttribute to be able to un-set it (v29)
+				this[i].setAttribute(attr, value);
 				this[i].style.cssText = value;
 			}
 			else if (lower === "class") {

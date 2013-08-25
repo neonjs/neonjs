@@ -4,7 +4,7 @@ The Neon Javascript Library: json
 A JSON encoder for Neon
 
 Part of the Neon Javascript Library
-Copyright (c) 2012, Thomas Rutter
+Copyright (c) 2013, Thomas Rutter
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ See http://neonjs.com for documentation and examples of use.
 
 /**
 @preserve The Neon Javascript Library: json
-Copyright (c) Thomas Rutter 2012
+Copyright (c) Thomas Rutter 2013
 http://neonjs.com
 http://neonjs.com/license
 */

@@ -155,7 +155,9 @@ neon.load("neon.tester.js", function() {
 			neon.load("neon.tester.js", function() { callback1++; });
 			neon.load("neon.json.js", callback2code);
 			neon.load("neon.json.js", callback2code);
-			neon.load("neon.json.js", callback2code);
+			setTimeout(function() {
+				neon.load("neon.json.js", callback2code);
+			}, 7);
 
 			this.wait(30000);
 		});

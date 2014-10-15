@@ -311,21 +311,14 @@ neon = (function() {
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// neon doesn't normalise them
 		var
-			styles = document.defaultView &&
-				document.defaultView.getComputedStyle ?
-				document.defaultView.getComputedStyle(this[0], null) :
-				this[0].currentStyle,
+			styles = getComputedStyle(this[0], null);
 			val = !this.length ? undefined :
 				styles[style === 'float' ? 'cssFloat' :
 				style.replace(/-(.)/g, function(a,b) {
 					return b.toUpperCase();
 				})];
 
-		return val !== undefined ? val :
-			style === "cssFloat" ? this.getStyle("styleFloat") :
-			style === "opacity" && /opacity=(\d+)/.exec(this.getStyle('filter')) ?
-				(parseFloat(val[1]) / 100).toString() :
-			undefined;
+		return val;
 	};
 
 	neon.getPosition = function(relative) {
@@ -364,10 +357,10 @@ neon = (function() {
 			// no longer compatible with various "quirks" modes.
 			// (neon now requires a browser in standards mode)
 			pos = {
-				left: pos.left + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.left,
-				top: pos.top + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.top,
-				right: pos.right + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.right,
-				bottom: pos.bottom + (window.pageXOffset || document.documentElement.scrollLeft) - relpos.bottom
+				left: pos.left + (window.pageXOffset) - relpos.left,
+				top: pos.top + (window.pageYOffset) - relpos.top,
+				right: pos.right + (window.pageXOffset) - relpos.right,
+				bottom: pos.bottom + (window.pageYOffset) - relpos.bottom
 				};
 		}
 
@@ -456,10 +449,6 @@ neon = (function() {
 
 		while (i--) {
 			this[i].style[mystyle] = myval;
-		}
-
-		if (mystyle === 'cssFloat') {
-			this.style('styleFloat', myval);
 		}
 
 		if (_func) {

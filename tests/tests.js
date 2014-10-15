@@ -1,5 +1,6 @@
 
-if (!document.createDocumentFragment || !document.querySelectorAll) {
+if (!document.createDocumentFragment || !document.querySelectorAll ||
+		!document.addEventListener) {
 	document.open();
 	document.write("<p>Your browser appears to be too old to support neon</p>");
 }

@@ -67,50 +67,13 @@ neon = (function() {
 	// and sets ready to 1
 		var
 			callback;
-		if (this.readyState !== 'loading') {
-			while ((callback = readyqueue.shift())) {
-				// shift callback from array, and execute it at same time
-				callback();
-			}
-			// unwatch these events - a potential memory leak breaker (and good hygeine)
-			neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
-			neon.select(document).unwatch("readystatechange", processreadyqueue);
-			ready = 1;
+		while ((callback = readyqueue.shift())) {
+			// shift callback from array, and execute it at same time
+			callback();
 		}
-	};
-
-	var eventwrapIE = function(callback, element) {
-	// wraps the given callback function in a function to emulate
-	// a W3C event context when running in a IE event context.
-	// element is needed to provide 'this' (and currentTarget)
-		return function() {
-			var
-				evt = event,
-				retval;
-
-			evt.preventDefault = function() {
-				evt.returnValue = false;
-			};
-			evt.stopPropagation = function() {
-				evt.cancelBubble = true;
-			};
-			evt.which =
-				evt.button & 1 ? 1 :
-				evt.button & 2 ? 3 :
-				evt.button & 4 ? 2 :
-				evt.keyCode || evt.charCode;
-			// documentElement.scrollLeft/Top required only for IE8
-			evt.pageX = evt.clientX + (window.pageXOffset || document.documentElement.scrollLeft);
-			evt.pageY = evt.clientY + (window.pageYOffset || document.documentElement.scrollTop);
-			evt.currentTarget = element;
-			evt.target = evt.srcElement;
-			evt.relatedTarget =
-				evt.fromElement !== evt.target ? evt.fromElement : evt.toElement;
-			retval = callback.call(element, evt);
-			// try to solve memory leak in IE - do we need this? (investigate more)
-			evt = null;
-			return retval;
-		};
+		// unwatch these events - a potential memory leak breaker (and good hygeine)
+		neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
+		ready = 1;
 	};
 
 	var eventwrapfocus = function(callback) {
@@ -205,10 +168,12 @@ neon = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
+			// mouseenter and mouseleave emulation required for Chrome 30 and earlier, etc
 			hoverevent =
 				eventname === 'mouseenter' ? 'mouseover' :
 				eventname === 'mouseleave' ? 'mouseout' :
 				null,
+			// focusin and focusout emulation required for Firefox, etc
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
@@ -221,16 +186,8 @@ neon = (function() {
 
 			mycallback = callback;
 
-			if (this[i].addEventListener) {
-				// other browsers
-				this[i].addEventListener(hoverevent || captureevent || eventname,
-					hoverevent ? (mycallback = eventwrapfocus(mycallback)) : mycallback, !!captureevent);
-			}
-			else {
-				// IE
-				this[i].attachEvent("on"+eventname,
-					(mycallback = eventwrapIE(mycallback, this[i])));
-			}
+			this[i].addEventListener(hoverevent || captureevent || eventname,
+				hoverevent ? (mycallback = eventwrapfocus(mycallback)) : mycallback, !!captureevent);
 
 			this[i].$neoni = this[i].$neoni || ++gid;
 			eventstore[this[i].$neoni+eventname+callback.$neoni] = mycallback;
@@ -259,17 +216,9 @@ neon = (function() {
 			if (this[i].$neoni && callback.$neoni &&
 				eventstore[this[i].$neoni+eventname+callback.$neoni]) {
 
-				if (this[i].addEventListener) {
-					// other browsers
-					this[i].removeEventListener(hoverevent || captureevent || eventname,
-						eventstore[this[i].$neoni+eventname+callback.$neoni],
-						!!captureevent);
-				}
-				else {
-					// IE
-					this[i].detachEvent("on"+eventname,
-						eventstore[this[i].$neoni+eventname+callback.$neoni]);
-				}
+				this[i].removeEventListener(hoverevent || captureevent || eventname,
+					eventstore[this[i].$neoni+eventname+callback.$neoni],
+					!!captureevent);
 
 				delete eventstore[this[i].$neoni+eventname+callback.$neoni];
 			}
@@ -398,9 +347,8 @@ neon = (function() {
 			rel = this.select(relative),
 			pos = !this.length ? undefined :
 				this[0] === window ? {left:0, top:0,
-					// IE8 doesn't support innerWidth/innerHeight
-					right: window.innerWidth || document.documentElement.clientWidth,
-					bottom: window.innerHeight || document.documentElement.clientHeight
+					right: window.innerWidth,
+					bottom: window.innerHeight
 				} :
 				this[0].getBoundingClientRect(),
 			relpos;
@@ -492,13 +440,7 @@ neon = (function() {
 			style = this.select('head').append({style:""})
 				.setAttribute('id', 'neon-styleRule');
 		}
-		// IE8 still needs styleSheet.cssText
-		if (style[0].styleSheet) {
-			style[0].styleSheet.cssText += selector+"{"+rules+"}";
-		}
-		else {
-			style.append(selector+"{"+rules+"}");
-		}
+		style.append(selector+"{"+rules+"}");
 
 		return this;
 	};
@@ -518,10 +460,6 @@ neon = (function() {
 
 		if (mystyle === 'cssFloat') {
 			this.style('styleFloat', myval);
-		}
-		else if (mystyle === 'opacity') {
-			// still required for IE8
-			this.style('filter', 'alpha(opacity='+(parseFloat(myval) * 100)+')');
 		}
 
 		if (_func) {
@@ -727,8 +665,6 @@ neon = (function() {
 
 	// set up ready listening
 	neon.select(document).watch("DOMContentLoaded", processreadyqueue);
-	// readystatechange is IE8-only
-	neon.select(document).watch("readystatechange", processreadyqueue);
 
 	return neon;
 }());

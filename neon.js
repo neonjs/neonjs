@@ -272,22 +272,17 @@ neon = (function() {
 				var
 					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : that.loaddir+url,
 					myscript = loadscripts[url] ||
-						(loadscripts[url] = that.select('head').append({script:"",$src:myurl})),
-					triggered = 0,
+						(loadscripts[url] = that.select('head').append({script:""})),
 					gencallback = function() {
-						if (!triggered &&
-							(!this.readyState || /loade|co/.test(this.readyState))) {
-							loadscripts[url] = triggered = true;
-							myscript.unwatch("load", gencallback)
-								.unwatch("readystatechange", gencallback);
-							if (callback && !(--loadcounter)) {
-								// this callback is no longer waiting on any files, so call it
-								callback();
-							}
+						loadscripts[url] = true;
+						myscript.unwatch("load", gencallback);
+						if (callback && !(--loadcounter)) {
+							// this callback is no longer waiting on any files, so call it
+							callback();
 						}
 					};
 				myscript.watch("load", gencallback);
-				myscript.watch("readystatechange", gencallback);
+				myscript.setAttribute('src', myurl);
 			};
 
 		for (i = myurls.length; i--;) {

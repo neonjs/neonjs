@@ -94,8 +94,7 @@ neon = (function() {
 		// handle the case where no selector is given, or a node, window,
 		// or array of nodes
 			elements = !selector ? [] :
-				selector.nodeType || selector.setTimeout ? [selector] :
-				selector;
+				selector.addEventListener ? [selector] : selector;
 
 			Constructor.prototype = this;
 			newelement = new Constructor();

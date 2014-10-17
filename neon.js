@@ -457,7 +457,7 @@ neon = (function() {
 		if (spec === "" || spec === null || spec.length === 0) {
 			return this.select([]);
 		}
-		if (spec.cloneNode && spec.nodeType) { // is a node
+		if (spec.addEventListener) { // is a node
 			return this.select(spec);
 		}
 		if (spec.length && spec[0] && typeof spec !== "string") { //arraylike

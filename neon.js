@@ -318,8 +318,8 @@ neon = (function() {
 			rel = this.select(relative),
 			pos = !this.length ? undefined :
 				this[0] === window ? {left:0, top:0,
-					right: window.innerWidth,
-					bottom: window.innerHeight
+					right: innerWidth,
+					bottom: innerHeight
 				} :
 				this[0].getBoundingClientRect(),
 			relpos;
@@ -335,10 +335,10 @@ neon = (function() {
 			// no longer compatible with various "quirks" modes.
 			// (neon now requires a browser in standards mode)
 			pos = {
-				left: pos.left + (window.pageXOffset) - relpos.left,
-				top: pos.top + (window.pageYOffset) - relpos.top,
-				right: pos.right + (window.pageXOffset) - relpos.right,
-				bottom: pos.bottom + (window.pageYOffset) - relpos.bottom
+				left: pos.left + pageXOffset - relpos.left,
+				top: pos.top + pageYOffset - relpos.top,
+				right: pos.right + pageXOffset - relpos.right,
+				bottom: pos.bottom + pageYOffset - relpos.bottom
 				};
 		}
 

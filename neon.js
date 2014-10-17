@@ -594,20 +594,10 @@ neon = (function() {
 			collected = [],
 			xhr = new XMLHttpRequest();
 
-		xhr.onreadystatechange = function() {
-			if (xhr.readyState === 4) {
-
-				// neon doesn't implement responseJSON at this time
-				// users should use JSON.parse() instead.
-
-				callback.call(xhr);
-
-				// this may be desirable to free memory, not sure if it's a
-				// memory leak problem though
-				// fixme: this was causing an error in my IE6 tester
-				// xhr.onreadystatechange = null;
-			}
-		};
+		if (callback) {
+			neon.select(xhr).watch('load', callback);
+		}
+				
 		xhr.open(method || "GET", url, true);
 		if (body && typeof body !== "string" /*&&
 			typeof body.cloneNode != "function" &&

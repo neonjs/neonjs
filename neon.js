@@ -593,7 +593,7 @@ neon = (function() {
 			xhr = new XMLHttpRequest();
 
 		if (callback) {
-			neon.select(xhr).watch('load', callback);
+			this.select(xhr).watch('load', callback);
 		}
 				
 		xhr.open(method || "GET", url, true);

@@ -61,21 +61,6 @@ neon = (function() {
 		ready = 0, // 0 = not ready, 1 = ready
 		gid = 0;
 
-	var processreadyqueue;
-	processreadyqueue = function() {
-	// fairly straightforward.  runs every callback in the ready queue
-	// and sets ready to 1
-		var
-			callback;
-		while ((callback = readyqueue.shift())) {
-			// shift callback from array, and execute it at same time
-			callback();
-		}
-		// unwatch these events - a potential memory leak breaker (and good hygeine)
-		neon.select(document).unwatch("DOMContentLoaded", processreadyqueue);
-		ready = 1;
-	};
-
 	var eventwrapfocus = function(callback) {
 		// checks if the relatedtarget is within the target and only calls the
 		// registered handler if it isn't.  suitable for implementing
@@ -647,7 +632,14 @@ neon = (function() {
 	};
 
 	// set up ready listening
-	neon.select(document).watch("DOMContentLoaded", processreadyqueue);
+	neon.select(document).watch("DOMContentLoaded", function() {
+		// runs every callback in the ready queue
+		// and sets ready to 1
+			ready = 1;
+			while (readyqueue[0]) {
+				readyqueue.shift()();
+			}
+		});
 
 	return neon;
 }());

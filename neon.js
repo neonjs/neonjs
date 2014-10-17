@@ -59,6 +59,7 @@ neon = (function() {
 		eventstore = {}, // remembering event handlers
 		readyqueue = [], // just callbacks to execute when ready
 		ready = 0, // 0 = not ready, 1 = ready
+		stylerule,
 		gid = 0;
 
 	var eventwrapfocus = function(callback) {
@@ -403,14 +404,11 @@ neon = (function() {
 	// (of a few thousand?) on the number of style rules in a
 	// stylesheet
 	// The document must have a head element when calling this.
-		var
-			style = this.select('#neon-styleRule');
-
-		if (!style.length) {
-			style = this.select('head').append({style:""})
-				.setAttribute('id', 'neon-styleRule');
-		}
-		style.append(selector+"{"+rules+"}");
+	
+		if (!stylerule)
+			stylerule = this.select('head').append({style:selector+"{"+rules+"}"});
+		else
+			stylerule.append(selector+"{"+rules+"}");
 
 		return this;
 	};

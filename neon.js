@@ -257,16 +257,15 @@ neon = (function() {
 				var
 					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : that.loaddir+url,
 					myscript = loadscripts[url] ||
-						(loadscripts[url] = that.select('head').append({script:""})),
-					gencallback = function() {
+						(loadscripts[url] = that.select('head').append({script:""}));
+
+				myscript.watch("load", function() {
 						loadscripts[url] = true;
-						myscript.unwatch("load", gencallback);
 						if (callback && !(--loadcounter)) {
 							// this callback is no longer waiting on any files, so call it
 							callback();
 						}
-					};
-				myscript.watch("load", gencallback);
+					});
 				myscript.setAttribute('src', myurl);
 			};
 

@@ -283,14 +283,12 @@ neon = (function() {
 	// notations, in particular in IE where it's as it was set eg.
 	// "yellow" vs "rgb(255, 255, 0)" vs "#ffff00".  at this stage
 	// neon doesn't normalise them
-		var
-			val = !this.length ? undefined :
-				getComputedStyle(this[0], null)[style === 'float' ? 'cssFloat' :
-				style.replace(/-(.)/g, function(_a,b) {
-					return b.toUpperCase();
-				})];
+		return !this.length ? undefined :
+			getComputedStyle(this[0], null)[style === 'float' ? 'cssFloat' :
+			style.replace(/-(.)/g, function(_a,b) {
+				return b.toUpperCase();
+			})];
 
-		return val;
 	};
 
 	neon.getPosition = function(relative) {

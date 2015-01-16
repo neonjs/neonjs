@@ -85,32 +85,26 @@ neon = (function() {
 	// returns a neon object with the given elements selected.
 		var
 			i,
-			elements,
+			// handle the case where no selector is given, or a node, window,
+			// or array of nodes
+			elements = typeof selector === "string" ?
+				document.querySelectorAll(selector) :
+				!selector ? [] :
+				selector.addEventListener ? [selector] : selector,
 			newelement,
 			/** @constructor */
 			Constructor = function() {};
-		
 
-		if (typeof selector !== "string") {
-		// handle the case where no selector is given, or a node, window,
-		// or array of nodes
-			elements = !selector ? [] :
-				selector.addEventListener ? [selector] : selector;
+		Constructor.prototype = this;
+		newelement = new Constructor();
 
-			Constructor.prototype = this;
-			newelement = new Constructor();
-
-			for (i = newelement.length; --i >= elements.length;) {
-				delete newelement[i];
-			}
-			for (newelement.length = i = elements.length; i--;) {
-				newelement[i] = elements[i];
-			}
-			return newelement;
+		for (i = newelement.length; --i >= elements.length;) {
+			delete newelement[i];
 		}
-
-		// requires querySelectorAll support
-		return this.select(document.querySelectorAll(selector));
+		for (newelement.length = i = elements.length; i--;) {
+			newelement[i] = elements[i];
+		}
+		return newelement;
 	};
 
 	neon.contains = function(what) {

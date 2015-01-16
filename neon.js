@@ -337,7 +337,10 @@ neon = (function() {
 		return pos;
 	};
 
-	neon.setAttribute = function(attr, value) {
+	// neon.removeAttribute is now just an alias of setAttribute, because
+	// setAttribute without a second arg removes the attribute anyway
+	neon.setAttribute = 
+		neon.removeAttribute = function(attr, value) {
 	// shortcut, for setting attribute on all selected elements
 	// note that in this function, setting the value to "" (empty
 	// string) removes that attribute.  handy for boolean attributes
@@ -353,10 +356,6 @@ neon = (function() {
 			}
 		}
 		return this;
-	};
-
-	neon.removeAttribute = function(attr) {
-		return this.setAttribute(attr, "");
 	};
 
 	neon.removeClass = function(myclass) {

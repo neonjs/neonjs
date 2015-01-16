@@ -4,7 +4,7 @@ The Neon Javascript Library: core
 All of Neon's core functionality in a small package
 
 Part of the Neon Javascript Library
-Copyright (c) 2014, Thomas Rutter
+Copyright (c) 2015, Thomas Rutter
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ See http://neonjs.com for documentation and examples of use.
 
 /**
 @preserve The Neon Javascript Library
-Copyright (c) Thomas Rutter 2014
+Copyright (c) Thomas Rutter 2015
 http://neonjs.com
 http://neonjs.com/license
 */

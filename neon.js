@@ -260,6 +260,7 @@ neon = (function() {
 							callback();
 						}
 					});
+				// TODO check if this is being set when it was already set
 				myscript.setAttribute('src', myurl);
 			};
 

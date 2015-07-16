@@ -249,19 +249,19 @@ neon = (function() {
 			that = this,
 			registerscript = function(url) {
 				var
-					myurl = (/^[^\/?#]+:|^\//).test(url) ? url : that.loaddir+url,
-					myscript = loadscripts[url] ||
-						(loadscripts[url] = that.select('head').append({script:""}));
+					existing = loadscripts[url],
+					script = existing || that.select('head').append({script:""});
 
-				myscript.watch("load", function() {
+				script.watch("load", function() {
 						loadscripts[url] = true;
 						if (callback && !(--loadcounter)) {
 							// this callback is no longer waiting on any files, so call it
 							callback();
 						}
 					});
-				// TODO check if this is being set when it was already set
-				myscript.setAttribute('src', myurl);
+				if (!existing) { 
+					loadscripts[url] = script.setAttribute('src', /^[^\/?#]+:|^\//.test(url) ? url : that.loaddir+url);
+				}
 			};
 
 		for (i = myurls.length; i--;) {
@@ -397,10 +397,12 @@ neon = (function() {
 	// stylesheet
 	// The document must have a head element when calling this.
 	
-		if (!stylerule)
+		if (!stylerule) {
 			stylerule = this.select('head').append({style:selector+"{"+rules+"}"});
-		else
+		}
+		else {
 			stylerule.append(selector+"{"+rules+"}");
+		}
 
 		return this;
 	};
@@ -412,7 +414,7 @@ neon = (function() {
 			i = this.length,
 			myval = _lastval === undefined ? value : _lastval,
 			mystyle = style === 'float' ? 'cssFloat' :
-				style.replace(/-(.)/g, function(a,b) { return b.toUpperCase(); });
+				style.replace(/-(.)/g, function(_x,y) { return y.toUpperCase(); });
 
 		while (i--) {
 			this[i].style[mystyle] = myval;

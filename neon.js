@@ -398,11 +398,9 @@ neon = (function() {
 	// The document must have a head element when calling this.
 	
 		if (!stylerule) {
-			stylerule = this.select('head').append({style:selector+"{"+rules+"}"});
+			stylerule = this.select('head').append({style:''});
 		}
-		else {
-			stylerule.append(selector+"{"+rules+"}");
-		}
+		stylerule.append(selector+"{"+rules+"}");
 
 		return this;
 	};

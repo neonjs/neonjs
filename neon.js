@@ -62,19 +62,6 @@ neon = (function() {
 		stylerule,
 		gid = 0;
 
-	var eventwrapfocus = function(callback) {
-		// checks if the relatedtarget is within the target and only calls the
-		// registered handler if it isn't.  suitable for implementing
-		// mouseenter/mouseleave
-		return function(evt) {
-			if (evt.currentTarget !== evt.relatedTarget &&
-				!neon.select(evt.currentTarget).contains(
-				evt.relatedTarget)) {
-				callback.call(this, evt);
-			}
-		};
-	};
-
 	// ##################################################################
 	// PUBLIC METHODS
 	// call these methods using neon.methodname() eg neon.watch()
@@ -147,11 +134,6 @@ neon = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			// mouseenter and mouseleave emulation required for Chrome 30 and earlier, etc
-			hoverevent =
-				eventname === 'mouseenter' ? 'mouseover' :
-				eventname === 'mouseleave' ? 'mouseout' :
-				null,
 			// focusin and focusout emulation required for Firefox, etc
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
@@ -165,8 +147,7 @@ neon = (function() {
 
 			mycallback = callback;
 
-			this[i].addEventListener(hoverevent || captureevent || eventname,
-				hoverevent ? (mycallback = eventwrapfocus(mycallback)) : mycallback, !!captureevent);
+			this[i].addEventListener(captureevent || eventname, mycallback, !!captureevent);
 
 			this[i].$neoni = this[i].$neoni || ++gid;
 			eventstore[this[i].$neoni+eventname+callback.$neoni] = mycallback;
@@ -181,10 +162,6 @@ neon = (function() {
 	// as the event was registered with.
 		var
 			i,
-			hoverevent =
-				eventname === 'mouseenter' ? 'mouseover' :
-				eventname === 'mouseleave' ? 'mouseout' :
-				null,
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
@@ -195,7 +172,7 @@ neon = (function() {
 			if (this[i].$neoni && callback.$neoni &&
 				eventstore[this[i].$neoni+eventname+callback.$neoni]) {
 
-				this[i].removeEventListener(hoverevent || captureevent || eventname,
+				this[i].removeEventListener(captureevent || eventname,
 					eventstore[this[i].$neoni+eventname+callback.$neoni],
 					!!captureevent);
 

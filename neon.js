@@ -134,7 +134,7 @@ neon = (function() {
 	// and event.stopPropagation() across browsers.
 		var
 			i,
-			// focusin and focusout emulation required for Firefox, etc
+			// focusin and focusout emulation required for Firefox
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
@@ -162,6 +162,7 @@ neon = (function() {
 	// as the event was registered with.
 		var
 			i,
+			// focusin and focusout emulation required for Firefox
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :

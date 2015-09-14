@@ -125,14 +125,14 @@ neon = (function() {
 	// parameter, which will contain event.target, event.preventDefault()
 	// and event.stopPropagation().
 		var
-			i,
+			i = this.length,
 			// focusin and focusout emulation required for Firefox
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
 				null;
 
-		for (i = this.length; i--;) {
+		for (; i--;) {
 			this[i].addEventListener(captureevent || eventname, callback, !!captureevent);
 		}
 
@@ -143,14 +143,14 @@ neon = (function() {
 	// This must be called with identical parameters and with the same selected
 	// elements as the corresponding call to watch().
 		var
-			i,
+			i = this.length,
 			// focusin and focusout emulation required for Firefox
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
 				null;
 
-		for (i = this.length; i--;) {
+		for (; i--;) {
 			this[i].removeEventListener(captureevent || eventname, callback, !!captureevent);
 		}
 

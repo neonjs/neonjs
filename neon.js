@@ -449,14 +449,12 @@ neon = (function() {
 		
 		if (element) {
 			for (i = this.length; i--;) {
-				if (this[i].appendChild) {
-					instance = i ? element.cloneNode(true) : element;
-					group = elements.length > 1 ? instance.childNodes : [instance];
-					for (j = 0, len = group.length; j < len;) {
-						collected.push(group[j++]);
-					}
-					this[i].appendChild(instance);
+				instance = i ? element.cloneNode(true) : element;
+				group = elements.length > 1 ? instance.childNodes : [instance];
+				for (j = 0, len = group.length; j < len;) {
+					collected.push(group[j++]);
 				}
+				this[i].appendChild(instance);
 			}
 		}
 		return this.select(collected);
@@ -480,14 +478,12 @@ neon = (function() {
 		
 		if (element) {
 			for (i = this.length; i--;) {
-				if (this[i].parentNode) {
-					instance = i ? element.cloneNode(true) : element;
-					group = elements.length > 1 ? instance.childNodes : [instance];
-					for (j = 0, len = group.length; j < len;) {
-						collected.push(group[j++]);
-					}
-					this[i].parentNode.insertBefore(instance, this[i]);
+				instance = i ? element.cloneNode(true) : element;
+				group = elements.length > 1 ? instance.childNodes : [instance];
+				for (j = 0, len = group.length; j < len;) {
+					collected.push(group[j++]);
 				}
+				this[i].parentNode.insertBefore(instance, this[i]);
 			}
 		}
 		return this.select(collected);

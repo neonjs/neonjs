@@ -56,11 +56,9 @@ neon = (function() {
 	var
 		neon = {},
 		loadscripts = {}, // for each file, script element while loading, true when finished
-		eventstore = {}, // remembering event handlers
 		readyqueue = [], // just callbacks to execute when ready
 		ready = 0, // 0 = not ready, 1 = ready
-		stylerule,
-		gid = 0;
+		stylerule;
 
 	// ##################################################################
 	// PUBLIC METHODS
@@ -125,7 +123,7 @@ neon = (function() {
 	// intended to be cross platform.
 	// The callback will be able to access the event object via the first
 	// parameter, which will contain event.target, event.preventDefault()
-	// and event.stopPropagation() across browsers.
+	// and event.stopPropagation().
 		var
 			i,
 			// focusin and focusout emulation required for Firefox
@@ -134,23 +132,16 @@ neon = (function() {
 				eventname === 'focusout' ? 'blur' :
 				null;
 
-		callback.$neoni = callback.$neoni || ++gid;
-
 		for (i = this.length; i--;) {
-
 			this[i].addEventListener(captureevent || eventname, callback, !!captureevent);
-
-			this[i].$neoni = this[i].$neoni || ++gid;
-			eventstore[this[i].$neoni + eventname + callback.$neoni] = callback;
 		}
 
 	};
 
 	neon.unwatch = function(eventname, callback) {
-	// removes an event handler added with watch(). While neon can be mixed
-	// with other frameworks and even with native browser calls, you need to
-	// always un-register each event handler with the same framework/method
-	// as the event was registered with.
+	// removes an event handler added with watch().
+	// This must be called with identical parameters and with the same selected
+	// elements as the corresponding call to watch().
 		var
 			i,
 			// focusin and focusout emulation required for Firefox
@@ -160,17 +151,9 @@ neon = (function() {
 				null;
 
 		for (i = this.length; i--;) {
-
-			if (eventstore[this[i].$neoni + eventname + callback.$neoni]) {
-
-				this[i].removeEventListener(captureevent || eventname,
-					eventstore[this[i].$neoni + eventname + callback.$neoni],
-					!!captureevent);
-
-				delete eventstore[this[i].$neoni + eventname + callback.$neoni];
-			}
-
+			this[i].removeEventListener(captureevent || eventname, callback, !!captureevent);
 		}
+
 		return this;
 	};
 

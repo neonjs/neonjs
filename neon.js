@@ -132,19 +132,16 @@ neon = (function() {
 			captureevent =
 				eventname === 'focusin' ? 'focus' :
 				eventname === 'focusout' ? 'blur' :
-				null,
-			mycallback;
+				null;
 
 		callback.$neoni = callback.$neoni || ++gid;
 
 		for (i = this.length; i--;) {
 
-			mycallback = callback;
-
-			this[i].addEventListener(captureevent || eventname, mycallback, !!captureevent);
+			this[i].addEventListener(captureevent || eventname, callback, !!captureevent);
 
 			this[i].$neoni = this[i].$neoni || ++gid;
-			eventstore[this[i].$neoni+eventname+callback.$neoni] = mycallback;
+			eventstore[this[i].$neoni + eventname + callback.$neoni] = callback;
 		}
 
 	};

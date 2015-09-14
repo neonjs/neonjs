@@ -104,9 +104,6 @@ neon = (function() {
 			cmplist = this.select(what),
 			j = cmplist.length;
 
-		// the try/catch was protection against "what" sometimes being
-		// a xul element or from some other context where walking up the tree
-		// would raise exceptions
 		for (; j--;) {
 			for (i = this.length; !this[--i].contains(cmplist[j]) || this[i] === cmplist[j];) {
 				if (!i) {

@@ -69,7 +69,7 @@ neon = (function() {
 	// string, or a node or array of nodes.  also accepts the window object
 	// returns a neon object with the given elements selected.
 		var
-			i,
+			i = this.length,
 			// handle the case where no selector is given, or a node, window,
 			// or array of nodes
 			elements = typeof selector === "string" ?
@@ -83,7 +83,7 @@ neon = (function() {
 		Constructor.prototype = this;
 		newelement = new Constructor();
 
-		for (i = newelement.length; --i >= elements.length;) {
+		for (; --i >= elements.length;) {
 			delete newelement[i];
 		}
 		for (newelement.length = i = elements.length; i--;) {
@@ -100,13 +100,14 @@ neon = (function() {
 	// an argument to neon.select()
 	// note this is fastest when comparing one element with one element
 		var
-			i, j,
-			cmplist = this.select(what);
+			i,
+			cmplist = this.select(what),
+			j = cmplist.length;
 
 		// the try/catch was protection against "what" sometimes being
 		// a xul element or from some other context where walking up the tree
 		// would raise exceptions
-		for (j = cmplist.length; j--;) {
+		for (; j--;) {
 			for (i = this.length; !this[--i].contains(cmplist[j]) || this[i] === cmplist[j];) {
 				if (!i) {
 					return false;
@@ -192,10 +193,10 @@ neon = (function() {
 	// loaded again, as long as the url string is completely the same (not
 	// just resolving to the same destination)
 		var
-			i,
 			// store a count of how many files this callback
 			// is still "waiting on"
 			myurls = typeof urls === "string" ? [urls] : urls,
+			i = myurls.length,
 			loadcounter = myurls.length,
 			that = this,
 			registerscript = function(url) {
@@ -215,7 +216,7 @@ neon = (function() {
 				}
 			};
 
-		for (i = myurls.length; i--;) {
+		for (; i--;) {
 			if (loadscripts[myurls[i]] !== true) {
 				registerscript(myurls[i]);
 			}
@@ -437,7 +438,7 @@ neon = (function() {
 	// the new elements are appended to the child nodes of each currently
 	// selected node.
 		var
-			i, j, len,
+			i = this.length, j, len,
 			elements = this.build(spec),
 			// we rely on this.build returning children of a DocumentFragment
 			element = elements.length && (
@@ -448,7 +449,7 @@ neon = (function() {
 			collected = [];
 		
 		if (element) {
-			for (i = this.length; i--;) {
+			for (; i--;) {
 				instance = i ? element.cloneNode(true) : element;
 				group = elements.length > 1 ? instance.childNodes : [instance];
 				for (j = 0, len = group.length; j < len;) {
@@ -467,7 +468,7 @@ neon = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			i, j, len,
+			i = this.length, j, len,
 			elements = this.build(spec),
 			element = elements.length && (
 				elements.length > 1 ? elements[0].parentNode :
@@ -477,7 +478,7 @@ neon = (function() {
 			collected = [];
 		
 		if (element) {
-			for (i = this.length; i--;) {
+			for (; i--;) {
 				instance = i ? element.cloneNode(true) : element;
 				group = elements.length > 1 ? instance.childNodes : [instance];
 				for (j = 0, len = group.length; j < len;) {

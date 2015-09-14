@@ -161,14 +161,13 @@ neon = (function() {
 
 		for (i = this.length; i--;) {
 
-			if (this[i].$neoni && callback.$neoni &&
-				eventstore[this[i].$neoni+eventname+callback.$neoni]) {
+			if (eventstore[this[i].$neoni + eventname + callback.$neoni]) {
 
 				this[i].removeEventListener(captureevent || eventname,
-					eventstore[this[i].$neoni+eventname+callback.$neoni],
+					eventstore[this[i].$neoni + eventname + callback.$neoni],
 					!!captureevent);
 
-				delete eventstore[this[i].$neoni+eventname+callback.$neoni];
+				delete eventstore[this[i].$neoni + eventname + callback.$neoni];
 			}
 
 		}

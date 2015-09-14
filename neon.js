@@ -103,22 +103,16 @@ neon = (function() {
 	// note this is fastest when comparing one element with one element
 		var
 			i, j,
-			found,
-			mylist = this.select(what);
+			cmplist = this.select(what);
 
 		// the try/catch was protection against "what" sometimes being
 		// a xul element or from some other context where walking up the tree
 		// would raise exceptions
-		for (j = mylist.length; j--;) {
-			try {
-				for (found = 0, i = this.length; !found && i--;) {
-					// not supported in FF < 9.0!
-					found = this[i].contains(mylist[j]) && this[i] !== mylist[j];
+		for (j = cmplist.length; j--;) {
+			for (i = this.length; !this[--i].contains(cmplist[j]) || this[i] === cmplist[j];) {
+				if (!i) {
+					return false;
 				}
-			}
-			catch (e) {}
-			if (!found) {
-				return false;
 			}
 		}
 		return true;

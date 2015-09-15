@@ -83,7 +83,7 @@ neon = (function() {
 		Constructor.prototype = this;
 		newelement = new Constructor();
 
-		for (; --i >= elements.length;) {
+		for (; i-- > elements.length;) {
 			delete newelement[i];
 		}
 		for (newelement.length = i = elements.length; i--;) {

@@ -390,40 +390,35 @@ neon = (function() {
 	//   reason.
 	// Or an array containing one or more strings or objects as above
 		var
-			tmp, len,
+			i,
 			element,
-			attributes = [];
-		if (spec === "" || spec === null || spec.length === 0) {
-			return this.select([]);
+			keys;
+
+		if (!spec || spec.addEventListener) {
+			element = spec;
 		}
-		if (spec.addEventListener) { // is a node
-			return this.select(spec);
+		else if (typeof spec === "string") {
+			element = document.createTextNode(spec);
 		}
-		if (spec.length && spec[0] && typeof spec !== "string") { //arraylike
+		else if (spec[0]) { //arraylike
 			element = document.createDocumentFragment();
-			for (tmp = 0, len = spec.length; tmp < len;) {
-				element.appendChild(this.build(spec[tmp++])[0]);
+			for (i = 0; i < spec.length;) {
+				element.appendChild(this.build(spec[i++])[0]);
 			}
-			return this.select(element.childNodes);
+			element = element.childNodes;
 		}
-		if (typeof spec !== "object") {
-			return this.select(document.createTextNode(spec));
-		}
-		for (tmp in spec) {
-			if (spec.hasOwnProperty(tmp)) {
-				if (tmp.slice(0,1) === "$") {
-					attributes.push([tmp.slice(1),spec[tmp]]);
-				}
-				else {
-					element = this.select(document.createElement(tmp));
-					if (spec[tmp]) {
-						element.append(spec[tmp]);
-					}
-				}
+		else {
+			// sorting the keys means the element name (without dollar sign)
+			// will be last
+			keys = Object.keys(spec).sort();
+			i = keys.pop();
+			element = this.select(document.createElement(i));
+			if (spec[i]) {
+				element.append(spec[i]);
 			}
-		}
-		for (tmp = 0, len = attributes.length; tmp < len;) {
-			element.setAttribute(attributes[tmp][0], attributes[tmp++][1]);
+			while ((i = keys.pop())) {
+				element.setAttribute(i.slice(1), spec[i]);
+			}
 		}
 		return this.select(element);
 	};

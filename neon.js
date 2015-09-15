@@ -430,7 +430,7 @@ neon = (function() {
 	// the new elements are appended to the child nodes of each currently
 	// selected node.
 		var
-			i = this.length, j, len,
+			i = this.length, j,
 			elements = this.build(spec),
 			// we rely on this.build returning children of a DocumentFragment
 			element = elements.length && (
@@ -444,7 +444,7 @@ neon = (function() {
 			for (; i--;) {
 				instance = i ? element.cloneNode(true) : element;
 				group = elements.length > 1 ? instance.childNodes : [instance];
-				for (j = 0, len = group.length; j < len;) {
+				for (j = 0; j < group.length;) {
 					collected.push(group[j++]);
 				}
 				this[i].appendChild(instance);
@@ -460,7 +460,7 @@ neon = (function() {
 	// the new elements are inserted before each currently
 	// selected node.
 		var
-			i = this.length, j, len,
+			i = this.length, j,
 			elements = this.build(spec),
 			element = elements.length && (
 				elements.length > 1 ? elements[0].parentNode :
@@ -473,7 +473,7 @@ neon = (function() {
 			for (; i--;) {
 				instance = i ? element.cloneNode(true) : element;
 				group = elements.length > 1 ? instance.childNodes : [instance];
-				for (j = 0, len = group.length; j < len;) {
+				for (j = 0; j < group.length;) {
 					collected.push(group[j++]);
 				}
 				this[i].parentNode.insertBefore(instance, this[i]);

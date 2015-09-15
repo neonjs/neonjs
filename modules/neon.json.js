@@ -4,7 +4,7 @@ The Neon Javascript Library: json
 A JSON encoder for Neon
 
 Part of the Neon Javascript Library
-Copyright (c) 2012, Thomas Rutter
+Copyright (c) 2015, Thomas Rutter
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -46,73 +46,9 @@ http://neonjs.com
 http://neonjs.com/license
 */
 
-// It's unfortunate that JSON encoding and decoding is so hard
-// to do in Javascript - until browsers start supporting it
-// natively.
+// Don't use this anymore, use JSON.stringify
+//
+// There is no reason to use this anymore, unless you really cannot possibly change
+// your references to neon.jsonEncode
 
-neon.jsonEncode = function(obj, $exclude) {
-// serialises the value obj into a JSON string.
-// this JSON encoder guards against infinite recursion, as well as
-// write-only properties (properties which throw an error when you
-// attempt to read them) so it should be safe to use it when you object
-// contains native objects, circular references etc.
-	var
-		i, current, len,
-		exclude = $exclude || [],
-		meta = {'\n': '\\n', '\r': '\\r', '"' : '\\"', '\\': '\\\\'},
-		escapechars = /[\\\"\x00-\x1f\u007f-\uffff]/g,
-		undef,
-		objtype,
-		collected = [];
-
-	if (typeof obj === 'object' && obj !== null && exclude.length < 1000) {
-
-		// prevent endless recursion; check if processing same object inside itself
-		for (i = exclude.length; i--;) {
-			if (obj === exclude[i]) {
-				return undef;
-			}
-		}
-		exclude.push(obj);
-
-		objtype = Object.prototype.toString.call(obj);
-
-		// treat it as array
-		if (objtype === '[object Array]') {
-			for (i = 0, len = obj.length; i < len; i++) {
-				try {
-					collected.push(this.jsonEncode(obj[i], exclude) || 'null');
-				}
-				catch (err1) {}
-			}
-			exclude.pop();
-			return '[' + collected.join() + ']';
-		}
-
-		if ((objtype === '[object Object]' &&
-			typeof obj.hasOwnProperty !== 'undefined') || exclude.length === 1) {
-			for (i in obj) {
-				if (Object.prototype.hasOwnProperty.call(obj, i)) {
-					try {
-						current = this.jsonEncode(obj[i], exclude);
-						if (current) {
-							collected.push(this.jsonEncode(i) + ':' + current);
-						}
-					} catch (err2) {}
-				}
-			}
-			exclude.pop();
-			return '{' + collected.join() + '}';
-		}
-
-		exclude.pop();
-	}
-
-	return typeof obj === 'string' ? '"' + obj.replace(escapechars, function(ch) {
-			return meta[ch] || '\\u' + ('000' + ch.charCodeAt(0).toString(16)).slice(-4);
-			}) + '"' :
-		typeof obj === 'number' ? (isFinite(obj) ? String(obj) : 'null') :
-		typeof obj === 'boolean' ? String(obj) :
-		obj === null ? "null" :
-		undef;
-};
+neon.jsonEncode = JSON.stringify;

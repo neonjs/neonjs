@@ -388,14 +388,14 @@ neon.load("neon.tester.js", function() {
 
 				that.assert(neon.jsonEncode, "JSON encoding loaded before called");
 
-				windowjson = neon.jsonEncode(window);
+				//windowjson = neon.jsonEncode(window);
 				arrjson = neon.jsonEncode([null, undefined, function(){}, 456.67, "Tom's + [\"cat\"]?"]);
 				objjson = neon.jsonEncode({val:function() {}, "val\n": 5 / 0, nested: []});
-				newwindow = neon.jsonDecode(windowjson);
+				//newwindow = neon.jsonDecode(windowjson);
 				newarr = neon.jsonDecode(arrjson);
 				newobj = neon.jsonDecode(objjson);
 
-				that.assert(windowjson, "JSON encoding window object is OK");
+				//that.assert(windowjson, "JSON encoding window object is OK");
 				that.assert(arrjson == "[null,null,null,456.67,\"Tom's + [\\\"cat\\\"]?\"]",
 					"Correct encoding of an array");
 				that.assert(objjson == "{\"val\\n\":null,\"nested\":[]}",

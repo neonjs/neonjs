@@ -41,7 +41,7 @@ See http://neonjs.com for documentation and examples of use.
 
 /**
 @preserve The Neon Javascript Library: json
-Copyright (c) Thomas Rutter 2012
+Copyright (c) Thomas Rutter 2015
 http://neonjs.com
 http://neonjs.com/license
 */

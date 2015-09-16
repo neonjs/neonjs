@@ -521,7 +521,7 @@ neon = (function() {
 	// it can be a string, where it will be transmitted bare
 		var
 			i,
-			collected = [],
+			str = "",
 			xhr = new XMLHttpRequest();
 
 		if (callback) {
@@ -534,11 +534,10 @@ neon = (function() {
 			typeof body.read != "function"*/) {
 			for (i in body) {
 				if (body.hasOwnProperty(i)) {
-					collected.push(encodeURIComponent(i) + "=" +
-						encodeURIComponent(body[i]));
+					str += "&" + encodeURIComponent(i) + "=" + encodeURIComponent(body[i]);
 				}
 			}
-			body = collected.join("&");
+			body = str.slice(1);
 			contenttype = "application/x-www-form-urlencoded";
 		}
 		if (contenttype) {

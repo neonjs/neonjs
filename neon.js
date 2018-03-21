@@ -122,16 +122,9 @@ neon = (function() {
 	// The callback will be able to access the event object via the first
 	// parameter, which will contain event.target, event.preventDefault()
 	// and event.stopPropagation().
-		var
-			i = this.length,
-			// focusin and focusout emulation required for Firefox
-			captureevent =
-				eventname === 'focusin' ? 'focus' :
-				eventname === 'focusout' ? 'blur' :
-				null;
 
-		for (; i--;) {
-			this[i].addEventListener(captureevent || eventname, callback, !!captureevent);
+		for (var i = this.length; i--;) {
+			this[i].addEventListener(eventname, callback);
 		}
 
 	};
@@ -140,16 +133,9 @@ neon = (function() {
 	// removes an event handler added with watch().
 	// This must be called with identical parameters and with the same selected
 	// elements as the corresponding call to watch().
-		var
-			i = this.length,
-			// focusin and focusout emulation required for Firefox
-			captureevent =
-				eventname === 'focusin' ? 'focus' :
-				eventname === 'focusout' ? 'blur' :
-				null;
 
-		for (; i--;) {
-			this[i].removeEventListener(captureevent || eventname, callback, !!captureevent);
+		for (var i = this.length; i--;) {
+			this[i].removeEventListener(eventname, callback);
 		}
 
 		return this;

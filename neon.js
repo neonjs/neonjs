@@ -408,7 +408,7 @@ neon = (function() {
       if (spec[i]) {
         element.append(spec[i]);
       }
-      while ((i = keys.pop())) {
+      while ((i = keys.shift())) {
         element.setAttribute(i.slice(1), spec[i]);
       }
     }

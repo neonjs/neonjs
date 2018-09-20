@@ -68,17 +68,23 @@ neon = (function() {
 	// main way of selecting elements in neon.  accepts a CSS selector
 	// string, or a node or array of nodes.  also accepts the window object
 	// returns a neon object with the given elements selected.
-		var
-			i = this.length,
-			// handle the case where no selector is given, or a node, window,
-			// or array of nodes
-			elements = typeof selector === "string" ?
-				document.querySelectorAll(selector) :
-				!selector ? [] :
-				selector.addEventListener ? [selector] : selector,
-			newelement,
-			/** @constructor */
-			Constructor = function() {};
+
+    var
+      i, source, elements = [],
+      newelement,
+      /** @constructor */
+      Constructor = function(){};
+
+    if (typeof selector === "string") {
+      source = this.length ? this : [document];
+      for (i = source.length; i--;) {
+        elements = [].slice.call(source[i].querySelectorAll(selector)).concat(elements);
+      }
+    }
+    else {
+      elements = !selector ? [] :
+        selector.addEventListener ? [selector] : selector;
+    }
 
 		Constructor.prototype = this;
 		newelement = new Constructor();

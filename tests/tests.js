@@ -28,7 +28,9 @@ neon.load("neon.tester.js", function() {
 			this.testdiv.append([
 				{div:"",$id:"myid"},
 				{div:"",$class:"test2 test2test",$title:"Tom's + [\"cat\"]?"},
-				{p:"",$lang:"en-US"}
+				{p:"",$lang:"en-US"},
+        {div:[{em:""},{em:""}],$class:"test3"},
+        {div:{em:""},$class:"test3"}
 			]);
 
 			this.assert(neon.select('body').length == 1, "Single tag name select");
@@ -70,6 +72,11 @@ neon.load("neon.tester.js", function() {
 				"Negative |= attribute selector");
 			this.assert(neon.select(document.createElement('p')).length == 1,
 				"Createelement in select");
+      this.assert(neon.select('body').select('html').length == 0, "Negative nested select");
+      this.assert(neon.select('html').select('body').length == 1, "Positive nested select");
+      this.assert(neon.select('div.test3').select('em').length == 3, "Nested select multiple match");
+      this.assert(neon.select('div.test3').select('div').length == 0, "Nested select negative self match");
+      this.assert(neon.select('div.test3').select('div>em').length == 3, "Nested select wide scope match");
 
 			this.finish();
 		});

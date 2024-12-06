@@ -29,10 +29,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
---
-
-See http://neonjs.com for documentation and examples of use.
-
 */
 
 /*jshint strict:false,smarttabs:true,browser:true,
@@ -42,8 +38,6 @@ See http://neonjs.com for documentation and examples of use.
 /**
 @preserve The Neon Javascript Library: json
 Copyright (c) Thomas Rutter 2015
-http://neonjs.com
-http://neonjs.com/license
 */
 
 // Don't use this anymore, use JSON.stringify

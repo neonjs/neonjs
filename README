@@ -45,7 +45,7 @@ compression.
 Documentation
 =============
 
-See http://neonjs.com for documentation and examples of use.
+Documentation is currently offline.
 
 The Neon archive also contains a demos/ directory which contains some small
 examples you can run in your browser.
@@ -58,8 +58,7 @@ Copyright (c) 2011, Thomas Rutter
 All rights reserved.
 
 The Neon Javascript Library is available for use under the Modified BSD
-License included in this distribution or available at:
-http://neonjs.com/license
+License included in this distribution.
 
 The Modified BSD License is an open source free software license compatible
 with the GNU General Public License.  Neon may be redistributed in your own

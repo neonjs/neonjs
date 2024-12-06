@@ -39,8 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
 @preserve The Neon Javascript Library
 Copyright (c) Thomas Rutter 2018
-http://neonjs.com
-http://neonjs.com/license
 */
 
 // overwrites any existing neon object
